@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Folder Include="Entity\" />
+      <Folder Include="Infraestructure\" />
+      <Folder Include="Mappers\" />
+      <Folder Include="Repositories\" />
+      <Folder Include="Services\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="CSharpFunctionalExtensions" Version="3.7.0" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.9" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.9" />
+      <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.9" />
+    </ItemGroup>
+
+</Project>
