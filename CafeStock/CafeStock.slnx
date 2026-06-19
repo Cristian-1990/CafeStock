@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="../CafeStock.Back/CafeStock.Back.csproj" />
+  <Project Path="../CafeStock.Blazor/CafeStock.Blazor.csproj" />
+  <Project Path="../CafeStock.Tests/CafeStock.Tests.csproj" />
+</Solution>
