@@ -1,0 +1,121 @@
+﻿using CafeStock.Back.Entity;
+using CafeStock.Back.Errors.Common;
+using CafeStock.Back.Errors.Productos;
+using CafeStock.Back.Models;
+using CafeStock.Back.Mappers;
+using CafeStock.Back.Repositories.Productos.Base;
+using CSharpFunctionalExtensions;
+using Microsoft.EntityFrameworkCore;
+
+namespace CafeStock.Back.Repositories.Productos.EfCore;
+
+public class ProductosEfRepository : IProductoRepository
+{
+    private readonly string _connectionString;
+    private bool _initialized;
+
+    public ProductosEfRepository(string connection)
+    {
+        _connectionString = connection;
+    }
+
+    private AppDbContext CreateContext() => new AppDbContext(_connectionString);
+
+    private async Task InitializeAsync()
+    {
+        if (_initialized) return;
+        using var context = CreateContext();
+        await context.EnsureCreatedAsync();
+        _initialized = true;
+    }
+    
+    
+    
+    public async Task<IEnumerable<Producto>> GetAllAsync()
+    {
+        await InitializeAsync();
+        using var context = CreateContext();
+        return await context.Productos
+            .Select(e => e.ToProducto())
+            .ToListAsync();
+    }
+
+    public async Task<Result<Producto, DomainError>> GetByIdAsync(int id)
+    {
+        await InitializeAsync();
+        using var context = CreateContext();
+        var entity = await context.Productos.FindAsync(id);
+        if (entity is null)
+            return Result.Failure<Producto, DomainError>(ProductoErrors.NotFound(id));
+        return Result.Success<Producto, DomainError>(entity.ToProducto());
+    }
+
+    public async Task<Result<Producto, DomainError>> CreateAsync(Producto producto)
+    {
+        await InitializeAsync();
+        try
+        {
+            using var context = CreateContext();
+            var entity = producto.ToEntity();
+            context.Productos.Add(entity);
+            await context.SaveChangesAsync();
+            return Result.Success<Producto, DomainError>(entity.ToProducto());
+        }
+        catch (Exception ex)
+        {
+            return Result.Failure<Producto, DomainError>(ProductoErrors.DatabaseError(ex.Message));
+        }
+    }
+
+    public async Task<Result<Producto, DomainError>> UpdateAsync(int id, Producto producto)
+    {
+        await InitializeAsync();
+        using var context = CreateContext();
+        var entity = await context.Productos.FindAsync(id);
+        if (entity is null)
+            return Result.Failure<Producto, DomainError>(ProductoErrors.NotFound(id));
+        try
+        {
+            entity.Nombre = producto.Nombre;
+            entity.StockActual = producto.StockActual;
+            entity.StockMaximo = producto.StockMaximo;
+            await context.SaveChangesAsync();
+            return Result.Success<Producto, DomainError>(entity.ToProducto());
+        }
+        catch (Exception ex)
+        {
+            return Result.Failure<Producto, DomainError>(ProductoErrors.DatabaseError(ex.Message));
+        }
+    }
+
+    public async Task<Result<Producto, DomainError>> DeleteAsync(int id)
+    {
+        await InitializeAsync();
+        using var context = CreateContext();
+        var entity = await context.Productos.FindAsync(id);
+        if (entity is null)
+            return Result.Failure<Producto, DomainError>(ProductoErrors.NotFound(id));
+        try
+        {
+            context.Productos.Remove(entity);
+            await context.SaveChangesAsync();
+            return Result.Success<Producto, DomainError>(entity.ToProducto());
+        }
+        catch (Exception ex)
+        {
+            return Result.Failure<Producto, DomainError>(ProductoErrors.DatabaseError(ex.Message));
+        }
+    }
+    
+    
+
+    public async Task<IEnumerable<Producto>> ProductosUrgentes()
+    {
+        await InitializeAsync();
+        using var context = CreateContext();
+        return await context.Productos
+            .Where(e => e.StockActual < e.StockMaximo)
+            .Select(e => e.ToProducto())
+            .ToListAsync();
+    }
+}
