@@ -1,0 +1,66 @@
+﻿@page "/productos"
+@inject IProductoService ProductoService
+
+<PageTitle>Productos</PageTitle>
+
+<h1>Productos</h1>
+
+<a href="/productos/nuevo" class="btn btn-primary mb-3">+ Añadir producto</a>
+
+@if (_cargando)
+{
+    <p>Cargando...</p>
+}
+else if (!_productos.Any())
+{
+    <p>No hay productos registrados.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th>Nombre</th>
+            <th>Stock actual</th>
+            <th>Stock máximo</th>
+            <th>Cantidad a comprar</th>
+            <th>Acciones</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var producto in _productos)
+        {
+            <tr>
+                <td>@producto.Nombre</td>
+                <td>@producto.StockActual</td>
+                <td>@producto.StockMaximo</td>
+                <td style="color: @(producto.CantidadAComprar > 0 ? "red" : "green")">
+                    @producto.CantidadAComprar
+                </td>
+                <td>
+                    <a href="/productos/editar/@producto.Id" class="btn btn-sm btn-warning">Editar</a>
+                    <button class="btn btn-sm btn-danger" @onclick="() => EliminarAsync(producto.Id)">Eliminar</button>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+@code {
+    private IEnumerable<Producto> _productos = [];
+    private bool _cargando = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _productos = await ProductoService.GetAllAsync();
+        _cargando = false;
+    }
+
+    private async Task EliminarAsync(int id)
+    {
+        var resultado = await ProductoService.DeleteAsync(id);
+        if (resultado.IsSuccess)
+            _productos = await ProductoService.GetAllAsync();
+    }
+}

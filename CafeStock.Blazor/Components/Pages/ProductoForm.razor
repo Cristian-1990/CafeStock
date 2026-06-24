@@ -1,0 +1,85 @@
+﻿@page "/productos/nuevo"
+@page "/productos/editar/{Id:int}"
+@rendermode InteractiveServer
+@inject IProductoService ProductoService
+@inject NavigationManager Navigation
+
+<PageTitle>@(_esNuevo ? "Nuevo producto" : "Editar producto")</PageTitle>
+
+<h1>@(_esNuevo ? "Nuevo producto" : "Editar producto")</h1>
+
+@if (_error is not null)
+{
+    <div class="alert alert-danger">@_error</div>
+}
+
+<div class="mb-3">
+    <label class="form-label">Nombre</label>
+    <input class="form-control" @bind="_nombre"/>
+</div>
+
+<div class="mb-3">
+    <label class="form-label">Stock actual</label>
+    <input type="number" class="form-control" @bind="_stockActual"/>
+</div>
+
+<div class="mb-3">
+    <label class="form-label">Stock máximo</label>
+    <input type="number" class="form-control" @bind="_stockMaximo"/>
+</div>
+
+<button type="button" class="btn btn-primary" @onclick="GuardarAsync">Guardar</button>
+<a href="/productos" class="btn btn-secondary ms-2">Cancelar</a>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    private string _nombre = string.Empty;
+    private int _stockActual;
+    private int _stockMaximo;
+    private string? _error;
+    private bool _esNuevo => Id is null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!_esNuevo)
+        {
+            var resultado = await ProductoService.GetByIdAsync(Id!.Value);
+            if (resultado.IsSuccess)
+            {
+                _nombre = resultado.Value.Nombre;
+                _stockActual = resultado.Value.StockActual;
+                _stockMaximo = resultado.Value.StockMaximo;
+            }
+            else
+            {
+                _error = resultado.Error.Message;
+            }
+        }
+    }
+
+    private async Task GuardarAsync()
+    {
+        var producto = new Producto
+        {
+            Id = Id ?? 0,
+            Nombre = _nombre,
+            StockActual = _stockActual,
+            StockMaximo = _stockMaximo
+        };
+
+        var resultado = _esNuevo
+            ? await ProductoService.CreateAsync(producto)
+            : await ProductoService.UpdateAsync(Id!.Value, producto);
+        Console.WriteLine($"IsSuccess: {resultado.IsSuccess}");
+        Console.WriteLine($"IsFailure: {resultado.IsFailure}");
+        if (resultado.IsFailure)
+            Console.WriteLine($"Error: {resultado.Error.Message}");
+
+        if (resultado.IsSuccess)
+            Navigation.NavigateTo("/productos");
+        else
+            _error = resultado.Error.Message;
+            StateHasChanged();
+    }
+}
