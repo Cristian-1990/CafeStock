@@ -1,0 +1,48 @@
+﻿@page "/lista-compra"
+@rendermode InteractiveServer
+@inject IProductoService ProductoService
+
+<PageTitle>Lista de la compra</PageTitle>
+
+<h1>Lista de la compra</h1>
+
+@if (_cargando)
+{
+    <p>Cargando...</p>
+}
+else if (!_productos.Any())
+{
+    <p>✅ Todo completo, no hay nada que comprar.</p>
+}
+else
+{
+    <p>Productos que necesitas comprar hoy:</p>
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th>Producto</th>
+            <th>Cantidad a comprar</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var producto in _productos)
+        {
+            <tr>
+                <td>@producto.Nombre</td>
+                <td style="font-weight: bold">@producto.CantidadAComprar</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+
+@code {
+    private IEnumerable<Producto> _productos = [];
+    private bool _cargando = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _productos = await ProductoService.GetProductosBajoMinimoAsync();
+        _cargando = false;
+    }
+}
