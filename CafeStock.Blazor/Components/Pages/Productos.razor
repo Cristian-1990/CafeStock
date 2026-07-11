@@ -1,50 +1,66 @@
 ﻿@page "/productos"
+@rendermode InteractiveServer
 @inject IProductoService ProductoService
+@inject NavigationManager Navigation
 
 <PageTitle>Productos</PageTitle>
 
-<h1>Productos</h1>
+<MudText Typo="Typo.h4" Class="mb-4" Style="color:#3E2723;">Productos</MudText>
 
-<a href="/productos/nuevo" class="btn btn-primary mb-3">+ Añadir producto</a>
+<MudButton Variant="Variant.Filled"
+           Color="Color.Primary"
+           StartIcon="@Icons.Material.Filled.Add"
+           Href="/productos/nuevo"
+           Class="mb-4">
+    Añadir producto
+</MudButton>
 
 @if (_cargando)
 {
-    <p>Cargando...</p>
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
 }
 else if (!_productos.Any())
 {
-    <p>No hay productos registrados.</p>
+    <MudAlert Severity="Severity.Info">No hay productos registrados.</MudAlert>
 }
 else
 {
-    <table class="table table-striped">
-        <thead>
-        <tr>
-            <th>Nombre</th>
-            <th>Stock actual</th>
-            <th>Stock máximo</th>
-            <th>Cantidad a comprar</th>
-            <th>Acciones</th>
-        </tr>
-        </thead>
-        <tbody>
-        @foreach (var producto in _productos)
-        {
-            <tr>
-                <td>@producto.Nombre</td>
-                <td>@producto.StockActual</td>
-                <td>@producto.StockMaximo</td>
-                <td style="color: @(producto.CantidadAComprar > 0 ? "red" : "green")">
-                    @producto.CantidadAComprar
-                </td>
-                <td>
-                    <a href="/productos/editar/@producto.Id" class="btn btn-sm btn-warning">Editar</a>
-                    <button class="btn btn-sm btn-danger" @onclick="() => EliminarAsync(producto.Id)">Eliminar</button>
-                </td>
-            </tr>
-        }
-        </tbody>
-    </table>
+    <MudTable Items="_productos" Hover="true" Striped="true" Elevation="2">
+        <HeaderContent>
+            <MudTh>Nombre</MudTh>
+            <MudTh>Stock actual</MudTh>
+            <MudTh>Stock máximo</MudTh>
+            <MudTh>Cantidad a comprar</MudTh>
+            <MudTh>Acciones</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Nombre">@context.Nombre</MudTd>
+            <MudTd DataLabel="Stock actual">@context.StockActual</MudTd>
+            <MudTd DataLabel="Stock máximo">@context.StockMaximo</MudTd>
+            <MudTd DataLabel="Cantidad a comprar">
+                <MudText Style="@($"color:{(context.CantidadAComprar > 0 ? "#993C1D" : "#3B6D11")}; font-weight:500;")">
+                    @context.CantidadAComprar
+                </MudText>
+            </MudTd>
+            <MudTd DataLabel="Acciones">
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Secondary"
+                           Size="Size.Small"
+                           StartIcon="@Icons.Material.Filled.Edit"
+                           Href="@($"/productos/editar/{context.Id}")"
+                           Class="mr-2">
+                    Editar
+                </MudButton>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Error"
+                           Size="Size.Small"
+                           StartIcon="@Icons.Material.Filled.Delete"
+                           OnClick="() => EliminarAsync(context.Id)">
+                    Eliminar
+                </MudButton>
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
 }
 
 @code {
