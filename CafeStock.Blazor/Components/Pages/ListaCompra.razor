@@ -1,39 +1,44 @@
 ﻿@page "/lista-compra"
 @rendermode InteractiveServer
 @inject IProductoService ProductoService
+@inject CafeStock.Blazor.Services.PdfService PdfService
+@inject IJSRuntime JS
 
 <PageTitle>Lista de la compra</PageTitle>
 
-<h1>Lista de la compra</h1>
+<MudText Typo="Typo.h4" Class="mb-4" Style="color:#3E2723;">Lista de la compra</MudText>
 
 @if (_cargando)
 {
-    <p>Cargando...</p>
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
 }
 else if (!_productos.Any())
 {
-    <p>✅ Todo completo, no hay nada que comprar.</p>
+    <MudAlert Severity="Severity.Success">Todo completo, no hay nada que comprar.</MudAlert>
 }
 else
 {
-    <p>Productos que necesitas comprar hoy:</p>
-    <table class="table table-striped">
-        <thead>
-        <tr>
-            <th>Producto</th>
-            <th>Cantidad a comprar</th>
-        </tr>
-        </thead>
-        <tbody>
-        @foreach (var producto in _productos)
-        {
-            <tr>
-                <td>@producto.Nombre</td>
-                <td style="font-weight: bold">@producto.CantidadAComprar</td>
-            </tr>
-        }
-        </tbody>
-    </table>
+    <MudButton Variant="Variant.Filled"
+               Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.PictureAsPdf"
+               OnClick="DescargarPdf"
+               Class="mb-4">
+        Descargar PDF
+    </MudButton>
+
+    <MudText Class="mb-3">Productos que necesitas comprar hoy:</MudText>
+    <MudTable Items="_productos" Hover="true" Striped="true" Elevation="2">
+        <HeaderContent>
+            <MudTh>Producto</MudTh>
+            <MudTh>Cantidad a comprar</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Producto">@context.Nombre</MudTd>
+            <MudTd DataLabel="Cantidad a comprar">
+                <MudText Style="color:#993C1D; font-weight:500;">@context.CantidadAComprar</MudText>
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
 }
 
 @code {
@@ -44,5 +49,12 @@ else
     {
         _productos = await ProductoService.GetProductosBajoMinimoAsync();
         _cargando = false;
+    }
+
+    private async Task DescargarPdf()
+    {
+        var pdf = PdfService.GenerarListaCompra(_productos);
+        var base64 = Convert.ToBase64String(pdf);
+        await JS.InvokeVoidAsync("descargarArchivo", "lista-compra.pdf", base64);
     }
 }

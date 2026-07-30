@@ -2,5 +2,29 @@
 
 <PageTitle>CafeStock</PageTitle>
 
-<h1>Bienvenido a CafeStock</h1>
-<p>Sistema de gestión de stock de la cafetería.</p>
+<MudContainer Class="d-flex flex-column align-center justify-center" Style="min-height:70vh;">
+    <img src="LogoCafeteria.png" alt="Logo" style="height:180px; margin-bottom:24px;"/>
+    <MudText Typo="Typo.h3" Align="Align.Center" Style="color:#3E2723;" Class="mb-2">
+        CafeStock
+    </MudText>
+    <MudText Typo="Typo.subtitle1" Align="Align.Center" Style="color:#6D4C41;">
+        Sistema de gestión de stock de la cafetería
+    </MudText>
+
+    <div class="d-flex gap-3 mt-6">
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   Size="Size.Large"
+                   StartIcon="@Icons.Material.Filled.Inventory2"
+                   Href="/productos">
+            Ver productos
+        </MudButton>
+        <MudButton Variant="Variant.Outlined"
+                   Color="Color.Secondary"
+                   Size="Size.Large"
+                   StartIcon="@Icons.Material.Filled.ShoppingCart"
+                   Href="/lista-compra">
+            Lista de la compra
+        </MudButton>
+    </div>
+</MudContainer>

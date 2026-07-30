@@ -2,12 +2,15 @@ using CafeStock.Back.Infrastructure;
 using CafeStock.Back.Repositories.Productos.Base;
 using CafeStock.Back.Services.Productos;
 using CafeStock.Blazor.Components;
+using MudBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+builder.Services.AddMudServices();
+builder.Services.AddScoped<CafeStock.Blazor.Services.PdfService>();
 
 // Configurar la base de datos
 var dbPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "cafestock.db");
