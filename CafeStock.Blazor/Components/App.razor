@@ -21,6 +21,16 @@
 <ReconnectModal/>
 <script src="@Assets["_framework/blazor.web.js"]"></script>
 <script src="_content/MudBlazor/MudBlazor.min.js"></script>
+<script>
+    window.descargarArchivo = (nombreArchivo, base64) => {
+        const enlace = document.createElement('a');
+        enlace.href = "data:application/pdf;base64," + base64;
+        enlace.download = nombreArchivo;
+        document.body.appendChild(enlace);
+        enlace.click();
+        document.body.removeChild(enlace);
+    };
+</script>
 </body>
 
 </html>

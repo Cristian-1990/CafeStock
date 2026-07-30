@@ -1,6 +1,8 @@
 ﻿@page "/lista-compra"
 @rendermode InteractiveServer
 @inject IProductoService ProductoService
+@inject CafeStock.Blazor.Services.PdfService PdfService
+@inject IJSRuntime JS
 
 <PageTitle>Lista de la compra</PageTitle>
 
@@ -16,6 +18,14 @@ else if (!_productos.Any())
 }
 else
 {
+    <MudButton Variant="Variant.Filled"
+               Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.PictureAsPdf"
+               OnClick="DescargarPdf"
+               Class="mb-4">
+        Descargar PDF
+    </MudButton>
+
     <MudText Class="mb-3">Productos que necesitas comprar hoy:</MudText>
     <MudTable Items="_productos" Hover="true" Striped="true" Elevation="2">
         <HeaderContent>
@@ -39,5 +49,12 @@ else
     {
         _productos = await ProductoService.GetProductosBajoMinimoAsync();
         _cargando = false;
+    }
+
+    private async Task DescargarPdf()
+    {
+        var pdf = PdfService.GenerarListaCompra(_productos);
+        var base64 = Convert.ToBase64String(pdf);
+        await JS.InvokeVoidAsync("descargarArchivo", "lista-compra.pdf", base64);
     }
 }
