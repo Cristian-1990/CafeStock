@@ -20,6 +20,20 @@ public class AppDbContext : DbContext
         if (!optionsBuilder.IsConfigured)
             optionsBuilder.UseSqlite(_connectionString);
     }
+
+    /// <summary>
+    /// Al eliminar un Proveedor, los productos que lo tenían asignado quedan con
+    /// ProveedorId = null en vez de eliminarse (o de bloquear el borrado por FK).
+    /// </summary>
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ProductoEntity>()
+            .HasOne(p => p.Proveedor)
+            .WithMany()
+            .HasForeignKey(p => p.ProveedorId)
+            .OnDelete(DeleteBehavior.SetNull);
+    }
+
 /// <summary>
 /// Crea un archivo .db y las tablas si no existen, si ya existen no hace nada
 /// </summary>
