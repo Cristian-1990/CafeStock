@@ -1,0 +1,71 @@
+@page "/lista-detallada"
+@inject IProductoService ProductoService
+
+<PageTitle>Lista detallada</PageTitle>
+
+<MudText Typo="Typo.h4" Class="mb-4" Style="color:#3E2723;">Lista detallada</MudText>
+
+@if (_cargando)
+{
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
+}
+else if (!_productos.Any())
+{
+    <MudAlert Severity="Severity.Info">No hay productos registrados.</MudAlert>
+}
+else
+{
+    <MudGrid>
+        @foreach (var producto in _productos)
+        {
+            <MudItem xs="12" sm="6" md="4">
+                <MudCard Elevation="2" Style="height:100%; display:flex; flex-direction:column;">
+                    @if (!string.IsNullOrWhiteSpace(producto.ImagenUrl))
+                    {
+                        <MudCardMedia Image="@producto.ImagenUrl" Height="160"/>
+                    }
+                    else
+                    {
+                        <div class="d-flex align-center justify-center"
+                             style="height:160px; background-color:#F5F0EB;">
+                            <MudIcon Icon="@Icons.Material.Filled.Inventory2" Style="font-size:3rem; color:#6D4C41;"/>
+                        </div>
+                    }
+                    <MudCardContent Style="flex-grow:1;">
+                        <MudText Typo="Typo.h6" Style="color:#3E2723;">@producto.Nombre</MudText>
+
+                        @if (!string.IsNullOrWhiteSpace(producto.Descripcion))
+                        {
+                            <MudText Typo="Typo.body2" Class="mt-1">@producto.Descripcion</MudText>
+                        }
+                        else
+                        {
+                            <MudText Typo="Typo.body2" Class="mt-1" Style="color:#9E9E9E; font-style:italic;">Sin descripción</MudText>
+                        }
+
+                        @if (!string.IsNullOrWhiteSpace(producto.Proveedor))
+                        {
+                            <MudChip T="string" Size="Size.Small" Color="Color.Secondary" Class="mt-2">@producto.Proveedor</MudChip>
+                        }
+
+                        <div class="d-flex align-center mt-3">
+                            <MudIcon Icon="@Icons.Material.Filled.Inventory" Size="Size.Small" Class="mr-1"/>
+                            <MudText Typo="Typo.body2">@producto.StockActual / @producto.StockMaximo</MudText>
+                        </div>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        }
+    </MudGrid>
+}
+
+@code {
+    private IEnumerable<Producto> _productos = [];
+    private bool _cargando = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _productos = await ProductoService.GetAllAsync();
+        _cargando = false;
+    }
+}

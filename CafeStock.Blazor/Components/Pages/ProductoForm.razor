@@ -1,4 +1,4 @@
-﻿@page "/productos/nuevo"
+@page "/productos/nuevo"
 @page "/productos/editar/{Id:int}"
 @inject IProductoService ProductoService
 @inject NavigationManager Navigation
@@ -32,6 +32,32 @@
                      Min="0"
                      Class="mb-4"/>
 
+    <MudSelect @bind-Value="_unidad"
+               Label="Unidad"
+               Variant="Variant.Outlined"
+               Class="mb-4">
+        @foreach (var unidad in Enum.GetValues<UnidadMedida>())
+        {
+            <MudSelectItem Value="@unidad">@FormatearUnidad(unidad)</MudSelectItem>
+        }
+    </MudSelect>
+
+    <MudTextField @bind-Value="_descripcion"
+                  Label="Descripción"
+                  Variant="Variant.Outlined"
+                  Lines="3"
+                  Class="mb-4"/>
+
+    <MudTextField @bind-Value="_imagenUrl"
+                  Label="Imagen (ruta relativa, p.ej. /images/nombre.jpg)"
+                  Variant="Variant.Outlined"
+                  Class="mb-4"/>
+
+    <MudTextField @bind-Value="_proveedor"
+                  Label="Proveedor"
+                  Variant="Variant.Outlined"
+                  Class="mb-4"/>
+
     <div class="d-flex gap-2">
         <MudButton Variant="Variant.Filled"
                    Color="Color.Primary"
@@ -53,8 +79,15 @@
     private string _nombre = string.Empty;
     private int _stockActual;
     private int _stockMaximo;
+    private UnidadMedida _unidad = UnidadMedida.SinEspecificar;
+    private string _descripcion = string.Empty;
+    private string _imagenUrl = string.Empty;
+    private string _proveedor = string.Empty;
     private string? _error;
     private bool _esNuevo => Id is null;
+
+    private static string FormatearUnidad(UnidadMedida unidad) =>
+        unidad == UnidadMedida.SinEspecificar ? "— Sin especificar —" : unidad.ToString();
 
     protected override async Task OnInitializedAsync()
     {
@@ -66,6 +99,10 @@
                 _nombre = resultado.Value.Nombre;
                 _stockActual = resultado.Value.StockActual;
                 _stockMaximo = resultado.Value.StockMaximo;
+                _unidad = resultado.Value.Unidad;
+                _descripcion = resultado.Value.Descripcion;
+                _imagenUrl = resultado.Value.ImagenUrl;
+                _proveedor = resultado.Value.Proveedor;
             }
             else
             {
@@ -81,7 +118,11 @@
             Id = Id ?? 0,
             Nombre = _nombre,
             StockActual = _stockActual,
-            StockMaximo = _stockMaximo
+            StockMaximo = _stockMaximo,
+            Unidad = _unidad,
+            Descripcion = _descripcion,
+            ImagenUrl = _imagenUrl,
+            Proveedor = _proveedor
         };
 
         var resultado = _esNuevo
