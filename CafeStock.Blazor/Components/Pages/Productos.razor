@@ -2,6 +2,8 @@
 @inject IProductoService ProductoService
 @inject IProveedorService ProveedorService
 @inject NavigationManager Navigation
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
 
 <PageTitle>Productos</PageTitle>
 
@@ -88,7 +90,7 @@ else
                            Color="Color.Error"
                            Size="Size.Small"
                            StartIcon="@Icons.Material.Filled.Delete"
-                           OnClick="() => EliminarAsync(context.Id)">
+                           OnClick="() => ConfirmarEliminarAsync(context.Id, context.Nombre)">
                     Eliminar
                 </MudButton>
             </MudTd>
@@ -115,10 +117,33 @@ else
         _cargando = false;
     }
 
-    private async Task EliminarAsync(int id)
+    private async Task ConfirmarEliminarAsync(int id, string nombre)
+    {
+        var parameters = new DialogParameters<ConfirmDialog>
+        {
+            { x => x.ContentText, $"¿Seguro que quieres eliminar '{nombre}'? Esta acción no se puede deshacer." },
+            { x => x.ConfirmText, "Eliminar" },
+            { x => x.CancelText, "Cancelar" }
+        };
+
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Eliminar producto", parameters);
+        var resultado = await dialog.Result;
+
+        if (resultado is not null && !resultado.Canceled)
+            await EliminarAsync(id, nombre);
+    }
+
+    private async Task EliminarAsync(int id, string nombre)
     {
         var resultado = await ProductoService.DeleteAsync(id);
         if (resultado.IsSuccess)
+        {
+            Snackbar.Add($"Producto '{nombre}' eliminado correctamente", Severity.Success);
             _productos = await ProductoService.GetAllAsync();
+        }
+        else
+        {
+            Snackbar.Add(resultado.Error.Message, Severity.Error);
+        }
     }
 }
