@@ -1,5 +1,6 @@
 @page "/lista-detallada"
 @inject IProductoService ProductoService
+@inject IProveedorService ProveedorService
 
 <PageTitle>Lista detallada</PageTitle>
 
@@ -43,9 +44,9 @@ else
                             <MudText Typo="Typo.body2" Class="mt-1" Style="color:#9E9E9E; font-style:italic;">Sin descripción</MudText>
                         }
 
-                        @if (!string.IsNullOrWhiteSpace(producto.Proveedor))
+                        @if (producto.ProveedorId is not null && _proveedoresPorId.TryGetValue(producto.ProveedorId.Value, out var nombreProveedor))
                         {
-                            <MudChip T="string" Size="Size.Small" Color="Color.Secondary" Class="mt-2">@producto.Proveedor</MudChip>
+                            <MudChip T="string" Size="Size.Small" Color="Color.Secondary" Class="mt-2">@nombreProveedor</MudChip>
                         }
 
                         <div class="d-flex align-center mt-3">
@@ -61,10 +62,13 @@ else
 
 @code {
     private IEnumerable<Producto> _productos = [];
+    private Dictionary<int, string> _proveedoresPorId = [];
     private bool _cargando = true;
 
     protected override async Task OnInitializedAsync()
     {
+        var proveedores = await ProveedorService.GetAllAsync();
+        _proveedoresPorId = proveedores.ToDictionary(p => p.Id, p => p.Nombre);
         _productos = await ProductoService.GetAllAsync();
         _cargando = false;
     }

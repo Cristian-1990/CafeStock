@@ -79,6 +79,10 @@ public class ProductosEfRepository : IProductoRepository
             entity.Nombre = producto.Nombre;
             entity.StockActual = producto.StockActual;
             entity.StockMaximo = producto.StockMaximo;
+            entity.Unidad = producto.Unidad;
+            entity.Descripcion = producto.Descripcion;
+            entity.ImagenUrl = producto.ImagenUrl;
+            entity.ProveedorId = producto.ProveedorId;
             await context.SaveChangesAsync();
             return Result.Success<Producto, DomainError>(entity.ToProducto());
         }

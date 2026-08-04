@@ -1,6 +1,7 @@
 @page "/productos/nuevo"
 @page "/productos/editar/{Id:int}"
 @inject IProductoService ProductoService
+@inject IProveedorService ProveedorService
 @inject NavigationManager Navigation
 
 <PageTitle>@(_esNuevo ? "Nuevo producto" : "Editar producto")</PageTitle>
@@ -53,10 +54,29 @@
                   Variant="Variant.Outlined"
                   Class="mb-4"/>
 
-    <MudTextField @bind-Value="_proveedor"
-                  Label="Proveedor"
-                  Variant="Variant.Outlined"
-                  Class="mb-4"/>
+    @if (_cargandoProveedores)
+    {
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Small" Class="mb-4"/>
+    }
+    else if (!_proveedores.Any())
+    {
+        <MudAlert Severity="Severity.Info" Class="mb-4">
+            No hay proveedores todavía — créalos primero en la pestaña Proveedores.
+        </MudAlert>
+    }
+    else
+    {
+        <MudSelect T="int?" @bind-Value="_proveedorId"
+                   Label="Proveedor"
+                   Variant="Variant.Outlined"
+                   Clearable="true"
+                   Class="mb-4">
+            @foreach (var proveedor in _proveedores)
+            {
+                <MudSelectItem T="int?" Value="@proveedor.Id">@proveedor.Nombre</MudSelectItem>
+            }
+        </MudSelect>
+    }
 
     <div class="d-flex gap-2">
         <MudButton Variant="Variant.Filled"
@@ -82,7 +102,9 @@
     private UnidadMedida _unidad = UnidadMedida.SinEspecificar;
     private string _descripcion = string.Empty;
     private string _imagenUrl = string.Empty;
-    private string _proveedor = string.Empty;
+    private int? _proveedorId;
+    private IEnumerable<Proveedor> _proveedores = [];
+    private bool _cargandoProveedores = true;
     private string? _error;
     private bool _esNuevo => Id is null;
 
@@ -91,6 +113,9 @@
 
     protected override async Task OnInitializedAsync()
     {
+        _proveedores = await ProveedorService.GetAllAsync();
+        _cargandoProveedores = false;
+
         if (!_esNuevo)
         {
             var resultado = await ProductoService.GetByIdAsync(Id!.Value);
@@ -102,7 +127,7 @@
                 _unidad = resultado.Value.Unidad;
                 _descripcion = resultado.Value.Descripcion;
                 _imagenUrl = resultado.Value.ImagenUrl;
-                _proveedor = resultado.Value.Proveedor;
+                _proveedorId = resultado.Value.ProveedorId;
             }
             else
             {
@@ -122,7 +147,7 @@
             Unidad = _unidad,
             Descripcion = _descripcion,
             ImagenUrl = _imagenUrl,
-            Proveedor = _proveedor
+            ProveedorId = _proveedorId
         };
 
         var resultado = _esNuevo

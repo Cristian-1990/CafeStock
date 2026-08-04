@@ -1,6 +1,8 @@
 using CafeStock.Back.Infrastructure;
 using CafeStock.Back.Repositories.Productos.Base;
+using CafeStock.Back.Repositories.Proveedores.Base;
 using CafeStock.Back.Services.Productos;
+using CafeStock.Back.Services.Proveedores;
 using CafeStock.Blazor.Components;
 using MudBlazor.Services;
 
@@ -21,6 +23,9 @@ var provider = DependenciesProvider.BuildServiceProvider(connectionString);
 builder.Services.AddSingleton(provider.GetService<IProductoRepository>()!);
 builder.Services.AddScoped<IProductoService, CafeStock.Back.Services.Productos.ProductoService>();
 builder.Services.AddScoped<CafeStock.Back.Validators.Common.IValidador<CafeStock.Back.Models.Producto>, CafeStock.Back.Validators.Productos.ValidadorProducto>();
+builder.Services.AddSingleton(provider.GetService<IProveedorRepository>()!);
+builder.Services.AddScoped<IProveedorService, CafeStock.Back.Services.Proveedores.ProveedorService>();
+builder.Services.AddScoped<CafeStock.Back.Validators.Common.IValidador<CafeStock.Back.Models.Proveedor>, CafeStock.Back.Validators.Proveedores.ValidadorProveedor>();
 
 var app = builder.Build();
 

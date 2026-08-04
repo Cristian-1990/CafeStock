@@ -13,6 +13,7 @@ public class AppDbContext : DbContext
     }
 
     public DbSet<ProductoEntity> Productos { get; set; } = null!; //DbSet<ProductoEntity> Coleccion de ProductoEntity, Tabla Productos en SQLite
+    public DbSet<ProveedorEntity> Proveedores { get; set; } = null!;
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) //
     {

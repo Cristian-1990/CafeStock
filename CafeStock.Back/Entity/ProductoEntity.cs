@@ -11,5 +11,6 @@ public class ProductoEntity
     public UnidadMedida Unidad { get; set; } = UnidadMedida.SinEspecificar;
     public string Descripcion { get; set; } = string.Empty;
     public string ImagenUrl { get; set; } = string.Empty;
-    public string Proveedor { get; set; } = string.Empty;
+    public int? ProveedorId { get; set; }
+    public ProveedorEntity? Proveedor { get; set; }
 }
