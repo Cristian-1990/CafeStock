@@ -1,10 +1,12 @@
-﻿@page "/productos"
+@page "/productos"
 @inject IProductoService ProductoService
 @inject NavigationManager Navigation
 
 <PageTitle>Productos</PageTitle>
 
-<MudText Typo="Typo.h4" Class="mb-4" Style="color:#3E2723;">Productos</MudText>
+<div class="mb-4" style="background-color:rgba(109,76,65,0.10); border-radius:12px; padding:16px 24px; display:inline-block;">
+    <MudText Typo="Typo.h4" Style="color:#3E2723; margin:0;">Productos</MudText>
+</div>
 
 <MudButton Variant="Variant.Filled"
            Color="Color.Primary"
