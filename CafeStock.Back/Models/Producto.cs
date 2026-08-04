@@ -8,6 +8,10 @@ public record Producto
     public string Nombre { get; set; } = string.Empty; //String.Empty evita que el compilador se queje por si puede ser null
     public int StockActual { get; set; }
     public int StockMaximo { get; set; }
+    public UnidadMedida Unidad { get; set; } = UnidadMedida.SinEspecificar;
+    public string Descripcion { get; set; } = string.Empty;
+    public string ImagenUrl { get; set; } = string.Empty;
+    public string Proveedor { get; set; } = string.Empty;
     public int CantidadAComprar => Math.Max(0, StockMaximo - StockActual);//Prodpiedad autocalculada
 
 };

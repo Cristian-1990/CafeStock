@@ -12,6 +12,10 @@ public static class ProductoMapper
            Nombre = producto.Nombre,
            StockActual = producto.StockActual,
            StockMaximo = producto.StockMaximo,
+           Unidad = producto.Unidad,
+           Descripcion = producto.Descripcion,
+           ImagenUrl = producto.ImagenUrl,
+           Proveedor = producto.Proveedor,
        };
     }
 
@@ -22,7 +26,11 @@ public static class ProductoMapper
             Id = entity.Id,
             Nombre = entity.Nombre,
             StockActual = entity.StockActual,
-            StockMaximo = entity.StockMaximo
+            StockMaximo = entity.StockMaximo,
+            Unidad = entity.Unidad,
+            Descripcion = entity.Descripcion,
+            ImagenUrl = entity.ImagenUrl,
+            Proveedor = entity.Proveedor
         };
     }
 }
