@@ -10,6 +10,7 @@ public static class ProveedorMapper
         {
             Id = proveedor.Id,
             Nombre = proveedor.Nombre,
+            ImagenUrl = proveedor.ImagenUrl,
         };
     }
 
@@ -18,7 +19,8 @@ public static class ProveedorMapper
         return new Proveedor
         {
             Id = entity.Id,
-            Nombre = entity.Nombre
+            Nombre = entity.Nombre,
+            ImagenUrl = entity.ImagenUrl
         };
     }
 }

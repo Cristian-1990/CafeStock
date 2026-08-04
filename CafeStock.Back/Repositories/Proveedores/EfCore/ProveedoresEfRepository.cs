@@ -75,6 +75,7 @@ public class ProveedoresEfRepository : IProveedorRepository
         try
         {
             entity.Nombre = proveedor.Nombre;
+            entity.ImagenUrl = proveedor.ImagenUrl;
             await context.SaveChangesAsync();
             return Result.Success<Proveedor, DomainError>(entity.ToProveedor());
         }

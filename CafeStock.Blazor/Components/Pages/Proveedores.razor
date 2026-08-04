@@ -1,7 +1,6 @@
 @page "/proveedores"
 @inject IProveedorService ProveedorService
-@inject IDialogService DialogService
-@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
 
 <PageTitle>Proveedores</PageTitle>
 
@@ -9,13 +8,15 @@
     <MudText Typo="Typo.h4" Style="color:#3E2723; margin:0;">Proveedores</MudText>
 </div>
 
-<MudButton Variant="Variant.Filled"
-           Color="Color.Primary"
-           StartIcon="@Icons.Material.Filled.Add"
-           Href="/proveedores/nuevo"
-           Class="mb-4">
-    Añadir proveedor
-</MudButton>
+<div>
+    <MudButton Variant="Variant.Filled"
+               Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.Add"
+               Href="/proveedores/nuevo"
+               Class="mb-4">
+        Añadir proveedor
+    </MudButton>
+</div>
 
 @if (_cargando)
 {
@@ -27,32 +28,31 @@ else if (!_proveedores.Any())
 }
 else
 {
-    <MudTable Items="_proveedores" Hover="true" Striped="true" Elevation="2">
-        <HeaderContent>
-            <MudTh>Nombre</MudTh>
-            <MudTh>Acciones</MudTh>
-        </HeaderContent>
-        <RowTemplate>
-            <MudTd DataLabel="Nombre">@context.Nombre</MudTd>
-            <MudTd DataLabel="Acciones">
-                <MudButton Variant="Variant.Filled"
-                           Color="Color.Secondary"
-                           Size="Size.Small"
-                           StartIcon="@Icons.Material.Filled.Edit"
-                           Href="@($"/proveedores/editar/{context.Id}")"
-                           Class="mr-2">
-                    Editar
-                </MudButton>
-                <MudButton Variant="Variant.Filled"
-                           Color="Color.Error"
-                           Size="Size.Small"
-                           StartIcon="@Icons.Material.Filled.Delete"
-                           OnClick="() => ConfirmarEliminarAsync(context.Id, context.Nombre)">
-                    Eliminar
-                </MudButton>
-            </MudTd>
-        </RowTemplate>
-    </MudTable>
+    <MudGrid>
+        @foreach (var proveedor in _proveedores)
+        {
+            <MudItem xs="12" sm="6" md="4">
+                <MudCard Elevation="2"
+                         Style="height:100%; cursor:pointer;"
+                         @onclick="@(() => Navigation.NavigateTo($"/proveedores/{proveedor.Id}"))">
+                    @if (!string.IsNullOrWhiteSpace(proveedor.ImagenUrl))
+                    {
+                        <MudCardMedia Image="@proveedor.ImagenUrl" Height="160"/>
+                    }
+                    else
+                    {
+                        <div class="d-flex align-center justify-center"
+                             style="height:160px; background-color:#F5F0EB;">
+                            <MudIcon Icon="@Icons.Material.Filled.LocalShipping" Style="font-size:3rem; color:#6D4C41;"/>
+                        </div>
+                    }
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6" Style="color:#3E2723;">@proveedor.Nombre</MudText>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        }
+    </MudGrid>
 }
 
 @code {
@@ -61,43 +61,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await CargarAsync();
-    }
-
-    private async Task CargarAsync()
-    {
-        _cargando = true;
         _proveedores = await ProveedorService.GetAllAsync();
         _cargando = false;
-    }
-
-    private async Task ConfirmarEliminarAsync(int id, string nombre)
-    {
-        var parameters = new DialogParameters<ConfirmDialog>
-        {
-            { x => x.ContentText, $"¿Seguro que quieres eliminar '{nombre}'? Esta acción no se puede deshacer." },
-            { x => x.ConfirmText, "Eliminar" },
-            { x => x.CancelText, "Cancelar" }
-        };
-
-        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Eliminar proveedor", parameters);
-        var resultado = await dialog.Result;
-
-        if (resultado is not null && !resultado.Canceled)
-            await EliminarAsync(id, nombre);
-    }
-
-    private async Task EliminarAsync(int id, string nombre)
-    {
-        var resultado = await ProveedorService.DeleteAsync(id);
-        if (resultado.IsSuccess)
-        {
-            Snackbar.Add($"Proveedor '{nombre}' eliminado correctamente", Severity.Success);
-            await CargarAsync();
-        }
-        else
-        {
-            Snackbar.Add(resultado.Error.Message, Severity.Error);
-        }
     }
 }

@@ -1,0 +1,140 @@
+@page "/proveedores/{Id:int}"
+@inject IProveedorService ProveedorService
+@inject IProductoService ProductoService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject NavigationManager Navigation
+
+<PageTitle>@(_proveedor?.Nombre ?? "Proveedor")</PageTitle>
+
+@if (_cargando)
+{
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
+}
+else if (_proveedor is null)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-4">No se ha encontrado este proveedor.</MudAlert>
+    <MudButton Variant="Variant.Filled"
+               Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.ArrowBack"
+               Href="/proveedores">
+        Volver al listado
+    </MudButton>
+}
+else
+{
+    <MudButton Variant="Variant.Text"
+               Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.ArrowBack"
+               Href="/proveedores"
+               Class="mb-4">
+        Volver al listado
+    </MudButton>
+
+    <div class="d-flex align-center mb-6" style="gap:1rem;">
+        @if (!string.IsNullOrWhiteSpace(_proveedor.ImagenUrl))
+        {
+            <MudImage Src="@_proveedor.ImagenUrl"
+                      Alt="@_proveedor.Nombre"
+                      ObjectFit="ObjectFit.Cover"
+                      Style="width:88px; height:88px; border-radius:8px; flex-shrink:0;"/>
+        }
+        else
+        {
+            <div class="d-flex align-center justify-center flex-shrink-0"
+                 style="width:88px; height:88px; background-color:#F5F0EB; border-radius:8px;">
+                <MudIcon Icon="@Icons.Material.Filled.LocalShipping" Style="font-size:2.5rem; color:#6D4C41;"/>
+            </div>
+        }
+        <div style="background-color:rgba(109,76,65,0.10); border-radius:12px; padding:8px 16px; display:inline-block;">
+            <MudText Typo="Typo.h4" Style="color:#3E2723; margin:0;">@_proveedor.Nombre</MudText>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2 mb-4">
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Secondary"
+                   StartIcon="@Icons.Material.Filled.Edit"
+                   Href="@($"/proveedores/editar/{Id}")">
+            Editar proveedor
+        </MudButton>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Error"
+                   StartIcon="@Icons.Material.Filled.Delete"
+                   OnClick="ConfirmarEliminarAsync">
+            Eliminar proveedor
+        </MudButton>
+    </div>
+
+    <MudText Typo="Typo.h5" Class="mb-2" Style="color:#3E2723;">Productos de este proveedor</MudText>
+
+    @if (!_productos.Any())
+    {
+        <MudAlert Severity="Severity.Info">Este proveedor no tiene productos asignados todavía.</MudAlert>
+    }
+    else
+    {
+        <MudTable Items="_productos" Hover="true" Striped="true" Elevation="2">
+            <HeaderContent>
+                <MudTh>Nombre</MudTh>
+                <MudTh>Stock actual</MudTh>
+                <MudTh>Stock máximo</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Nombre">@context.Nombre</MudTd>
+                <MudTd DataLabel="Stock actual">@context.StockActual</MudTd>
+                <MudTd DataLabel="Stock máximo">@context.StockMaximo</MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Proveedor? _proveedor;
+    private IEnumerable<Producto> _productos = [];
+    private bool _cargando = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var resultado = await ProveedorService.GetByIdAsync(Id);
+        if (resultado.IsSuccess)
+        {
+            _proveedor = resultado.Value;
+            var todosLosProductos = await ProductoService.GetAllAsync();
+            _productos = todosLosProductos.Where(p => p.ProveedorId == Id);
+        }
+        _cargando = false;
+    }
+
+    private async Task ConfirmarEliminarAsync()
+    {
+        var parameters = new DialogParameters<ConfirmDialog>
+        {
+            { x => x.ContentText, $"¿Seguro que quieres eliminar '{_proveedor!.Nombre}'? Esta acción no se puede deshacer." },
+            { x => x.ConfirmText, "Eliminar" },
+            { x => x.CancelText, "Cancelar" }
+        };
+
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Eliminar proveedor", parameters);
+        var resultado = await dialog.Result;
+
+        if (resultado is not null && !resultado.Canceled)
+            await EliminarAsync();
+    }
+
+    private async Task EliminarAsync()
+    {
+        var resultado = await ProveedorService.DeleteAsync(Id);
+        if (resultado.IsSuccess)
+        {
+            Snackbar.Add($"Proveedor '{_proveedor!.Nombre}' eliminado correctamente", Severity.Success);
+            Navigation.NavigateTo("/proveedores");
+        }
+        else
+        {
+            Snackbar.Add(resultado.Error.Message, Severity.Error);
+        }
+    }
+}

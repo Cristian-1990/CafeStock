@@ -22,6 +22,11 @@
                   Variant="Variant.Outlined"
                   Class="mb-4"/>
 
+    <MudTextField @bind-Value="_imagenUrl"
+                  Label="Imagen (ruta relativa, p.ej. /images/nombre.jpg)"
+                  Variant="Variant.Outlined"
+                  Class="mb-4"/>
+
     <div class="d-flex gap-2">
         <MudButton Variant="Variant.Filled"
                    Color="Color.Primary"
@@ -41,6 +46,7 @@
     [Parameter] public int? Id { get; set; }
 
     private string _nombre = string.Empty;
+    private string _imagenUrl = string.Empty;
     private string? _error;
     private bool _esNuevo => Id is null;
 
@@ -52,6 +58,7 @@
             if (resultado.IsSuccess)
             {
                 _nombre = resultado.Value.Nombre;
+                _imagenUrl = resultado.Value.ImagenUrl;
             }
             else
             {
@@ -65,7 +72,8 @@
         var proveedor = new Proveedor
         {
             Id = Id ?? 0,
-            Nombre = _nombre
+            Nombre = _nombre,
+            ImagenUrl = _imagenUrl
         };
 
         var resultado = _esNuevo
