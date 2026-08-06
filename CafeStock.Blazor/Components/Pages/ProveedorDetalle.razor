@@ -34,10 +34,10 @@ else
     <div class="d-flex align-center mb-6" style="gap:1rem;">
         @if (!string.IsNullOrWhiteSpace(_proveedor.ImagenUrl))
         {
-            <MudImage Src="@_proveedor.ImagenUrl"
-                      Alt="@_proveedor.Nombre"
-                      ObjectFit="ObjectFit.Cover"
-                      Style="width:88px; height:88px; border-radius:8px; flex-shrink:0;"/>
+            <div style="width:88px; height:88px; border-radius:8px; overflow:hidden; flex-shrink:0; background-color:#F5F0EB;">
+                <img src="@_proveedor.ImagenUrl" alt="@_proveedor.Nombre"
+                     style="width:100%; height:100%; object-fit:contain; object-position:center; display:block;"/>
+            </div>
         }
         else
         {
