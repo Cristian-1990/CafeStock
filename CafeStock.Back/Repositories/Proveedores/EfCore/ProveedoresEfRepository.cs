@@ -78,6 +78,11 @@ public class ProveedoresEfRepository : IProveedorRepository
         {
             entity.Nombre = proveedor.Nombre;
             entity.ImagenUrl = proveedor.ImagenUrl;
+            entity.Telefono = proveedor.Telefono;
+            entity.PersonaContacto = proveedor.PersonaContacto;
+            entity.Email = proveedor.Email;
+            entity.DiaReparto = proveedor.DiaReparto;
+            entity.Notas = proveedor.Notas;
             await context.SaveChangesAsync();
             return Result.Success<Proveedor, DomainError>(entity.ToProveedor());
         }

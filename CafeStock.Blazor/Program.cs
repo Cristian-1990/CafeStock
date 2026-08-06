@@ -33,6 +33,8 @@ try
         .AddInteractiveServerComponents();
     builder.Services.AddMudServices();
     builder.Services.AddScoped<CafeStock.Blazor.Services.PdfService>();
+    builder.Services.Configure<CafeStock.Blazor.Services.EmailSettings>(builder.Configuration.GetSection("Email"));
+    builder.Services.AddScoped<CafeStock.Blazor.Services.EmailService>();
 
     // Configurar la base de datos
     var dbPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "cafestock.db");

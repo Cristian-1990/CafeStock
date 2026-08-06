@@ -51,6 +51,53 @@ else
         </div>
     </div>
 
+    @if (TieneDatosDeContacto())
+    {
+        <MudPaper Class="pa-4 mb-4" Elevation="1" Style="max-width:400px;">
+            <MudText Typo="Typo.subtitle2" Class="mb-2" Style="color:#6D4C41; text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">
+                Contacto
+            </MudText>
+            @if (!string.IsNullOrWhiteSpace(_proveedor.Telefono))
+            {
+                <div class="d-flex align-center mb-2">
+                    <MudIcon Icon="@Icons.Material.Filled.Phone" Size="Size.Small" Class="mr-2" Style="color:#6D4C41;"/>
+                    <MudText Typo="Typo.body1">@_proveedor.Telefono</MudText>
+                </div>
+            }
+            @if (!string.IsNullOrWhiteSpace(_proveedor.PersonaContacto))
+            {
+                <div class="d-flex align-center mb-2">
+                    <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Class="mr-2" Style="color:#6D4C41;"/>
+                    <MudText Typo="Typo.body1">@_proveedor.PersonaContacto</MudText>
+                </div>
+            }
+            @if (!string.IsNullOrWhiteSpace(_proveedor.Email))
+            {
+                <div class="d-flex align-center mb-2">
+                    <MudIcon Icon="@Icons.Material.Filled.Email" Size="Size.Small" Class="mr-2" Style="color:#6D4C41;"/>
+                    <MudText Typo="Typo.body1">@_proveedor.Email</MudText>
+                </div>
+            }
+            @if (!string.IsNullOrWhiteSpace(_proveedor.DiaReparto))
+            {
+                <div class="d-flex align-center">
+                    <MudIcon Icon="@Icons.Material.Filled.LocalShipping" Size="Size.Small" Class="mr-2" Style="color:#6D4C41;"/>
+                    <MudText Typo="Typo.body1">Reparto: @_proveedor.DiaReparto</MudText>
+                </div>
+            }
+        </MudPaper>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(_proveedor.Notas))
+    {
+        <MudPaper Class="pa-4 mb-4" Elevation="1" Style="max-width:400px; background-color:rgba(109,76,65,0.06);">
+            <MudText Typo="Typo.subtitle2" Class="mb-1" Style="color:#6D4C41; text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">
+                Notas
+            </MudText>
+            <MudText Typo="Typo.body2" Style="white-space:pre-wrap;">@_proveedor.Notas</MudText>
+        </MudPaper>
+    }
+
     <div class="d-flex gap-2 mb-4">
         <MudButton Variant="Variant.Filled"
                    Color="Color.Secondary"
@@ -79,11 +126,17 @@ else
                 <MudTh>Nombre</MudTh>
                 <MudTh>Stock actual</MudTh>
                 <MudTh>Stock máximo</MudTh>
+                <MudTh>Cantidad a comprar</MudTh>
             </HeaderContent>
             <RowTemplate>
                 <MudTd DataLabel="Nombre">@context.Nombre</MudTd>
                 <MudTd DataLabel="Stock actual">@context.StockActual</MudTd>
                 <MudTd DataLabel="Stock máximo">@context.StockMaximo</MudTd>
+                <MudTd DataLabel="Cantidad a comprar">
+                    <MudText Style="@($"color:{(context.CantidadAComprar > 0 ? "#7A2410" : "#3B6D11")}; font-weight:700;")">
+                        @context.CantidadAComprar
+                    </MudText>
+                </MudTd>
             </RowTemplate>
         </MudTable>
     }
@@ -107,6 +160,13 @@ else
         }
         _cargando = false;
     }
+
+    private bool TieneDatosDeContacto() =>
+        _proveedor is not null &&
+        (!string.IsNullOrWhiteSpace(_proveedor.Telefono) ||
+         !string.IsNullOrWhiteSpace(_proveedor.PersonaContacto) ||
+         !string.IsNullOrWhiteSpace(_proveedor.Email) ||
+         !string.IsNullOrWhiteSpace(_proveedor.DiaReparto));
 
     private async Task ConfirmarEliminarAsync()
     {

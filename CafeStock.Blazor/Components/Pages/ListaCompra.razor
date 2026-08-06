@@ -1,6 +1,7 @@
 @page "/lista-compra"
 @inject IProductoService ProductoService
 @inject CafeStock.Blazor.Services.PdfService PdfService
+@inject CafeStock.Blazor.Services.EmailService EmailService
 @inject IJSRuntime JS
 @inject ISnackbar Snackbar
 
@@ -20,52 +21,63 @@ else if (!_productos.Any())
 }
 else
 {
-    <MudButton Variant="Variant.Filled"
-               Color="Color.Primary"
-               StartIcon="@Icons.Material.Filled.PictureAsPdf"
-               OnClick="DescargarPdf"
-               Class="mb-4">
-        Descargar PDF
-    </MudButton>
+    <div class="d-flex gap-2 mb-4">
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.PictureAsPdf"
+                   OnClick="DescargarPdf">
+            Descargar PDF
+        </MudButton>
+        <MudButton Variant="Variant.Outlined"
+                   Color="Color.Secondary"
+                   StartIcon="@Icons.Material.Filled.Email"
+                   OnClick="EnviarPorEmail"
+                   Disabled="_enviandoEmail">
+            @(_enviandoEmail ? "Enviando..." : "Enviar por email")
+        </MudButton>
+    </div>
 
-    <MudText Class="mb-3">Productos que necesitas comprar hoy:</MudText>
-    <MudTable Items="_productos" Hover="true" Striped="true" Elevation="2">
-        <HeaderContent>
-            <MudTh>Producto</MudTh>
-            <MudTh>Cantidad a comprar</MudTh>
-            <MudTh>Cantidad recibida</MudTh>
-            <MudTh>Acciones</MudTh>
-        </HeaderContent>
-        <RowTemplate>
-            <MudTd DataLabel="Producto">@context.Nombre</MudTd>
-            <MudTd DataLabel="Cantidad a comprar">
-                <MudText Style="color:#993C1D; font-weight:500;">@context.CantidadAComprar</MudText>
-            </MudTd>
-            <MudTd DataLabel="Cantidad recibida">
-                <MudNumericField T="int"
-                                  Value="_cantidadesRecibidas[context.Id]"
-                                  ValueChanged="@((int v) => _cantidadesRecibidas[context.Id] = v)"
-                                  Min="1"
-                                  Variant="Variant.Outlined"
-                                  Style="max-width:100px;"/>
-            </MudTd>
-            <MudTd DataLabel="Acciones">
-                <MudButton Variant="Variant.Filled"
-                           Color="Color.Primary"
-                           Size="Size.Small"
-                           StartIcon="@Icons.Material.Filled.Check"
-                           OnClick="@(() => ConfirmarRecepcionAsync(context))">
-                    Confirmar
-                </MudButton>
-            </MudTd>
-        </RowTemplate>
-    </MudTable>
+    <MudPaper Class="pa-4" Elevation="2">
+        <MudText Class="mb-3">Productos que necesitas comprar hoy:</MudText>
+        <MudTable Items="_productos" Hover="true" Striped="true" Elevation="0">
+            <HeaderContent>
+                <MudTh>Producto</MudTh>
+                <MudTh>Cantidad a comprar</MudTh>
+                <MudTh>Cantidad recibida</MudTh>
+                <MudTh>Acciones</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Producto">@context.Nombre</MudTd>
+                <MudTd DataLabel="Cantidad a comprar">
+                    <MudText Typo="Typo.subtitle1" Style="color:#7A2410; font-weight:700;">@context.CantidadAComprar</MudText>
+                </MudTd>
+                <MudTd DataLabel="Cantidad recibida">
+                    <MudNumericField T="int"
+                                      Value="_cantidadesRecibidas[context.Id]"
+                                      ValueChanged="@((int v) => _cantidadesRecibidas[context.Id] = v)"
+                                      Min="1"
+                                      Variant="Variant.Outlined"
+                                      Style="max-width:100px;"/>
+                </MudTd>
+                <MudTd DataLabel="Acciones">
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               Size="Size.Small"
+                               StartIcon="@Icons.Material.Filled.Check"
+                               OnClick="@(() => ConfirmarRecepcionAsync(context))">
+                        Confirmar
+                    </MudButton>
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    </MudPaper>
 }
 
 @code {
     private IEnumerable<Producto> _productos = [];
     private Dictionary<int, int> _cantidadesRecibidas = [];
     private bool _cargando = true;
+    private bool _enviandoEmail;
 
     protected override async Task OnInitializedAsync()
     {
@@ -84,6 +96,25 @@ else
         var pdf = PdfService.GenerarListaCompra(_productos);
         var base64 = Convert.ToBase64String(pdf);
         await JS.InvokeVoidAsync("descargarArchivo", "lista-compra.pdf", base64);
+    }
+
+    private async Task EnviarPorEmail()
+    {
+        _enviandoEmail = true;
+        try
+        {
+            var pdf = PdfService.GenerarListaCompra(_productos);
+            await EmailService.EnviarListaCompraAsync(pdf);
+            Snackbar.Add("Lista de la compra enviada por email", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _enviandoEmail = false;
+        }
     }
 
     private async Task ConfirmarRecepcionAsync(Producto producto)

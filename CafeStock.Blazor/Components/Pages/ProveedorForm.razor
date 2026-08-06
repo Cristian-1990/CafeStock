@@ -27,6 +27,37 @@
                   Variant="Variant.Outlined"
                   Class="mb-4"/>
 
+    <MudText Typo="Typo.subtitle2" Class="mb-2 mt-2" Style="color:#6D4C41; text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">
+        Contacto
+    </MudText>
+
+    <MudTextField @bind-Value="_telefono"
+                  Label="Teléfono"
+                  Variant="Variant.Outlined"
+                  Class="mb-4"/>
+
+    <MudTextField @bind-Value="_personaContacto"
+                  Label="Persona de contacto"
+                  Variant="Variant.Outlined"
+                  Class="mb-4"/>
+
+    <MudTextField @bind-Value="_email"
+                  Label="Email"
+                  Variant="Variant.Outlined"
+                  Class="mb-4"/>
+
+    <MudTextField @bind-Value="_diaReparto"
+                  Label="Día de reparto"
+                  Placeholder="p.ej. Martes y viernes"
+                  Variant="Variant.Outlined"
+                  Class="mb-4"/>
+
+    <MudTextField @bind-Value="_notas"
+                  Label="Notas"
+                  Variant="Variant.Outlined"
+                  Lines="3"
+                  Class="mb-4"/>
+
     <div class="d-flex gap-2">
         <MudButton Variant="Variant.Filled"
                    Color="Color.Primary"
@@ -47,6 +78,11 @@
 
     private string _nombre = string.Empty;
     private string _imagenUrl = string.Empty;
+    private string _telefono = string.Empty;
+    private string _personaContacto = string.Empty;
+    private string _email = string.Empty;
+    private string _diaReparto = string.Empty;
+    private string _notas = string.Empty;
     private string? _error;
     private bool _esNuevo => Id is null;
 
@@ -59,6 +95,11 @@
             {
                 _nombre = resultado.Value.Nombre;
                 _imagenUrl = resultado.Value.ImagenUrl;
+                _telefono = resultado.Value.Telefono;
+                _personaContacto = resultado.Value.PersonaContacto;
+                _email = resultado.Value.Email;
+                _diaReparto = resultado.Value.DiaReparto;
+                _notas = resultado.Value.Notas;
             }
             else
             {
@@ -73,7 +114,12 @@
         {
             Id = Id ?? 0,
             Nombre = _nombre,
-            ImagenUrl = _imagenUrl
+            ImagenUrl = _imagenUrl,
+            Telefono = _telefono,
+            PersonaContacto = _personaContacto,
+            Email = _email,
+            DiaReparto = _diaReparto,
+            Notas = _notas
         };
 
         var resultado = _esNuevo

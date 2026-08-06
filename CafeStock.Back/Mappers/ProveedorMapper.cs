@@ -11,6 +11,11 @@ public static class ProveedorMapper
             Id = proveedor.Id,
             Nombre = proveedor.Nombre,
             ImagenUrl = proveedor.ImagenUrl,
+            Telefono = proveedor.Telefono,
+            PersonaContacto = proveedor.PersonaContacto,
+            Email = proveedor.Email,
+            DiaReparto = proveedor.DiaReparto,
+            Notas = proveedor.Notas,
         };
     }
 
@@ -20,7 +25,12 @@ public static class ProveedorMapper
         {
             Id = entity.Id,
             Nombre = entity.Nombre,
-            ImagenUrl = entity.ImagenUrl
+            ImagenUrl = entity.ImagenUrl,
+            Telefono = entity.Telefono,
+            PersonaContacto = entity.PersonaContacto,
+            Email = entity.Email,
+            DiaReparto = entity.DiaReparto,
+            Notas = entity.Notas
         };
     }
 }
