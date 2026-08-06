@@ -3,6 +3,7 @@ using CafeStock.Back.Errors.Common;
 using CafeStock.Back.Models;
 using CafeStock.Back.Repositories.Proveedores.Base;
 using CafeStock.Back.Validators.Common;
+using Serilog;
 
 namespace CafeStock.Back.Services.Proveedores;
 
@@ -33,7 +34,10 @@ public class ProveedorService : IProveedorService
         if (validacion.IsFailure)
             return validacion;
 
-        return await _repository.CreateAsync(proveedor);
+        var resultado = await _repository.CreateAsync(proveedor);
+        if (resultado.IsSuccess)
+            Log.Information("Proveedor creado: Id={Id}, Nombre={Nombre}", resultado.Value.Id, resultado.Value.Nombre);
+        return resultado;
     }
 
     public async Task<Result<Proveedor, DomainError>> UpdateAsync(int id, Proveedor proveedor)
@@ -42,11 +46,17 @@ public class ProveedorService : IProveedorService
         if (validacion.IsFailure)
             return validacion;
 
-        return await _repository.UpdateAsync(id, proveedor);
+        var resultado = await _repository.UpdateAsync(id, proveedor);
+        if (resultado.IsSuccess)
+            Log.Information("Proveedor editado: Id={Id}, Nombre={Nombre}", id, proveedor.Nombre);
+        return resultado;
     }
 
     public async Task<Result<Proveedor, DomainError>> DeleteAsync(int id)
     {
-        return await _repository.DeleteAsync(id);
+        var resultado = await _repository.DeleteAsync(id);
+        if (resultado.IsSuccess)
+            Log.Information("Proveedor eliminado: Id={Id}", id);
+        return resultado;
     }
 }

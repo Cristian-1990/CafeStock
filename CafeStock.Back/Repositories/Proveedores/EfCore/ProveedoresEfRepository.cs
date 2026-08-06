@@ -6,6 +6,7 @@ using CafeStock.Back.Mappers;
 using CafeStock.Back.Repositories.Proveedores.Base;
 using CSharpFunctionalExtensions;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 
 namespace CafeStock.Back.Repositories.Proveedores.EfCore;
 
@@ -61,6 +62,7 @@ public class ProveedoresEfRepository : IProveedorRepository
         }
         catch (Exception ex)
         {
+            Log.Error(ex, "Error al crear el proveedor {Nombre}", proveedor.Nombre);
             return Result.Failure<Proveedor, DomainError>(ProveedorErrors.DatabaseError(ex.Message));
         }
     }
@@ -81,6 +83,7 @@ public class ProveedoresEfRepository : IProveedorRepository
         }
         catch (Exception ex)
         {
+            Log.Error(ex, "Error al editar el proveedor {Id}", id);
             return Result.Failure<Proveedor, DomainError>(ProveedorErrors.DatabaseError(ex.Message));
         }
     }
@@ -100,6 +103,7 @@ public class ProveedoresEfRepository : IProveedorRepository
         }
         catch (Exception ex)
         {
+            Log.Error(ex, "Error al eliminar el proveedor {Id}", id);
             return Result.Failure<Proveedor, DomainError>(ProveedorErrors.DatabaseError(ex.Message));
         }
     }

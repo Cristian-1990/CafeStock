@@ -3,6 +3,7 @@ using CafeStock.Back.Errors.Common;
 using CafeStock.Back.Models;
 using CafeStock.Back.Repositories.Productos.Base;
 using CafeStock.Back.Validators.Common;
+using Serilog;
 
 namespace CafeStock.Back.Services.Productos;
 
@@ -33,7 +34,10 @@ public class ProductoService : IProductoService
         if (validacion.IsFailure)
             return validacion;
 
-        return await _repository.CreateAsync(producto);
+        var resultado = await _repository.CreateAsync(producto);
+        if (resultado.IsSuccess)
+            Log.Information("Producto creado: Id={Id}, Nombre={Nombre}", resultado.Value.Id, resultado.Value.Nombre);
+        return resultado;
     }
 
     public async Task<Result<Producto, DomainError>> UpdateAsync(int id, Producto producto)
@@ -42,12 +46,18 @@ public class ProductoService : IProductoService
         if (validacion.IsFailure)
             return validacion;
 
-        return await _repository.UpdateAsync(id, producto);
+        var resultado = await _repository.UpdateAsync(id, producto);
+        if (resultado.IsSuccess)
+            Log.Information("Producto editado: Id={Id}, Nombre={Nombre}", id, producto.Nombre);
+        return resultado;
     }
 
     public async Task<Result<Producto, DomainError>> DeleteAsync(int id)
     {
-        return await _repository.DeleteAsync(id);
+        var resultado = await _repository.DeleteAsync(id);
+        if (resultado.IsSuccess)
+            Log.Information("Producto eliminado: Id={Id}", id);
+        return resultado;
     }
 
     public async Task<IEnumerable<Producto>> GetProductosBajoMinimoAsync()

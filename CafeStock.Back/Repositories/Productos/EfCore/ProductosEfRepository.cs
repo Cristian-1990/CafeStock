@@ -6,6 +6,7 @@ using CafeStock.Back.Mappers;
 using CafeStock.Back.Repositories.Productos.Base;
 using CSharpFunctionalExtensions;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 
 namespace CafeStock.Back.Repositories.Productos.EfCore;
 
@@ -63,6 +64,7 @@ public class ProductosEfRepository : IProductoRepository
         }
         catch (Exception ex)
         {
+            Log.Error(ex, "Error al crear el producto {Nombre}", producto.Nombre);
             return Result.Failure<Producto, DomainError>(ProductoErrors.DatabaseError(ex.Message));
         }
     }
@@ -88,6 +90,7 @@ public class ProductosEfRepository : IProductoRepository
         }
         catch (Exception ex)
         {
+            Log.Error(ex, "Error al editar el producto {Id}", id);
             return Result.Failure<Producto, DomainError>(ProductoErrors.DatabaseError(ex.Message));
         }
     }
@@ -107,11 +110,12 @@ public class ProductosEfRepository : IProductoRepository
         }
         catch (Exception ex)
         {
+            Log.Error(ex, "Error al eliminar el producto {Id}", id);
             return Result.Failure<Producto, DomainError>(ProductoErrors.DatabaseError(ex.Message));
         }
     }
-    
-    
+
+
 
     public async Task<IEnumerable<Producto>> ProductosUrgentes()
     {
