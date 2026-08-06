@@ -116,6 +116,38 @@ public class ProductosEfRepositoryTest
     }
 
     [Test]
+    public async Task ConfirmarRecepcionAsync_RecepcionCompleta_SumaTodoLoPedidoYNoQuedaDeficit()
+    {
+        // Arrange: faltan 3 (StockActual=2, StockMaximo=5)
+        var creado = await _repository.CreateAsync(
+            new Producto { Nombre = "Café", StockActual = 2, StockMaximo = 5 });
+
+        // Act: llega todo lo que faltaba
+        var resultado = await _repository.ConfirmarRecepcionAsync(creado.Value.Id, 3);
+
+        // Assert
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value.StockActual.Should().Be(5);
+        resultado.Value.CantidadAComprar.Should().Be(0);
+    }
+
+    [Test]
+    public async Task ConfirmarRecepcionAsync_RecepcionParcial_SumaSoloLoRecibidoYQuedaDeficit()
+    {
+        // Arrange: faltan 3 (StockActual=2, StockMaximo=5)
+        var creado = await _repository.CreateAsync(
+            new Producto { Nombre = "Café", StockActual = 2, StockMaximo = 5 });
+
+        // Act: pedían 3, llegan solo 2
+        var resultado = await _repository.ConfirmarRecepcionAsync(creado.Value.Id, 2);
+
+        // Assert: StockActual = 2 + 2 = 4, sigue faltando 1
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value.StockActual.Should().Be(4);
+        resultado.Value.CantidadAComprar.Should().Be(1);
+    }
+
+    [Test]
     public async Task ProductosUrgentes_DevuelveSoloBajoMinimo()
     {
         // Arrange

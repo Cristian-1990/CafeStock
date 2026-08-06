@@ -117,6 +117,26 @@ public class ProductosEfRepository : IProductoRepository
 
 
 
+    public async Task<Result<Producto, DomainError>> ConfirmarRecepcionAsync(int id, int cantidadRecibida)
+    {
+        await InitializeAsync();
+        using var context = CreateContext();
+        var entity = await context.Productos.FindAsync(id);
+        if (entity is null)
+            return Result.Failure<Producto, DomainError>(ProductoErrors.NotFound(id));
+        try
+        {
+            entity.StockActual += cantidadRecibida;
+            await context.SaveChangesAsync();
+            return Result.Success<Producto, DomainError>(entity.ToProducto());
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error al confirmar la recepción del producto {Id}", id);
+            return Result.Failure<Producto, DomainError>(ProductoErrors.DatabaseError(ex.Message));
+        }
+    }
+
     public async Task<IEnumerable<Producto>> ProductosUrgentes()
     {
         await InitializeAsync();

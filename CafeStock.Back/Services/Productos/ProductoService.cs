@@ -1,5 +1,6 @@
 ﻿using CSharpFunctionalExtensions;
 using CafeStock.Back.Errors.Common;
+using CafeStock.Back.Errors.Productos;
 using CafeStock.Back.Models;
 using CafeStock.Back.Repositories.Productos.Base;
 using CafeStock.Back.Validators.Common;
@@ -57,6 +58,19 @@ public class ProductoService : IProductoService
         var resultado = await _repository.DeleteAsync(id);
         if (resultado.IsSuccess)
             Log.Information("Producto eliminado: Id={Id}", id);
+        return resultado;
+    }
+
+    public async Task<Result<Producto, DomainError>> ConfirmarRecepcionAsync(int id, int cantidadRecibida)
+    {
+        if (cantidadRecibida <= 0)
+            return Result.Failure<Producto, DomainError>(
+                ProductoErrors.Validation(["La cantidad recibida debe ser mayor que 0"]));
+
+        var resultado = await _repository.ConfirmarRecepcionAsync(id, cantidadRecibida);
+        if (resultado.IsSuccess)
+            Log.Information("Stock repuesto: Id={Id}, Nombre={Nombre}, CantidadRecibida={CantidadRecibida}",
+                resultado.Value.Id, resultado.Value.Nombre, cantidadRecibida);
         return resultado;
     }
 

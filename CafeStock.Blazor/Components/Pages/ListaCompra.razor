@@ -1,7 +1,8 @@
-﻿@page "/lista-compra"
+@page "/lista-compra"
 @inject IProductoService ProductoService
 @inject CafeStock.Blazor.Services.PdfService PdfService
 @inject IJSRuntime JS
+@inject ISnackbar Snackbar
 
 <PageTitle>Lista de la compra</PageTitle>
 
@@ -32,11 +33,30 @@ else
         <HeaderContent>
             <MudTh>Producto</MudTh>
             <MudTh>Cantidad a comprar</MudTh>
+            <MudTh>Cantidad recibida</MudTh>
+            <MudTh>Acciones</MudTh>
         </HeaderContent>
         <RowTemplate>
             <MudTd DataLabel="Producto">@context.Nombre</MudTd>
             <MudTd DataLabel="Cantidad a comprar">
                 <MudText Style="color:#993C1D; font-weight:500;">@context.CantidadAComprar</MudText>
+            </MudTd>
+            <MudTd DataLabel="Cantidad recibida">
+                <MudNumericField T="int"
+                                  Value="_cantidadesRecibidas[context.Id]"
+                                  ValueChanged="@((int v) => _cantidadesRecibidas[context.Id] = v)"
+                                  Min="1"
+                                  Variant="Variant.Outlined"
+                                  Style="max-width:100px;"/>
+            </MudTd>
+            <MudTd DataLabel="Acciones">
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           Size="Size.Small"
+                           StartIcon="@Icons.Material.Filled.Check"
+                           OnClick="@(() => ConfirmarRecepcionAsync(context))">
+                    Confirmar
+                </MudButton>
             </MudTd>
         </RowTemplate>
     </MudTable>
@@ -44,11 +64,18 @@ else
 
 @code {
     private IEnumerable<Producto> _productos = [];
+    private Dictionary<int, int> _cantidadesRecibidas = [];
     private bool _cargando = true;
 
     protected override async Task OnInitializedAsync()
     {
+        await CargarAsync();
+    }
+
+    private async Task CargarAsync()
+    {
         _productos = await ProductoService.GetProductosBajoMinimoAsync();
+        _cantidadesRecibidas = _productos.ToDictionary(p => p.Id, p => p.CantidadAComprar);
         _cargando = false;
     }
 
@@ -57,5 +84,20 @@ else
         var pdf = PdfService.GenerarListaCompra(_productos);
         var base64 = Convert.ToBase64String(pdf);
         await JS.InvokeVoidAsync("descargarArchivo", "lista-compra.pdf", base64);
+    }
+
+    private async Task ConfirmarRecepcionAsync(Producto producto)
+    {
+        var cantidadRecibida = _cantidadesRecibidas[producto.Id];
+        var resultado = await ProductoService.ConfirmarRecepcionAsync(producto.Id, cantidadRecibida);
+        if (resultado.IsSuccess)
+        {
+            Snackbar.Add($"Stock repuesto: {producto.Nombre} (+{cantidadRecibida})", Severity.Success);
+            await CargarAsync();
+        }
+        else
+        {
+            Snackbar.Add(resultado.Error.Message, Severity.Error);
+        }
     }
 }
