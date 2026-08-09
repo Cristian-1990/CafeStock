@@ -2,6 +2,8 @@
 @page "/proveedores/editar/{Id:int}"
 @inject IProveedorService ProveedorService
 @inject NavigationManager Navigation
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
 
 <PageTitle>@(_esNuevo ? "Nuevo proveedor" : "Editar proveedor")</PageTitle>
 
@@ -70,6 +72,15 @@
                    Href="/proveedores">
             Cancelar
         </MudButton>
+        @if (!_esNuevo)
+        {
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Error"
+                       StartIcon="@Icons.Material.Filled.Delete"
+                       OnClick="ConfirmarEliminarAsync">
+                Eliminar proveedor
+            </MudButton>
+        }
     </div>
 </MudPaper>
 
@@ -132,6 +143,36 @@
         {
             _error = resultado.Error.Message;
             StateHasChanged();
+        }
+    }
+
+    private async Task ConfirmarEliminarAsync()
+    {
+        var parameters = new DialogParameters<ConfirmDialog>
+        {
+            { x => x.ContentText, $"¿Seguro que quieres eliminar '{_nombre}'? Esta acción no se puede deshacer." },
+            { x => x.ConfirmText, "Eliminar" },
+            { x => x.CancelText, "Cancelar" }
+        };
+
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Eliminar proveedor", parameters);
+        var resultado = await dialog.Result;
+
+        if (resultado is not null && !resultado.Canceled)
+            await EliminarAsync();
+    }
+
+    private async Task EliminarAsync()
+    {
+        var resultado = await ProveedorService.DeleteAsync(Id!.Value);
+        if (resultado.IsSuccess)
+        {
+            Snackbar.Add($"Proveedor '{_nombre}' eliminado correctamente", Severity.Success);
+            Navigation.NavigateTo("/proveedores");
+        }
+        else
+        {
+            Snackbar.Add(resultado.Error.Message, Severity.Error);
         }
     }
 }
