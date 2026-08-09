@@ -1,5 +1,7 @@
 @page "/lista-compra"
+@using System.Text
 @inject IProductoService ProductoService
+@inject IProveedorService ProveedorService
 @inject CafeStock.Blazor.Services.PdfService PdfService
 @inject CafeStock.Blazor.Services.EmailService EmailService
 @inject IJSRuntime JS
@@ -34,6 +36,13 @@ else
                    OnClick="EnviarPorEmail"
                    Disabled="_enviandoEmail">
             @(_enviandoEmail ? "Enviando..." : "Enviar por email")
+        </MudButton>
+        <MudButton Variant="Variant.Outlined"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Storefront"
+                   OnClick="GenerarPedido"
+                   Disabled="_generandoPedido">
+            @(_generandoPedido ? "Generando..." : "Generar pedido")
         </MudButton>
     </div>
 
@@ -78,6 +87,7 @@ else
     private Dictionary<int, int> _cantidadesRecibidas = [];
     private bool _cargando = true;
     private bool _enviandoEmail;
+    private bool _generandoPedido;
 
     protected override async Task OnInitializedAsync()
     {
@@ -115,6 +125,50 @@ else
         {
             _enviandoEmail = false;
         }
+    }
+
+    private async Task GenerarPedido()
+    {
+        _generandoPedido = true;
+        try
+        {
+            var proveedores = await ProveedorService.GetAllAsync();
+            var cuerpo = ConstruirInformePedido(_productos, proveedores);
+            await EmailService.EnviarInformePedidoAsync(cuerpo);
+            Snackbar.Add("Pedido agrupado por proveedor enviado por email", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _generandoPedido = false;
+        }
+    }
+
+    private static string ConstruirInformePedido(IEnumerable<Producto> productos, IEnumerable<Proveedor> proveedores)
+    {
+        var proveedoresPorId = proveedores.ToDictionary(p => p.Id);
+        var grupos = productos
+            .GroupBy(p => p.ProveedorId.HasValue && proveedoresPorId.ContainsKey(p.ProveedorId.Value) ? p.ProveedorId : null)
+            .OrderBy(g => g.Key is null)
+            .ThenBy(g => proveedoresPorId[g.Key!.Value].Nombre);
+
+        var texto = new StringBuilder();
+        texto.AppendLine("Pedido agrupado por proveedor:");
+        texto.AppendLine();
+
+        foreach (var grupo in grupos)
+        {
+            var titulo = grupo.Key.HasValue ? proveedoresPorId[grupo.Key.Value].Nombre : "Sin proveedor asignado";
+            texto.AppendLine(titulo);
+            foreach (var producto in grupo)
+                texto.AppendLine($"  - {producto.Nombre}: pedir {producto.CantidadAComprar}, quedan {producto.StockActual}");
+            texto.AppendLine();
+        }
+
+        return texto.ToString();
     }
 
     private async Task ConfirmarRecepcionAsync(Producto producto)

@@ -29,6 +29,28 @@ public class EmailService
         cuerpo.Attachments.Add("lista-compra.pdf", pdfAdjunto, ContentType.Parse("application/pdf"));
         mensaje.Body = cuerpo.ToMessageBody();
 
+        await EnviarAsync(mensaje, "la lista de la compra");
+    }
+
+    /// <summary>
+    /// Envía el informe de pedido agrupado por proveedor, generado al vuelo (sin adjunto,
+    /// solo el texto del listado en el cuerpo del email).
+    /// </summary>
+    public async Task EnviarInformePedidoAsync(string cuerpoTexto)
+    {
+        ValidarConfiguracion();
+
+        var mensaje = new MimeMessage();
+        mensaje.From.Add(MailboxAddress.Parse(_settings.Usuario));
+        mensaje.To.Add(MailboxAddress.Parse(_settings.DestinatarioFijo));
+        mensaje.Subject = $"Pedido agrupado por proveedor - {DateTime.Now:dd/MM/yyyy}";
+        mensaje.Body = new TextPart("plain") { Text = cuerpoTexto };
+
+        await EnviarAsync(mensaje, "el informe de pedido por proveedor");
+    }
+
+    private async Task EnviarAsync(MimeMessage mensaje, string contextoError)
+    {
         using var cliente = new SmtpClient();
         try
         {
@@ -38,7 +60,7 @@ public class EmailService
         }
         catch (Exception ex)
         {
-            Log.Error(ex, "Error al enviar la lista de la compra por email");
+            Log.Error(ex, "Error al enviar {ContextoError} por email", contextoError);
             throw new InvalidOperationException("No se pudo enviar el email. Revisa la configuración SMTP o la conexión a internet.", ex);
         }
         finally
