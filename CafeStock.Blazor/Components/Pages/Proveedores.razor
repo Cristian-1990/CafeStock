@@ -1,5 +1,6 @@
 @page "/proveedores"
 @inject IProveedorService ProveedorService
+@inject IProductoService ProductoService
 @inject NavigationManager Navigation
 
 <PageTitle>Proveedores</PageTitle>
@@ -18,18 +19,31 @@
     </MudButton>
 </div>
 
+<div class="d-flex justify-center mb-4">
+    <MudPaper Elevation="3" Style="border-radius:9999px; max-width:400px; width:100%; padding:2px 20px;">
+        <MudTextField T="string"
+                      @bind-Value="_busqueda"
+                      Immediate="true"
+                      Placeholder="Buscar por producto..."
+                      Variant="Variant.Text"
+                      Underline="false"
+                      Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search"/>
+    </MudPaper>
+</div>
+
 @if (_cargando)
 {
     <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
 }
-else if (!_proveedores.Any())
+else if (!_proveedoresFiltrados.Any())
 {
-    <MudAlert Severity="Severity.Info">No hay proveedores registrados.</MudAlert>
+    <MudAlert Severity="Severity.Info">No hay proveedores que coincidan con esta búsqueda.</MudAlert>
 }
 else
 {
     <MudGrid>
-        @foreach (var proveedor in _proveedores)
+        @foreach (var proveedor in _proveedoresFiltrados)
         {
             <MudItem xs="12" sm="6" md="4">
                 <MudCard Elevation="2"
@@ -60,11 +74,19 @@ else
 
 @code {
     private IEnumerable<Proveedor> _proveedores = [];
+    private IEnumerable<Producto> _productos = [];
     private bool _cargando = true;
+    private string _busqueda = string.Empty;
+
+    private IEnumerable<Proveedor> _proveedoresFiltrados =>
+        _proveedores.Where(p =>
+            string.IsNullOrWhiteSpace(_busqueda) ||
+            _productos.Any(prod => prod.ProveedorId == p.Id && prod.Nombre.Contains(_busqueda, StringComparison.OrdinalIgnoreCase)));
 
     protected override async Task OnInitializedAsync()
     {
         _proveedores = await ProveedorService.GetAllAsync();
+        _productos = await ProductoService.GetAllAsync();
         _cargando = false;
     }
 }
