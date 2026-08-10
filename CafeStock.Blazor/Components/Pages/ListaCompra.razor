@@ -1,16 +1,13 @@
 @page "/lista-compra"
-@using System.Text
 @inject IProductoService ProductoService
-@inject IProveedorService ProveedorService
 @inject CafeStock.Blazor.Services.PdfService PdfService
-@inject CafeStock.Blazor.Services.EmailService EmailService
 @inject IJSRuntime JS
 @inject ISnackbar Snackbar
 
-<PageTitle>Lista de la compra</PageTitle>
+<PageTitle>Compra</PageTitle>
 
 <div class="mb-4" style="background-color:rgba(109,76,65,0.10); border-radius:12px; padding:16px 24px; display:inline-block;">
-    <MudText Typo="Typo.h4" Style="color:#3E2723; margin:0;">Lista de la compra</MudText>
+    <MudText Typo="Typo.h4" Style="color:#3E2723; margin:0;">Compra</MudText>
 </div>
 
 @if (_cargando)
@@ -29,20 +26,6 @@ else
                    StartIcon="@Icons.Material.Filled.PictureAsPdf"
                    OnClick="DescargarPdf">
             Descargar PDF
-        </MudButton>
-        <MudButton Variant="Variant.Outlined"
-                   Color="Color.Secondary"
-                   StartIcon="@Icons.Material.Filled.Email"
-                   OnClick="EnviarPorEmail"
-                   Disabled="_enviandoEmail">
-            @(_enviandoEmail ? "Enviando..." : "Enviar por email")
-        </MudButton>
-        <MudButton Variant="Variant.Outlined"
-                   Color="Color.Primary"
-                   StartIcon="@Icons.Material.Filled.Storefront"
-                   OnClick="GenerarPedido"
-                   Disabled="_generandoPedido">
-            @(_generandoPedido ? "Generando..." : "Generar pedido")
         </MudButton>
     </div>
 
@@ -86,8 +69,6 @@ else
     private IEnumerable<Producto> _productos = [];
     private Dictionary<int, int> _cantidadesRecibidas = [];
     private bool _cargando = true;
-    private bool _enviandoEmail;
-    private bool _generandoPedido;
 
     protected override async Task OnInitializedAsync()
     {
@@ -106,69 +87,6 @@ else
         var pdf = PdfService.GenerarListaCompra(_productos);
         var base64 = Convert.ToBase64String(pdf);
         await JS.InvokeVoidAsync("descargarArchivo", "lista-compra.pdf", base64);
-    }
-
-    private async Task EnviarPorEmail()
-    {
-        _enviandoEmail = true;
-        try
-        {
-            var pdf = PdfService.GenerarListaCompra(_productos);
-            await EmailService.EnviarListaCompraAsync(pdf);
-            Snackbar.Add("Lista de la compra enviada por email", Severity.Success);
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add(ex.Message, Severity.Error);
-        }
-        finally
-        {
-            _enviandoEmail = false;
-        }
-    }
-
-    private async Task GenerarPedido()
-    {
-        _generandoPedido = true;
-        try
-        {
-            var proveedores = await ProveedorService.GetAllAsync();
-            var cuerpo = ConstruirInformePedido(_productos, proveedores);
-            await EmailService.EnviarInformePedidoAsync(cuerpo);
-            Snackbar.Add("Pedido agrupado por proveedor enviado por email", Severity.Success);
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add(ex.Message, Severity.Error);
-        }
-        finally
-        {
-            _generandoPedido = false;
-        }
-    }
-
-    private static string ConstruirInformePedido(IEnumerable<Producto> productos, IEnumerable<Proveedor> proveedores)
-    {
-        var proveedoresPorId = proveedores.ToDictionary(p => p.Id);
-        var grupos = productos
-            .GroupBy(p => p.ProveedorId.HasValue && proveedoresPorId.ContainsKey(p.ProveedorId.Value) ? p.ProveedorId : null)
-            .OrderBy(g => g.Key is null)
-            .ThenBy(g => proveedoresPorId[g.Key!.Value].Nombre);
-
-        var texto = new StringBuilder();
-        texto.AppendLine("Pedido agrupado por proveedor:");
-        texto.AppendLine();
-
-        foreach (var grupo in grupos)
-        {
-            var titulo = grupo.Key.HasValue ? proveedoresPorId[grupo.Key.Value].Nombre : "Sin proveedor asignado";
-            texto.AppendLine(titulo);
-            foreach (var producto in grupo)
-                texto.AppendLine($"  - {producto.Nombre}: pedir {producto.CantidadAComprar}, quedan {producto.StockActual}");
-            texto.AppendLine();
-        }
-
-        return texto.ToString();
     }
 
     private async Task ConfirmarRecepcionAsync(Producto producto)
