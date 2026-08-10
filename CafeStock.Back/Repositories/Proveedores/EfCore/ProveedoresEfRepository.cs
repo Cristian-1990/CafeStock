@@ -27,6 +27,7 @@ public class ProveedoresEfRepository : IProveedorRepository
         if (_initialized) return;
         using var context = CreateContext();
         await context.EnsureCreatedAsync();
+        await context.AsegurarColumnaEsSupermercadoGenericoAsync();
         _initialized = true;
     }
 
@@ -83,6 +84,7 @@ public class ProveedoresEfRepository : IProveedorRepository
             entity.Email = proveedor.Email;
             entity.DiaReparto = proveedor.DiaReparto;
             entity.Notas = proveedor.Notas;
+            entity.EsSupermercadoGenerico = proveedor.EsSupermercadoGenerico;
             await context.SaveChangesAsync();
             return Result.Success<Proveedor, DomainError>(entity.ToProveedor());
         }

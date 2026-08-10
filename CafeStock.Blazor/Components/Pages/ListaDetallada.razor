@@ -9,6 +9,29 @@
     <MudText Typo="Typo.h4" Style="color:#3E2723; margin:0;">Productos</MudText>
 </div>
 
+<div>
+    <MudButton Variant="Variant.Filled"
+               Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.Add"
+               Href="/productos/nuevo"
+               Class="mb-4">
+        Añadir producto
+    </MudButton>
+</div>
+
+<div class="d-flex justify-center mb-4">
+    <MudPaper Elevation="3" Style="border-radius:9999px; max-width:400px; width:100%; padding:2px 20px;">
+        <MudTextField T="string"
+                      @bind-Value="_busqueda"
+                      Immediate="true"
+                      Placeholder="Buscar producto..."
+                      Variant="Variant.Text"
+                      Underline="false"
+                      Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search"/>
+    </MudPaper>
+</div>
+
 @if (_cargando)
 {
     <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
@@ -37,7 +60,7 @@ else
 
     @if (!_productosFiltrados.Any())
     {
-        <MudAlert Severity="Severity.Info">No hay productos que coincidan con este filtro.</MudAlert>
+        <MudAlert Severity="Severity.Info">No hay productos que coincidan con estos filtros.</MudAlert>
     }
     else
     {
@@ -97,9 +120,12 @@ else
     private Dictionary<int, string> _proveedoresPorId = [];
     private int? _proveedorSeleccionado;
     private bool _cargando = true;
+    private string _busqueda = string.Empty;
 
     private IEnumerable<Producto> _productosFiltrados =>
-        _productos.Where(p => _proveedorSeleccionado is null || p.ProveedorId == _proveedorSeleccionado);
+        _productos
+            .Where(p => string.IsNullOrWhiteSpace(_busqueda) || p.Nombre.Contains(_busqueda, StringComparison.OrdinalIgnoreCase))
+            .Where(p => _proveedorSeleccionado is null || p.ProveedorId == _proveedorSeleccionado);
 
     protected override async Task OnInitializedAsync()
     {

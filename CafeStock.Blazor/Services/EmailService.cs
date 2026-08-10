@@ -33,10 +33,9 @@ public class EmailService
     }
 
     /// <summary>
-    /// Envía el informe de pedido agrupado por proveedor, generado al vuelo (sin adjunto,
-    /// solo el texto del listado en el cuerpo del email).
+    /// Envía el informe de pedido agrupado por proveedor, generado al vuelo como PDF adjunto.
     /// </summary>
-    public async Task EnviarInformePedidoAsync(string cuerpoTexto)
+    public async Task EnviarInformePedidoAsync(byte[] pdfAdjunto)
     {
         ValidarConfiguracion();
 
@@ -44,7 +43,10 @@ public class EmailService
         mensaje.From.Add(MailboxAddress.Parse(_settings.Usuario));
         mensaje.To.Add(MailboxAddress.Parse(_settings.DestinatarioFijo));
         mensaje.Subject = $"Pedido agrupado por proveedor - {DateTime.Now:dd/MM/yyyy}";
-        mensaje.Body = new TextPart("plain") { Text = cuerpoTexto };
+
+        var cuerpo = new BodyBuilder { TextBody = "Adjunto el informe de pedido agrupado por proveedor de CafeStock." };
+        cuerpo.Attachments.Add("pedido-por-proveedor.pdf", pdfAdjunto, ContentType.Parse("application/pdf"));
+        mensaje.Body = cuerpo.ToMessageBody();
 
         await EnviarAsync(mensaje, "el informe de pedido por proveedor");
     }

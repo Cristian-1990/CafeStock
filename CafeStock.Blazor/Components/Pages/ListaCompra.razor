@@ -1,7 +1,8 @@
 @page "/lista-compra"
 @inject IProductoService ProductoService
+@inject IProveedorService ProveedorService
 @inject CafeStock.Blazor.Services.PdfService PdfService
-@inject IJSRuntime JS
+@inject CafeStock.Blazor.Services.EmailService EmailService
 @inject ISnackbar Snackbar
 
 <PageTitle>Compra</PageTitle>
@@ -21,11 +22,12 @@ else if (!_productos.Any())
 else
 {
     <div class="d-flex gap-2 mb-4">
-        <MudButton Variant="Variant.Filled"
-                   Color="Color.Primary"
-                   StartIcon="@Icons.Material.Filled.PictureAsPdf"
-                   OnClick="DescargarPdf">
-            Descargar PDF
+        <MudButton Variant="Variant.Outlined"
+                   Color="Color.Secondary"
+                   StartIcon="@Icons.Material.Filled.Email"
+                   OnClick="CrearListaCompra"
+                   Disabled="_creandoListaCompra">
+            @(_creandoListaCompra ? "Enviando..." : "Crear lista de la compra")
         </MudButton>
     </div>
 
@@ -67,11 +69,21 @@ else
 
 @code {
     private IEnumerable<Producto> _productos = [];
+    private Dictionary<int, Proveedor> _proveedoresPorId = [];
     private Dictionary<int, int> _cantidadesRecibidas = [];
     private bool _cargando = true;
+    private bool _creandoListaCompra;
+
+    private IEnumerable<Producto> _productosSupermercado =>
+        _productos.Where(p =>
+            p.ProveedorId.HasValue &&
+            _proveedoresPorId.TryGetValue(p.ProveedorId.Value, out var proveedor) &&
+            proveedor.EsSupermercadoGenerico);
 
     protected override async Task OnInitializedAsync()
     {
+        var proveedores = await ProveedorService.GetAllAsync();
+        _proveedoresPorId = proveedores.ToDictionary(p => p.Id);
         await CargarAsync();
     }
 
@@ -82,11 +94,30 @@ else
         _cargando = false;
     }
 
-    private async Task DescargarPdf()
+    private async Task CrearListaCompra()
     {
-        var pdf = PdfService.GenerarListaCompra(_productos);
-        var base64 = Convert.ToBase64String(pdf);
-        await JS.InvokeVoidAsync("descargarArchivo", "lista-compra.pdf", base64);
+        var productosSupermercado = _productosSupermercado.ToList();
+        if (!productosSupermercado.Any())
+        {
+            Snackbar.Add("No hay productos de supermercado pendientes de comprar", Severity.Warning);
+            return;
+        }
+
+        _creandoListaCompra = true;
+        try
+        {
+            var pdf = PdfService.GenerarListaCompra(productosSupermercado);
+            await EmailService.EnviarListaCompraAsync(pdf);
+            Snackbar.Add("Lista de la compra enviada por email", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _creandoListaCompra = false;
+        }
     }
 
     private async Task ConfirmarRecepcionAsync(Producto producto)

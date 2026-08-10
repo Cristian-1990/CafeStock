@@ -60,6 +60,11 @@
                   Lines="3"
                   Class="mb-4"/>
 
+    <MudCheckBox @bind-Value="_esSupermercadoGenerico"
+                 Label="Es supermercado genérico (compra suelta, no proveedor con acuerdo)"
+                 Color="Color.Primary"
+                 Class="mb-4"/>
+
     <div class="d-flex gap-2">
         <MudButton Variant="Variant.Filled"
                    Color="Color.Primary"
@@ -94,6 +99,7 @@
     private string _email = string.Empty;
     private string _diaReparto = string.Empty;
     private string _notas = string.Empty;
+    private bool _esSupermercadoGenerico;
     private string? _error;
     private bool _esNuevo => Id is null;
 
@@ -111,6 +117,7 @@
                 _email = resultado.Value.Email;
                 _diaReparto = resultado.Value.DiaReparto;
                 _notas = resultado.Value.Notas;
+                _esSupermercadoGenerico = resultado.Value.EsSupermercadoGenerico;
             }
             else
             {
@@ -130,7 +137,8 @@
             PersonaContacto = _personaContacto,
             Email = _email,
             DiaReparto = _diaReparto,
-            Notas = _notas
+            Notas = _notas,
+            EsSupermercadoGenerico = _esSupermercadoGenerico
         };
 
         var resultado = _esNuevo

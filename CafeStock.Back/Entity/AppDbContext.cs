@@ -41,4 +41,43 @@ public class AppDbContext : DbContext
     {
         await Database.EnsureCreatedAsync();
     }
+
+    /// <summary>
+    /// Migración idempotente: en bases de datos creadas antes de que existiera este campo,
+    /// EnsureCreatedAsync no la toca (solo crea el esquema si el .db no existía). Comprueba
+    /// con PRAGMA table_info si la columna ya está y, si no, la añade sin perder datos.
+    /// </summary>
+    public async Task AsegurarColumnaEsSupermercadoGenericoAsync()
+    {
+        var conexion = Database.GetDbConnection();
+        await conexion.OpenAsync();
+        try
+        {
+            var columnaExiste = false;
+            await using (var comandoComprobar = conexion.CreateCommand())
+            {
+                comandoComprobar.CommandText = "PRAGMA table_info(Proveedores)";
+                await using var lector = await comandoComprobar.ExecuteReaderAsync();
+                while (await lector.ReadAsync())
+                {
+                    if (string.Equals(lector.GetString(lector.GetOrdinal("name")), "EsSupermercadoGenerico", StringComparison.OrdinalIgnoreCase))
+                    {
+                        columnaExiste = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!columnaExiste)
+            {
+                await using var comandoAlterar = conexion.CreateCommand();
+                comandoAlterar.CommandText = "ALTER TABLE Proveedores ADD COLUMN EsSupermercadoGenerico INTEGER NOT NULL DEFAULT 0";
+                await comandoAlterar.ExecuteNonQueryAsync();
+            }
+        }
+        finally
+        {
+            await conexion.CloseAsync();
+        }
+    }
 }

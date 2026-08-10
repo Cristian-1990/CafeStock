@@ -13,4 +13,5 @@ public record Proveedor
     public string Email { get; set; } = string.Empty;
     public string DiaReparto { get; set; } = string.Empty;
     public string Notas { get; set; } = string.Empty;
+    public bool EsSupermercadoGenerico { get; set; } = false;
 };
