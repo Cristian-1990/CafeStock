@@ -5,6 +5,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <PackageReference Include="Blazor-ApexCharts" Version="7.0.0" />
       <PackageReference Include="MailKit" Version="4.17.0" />
       <PackageReference Include="MudBlazor" Version="9.7.0" />
       <PackageReference Include="QuestPDF" Version="2026.7.1" />

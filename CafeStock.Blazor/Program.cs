@@ -6,6 +6,7 @@ using CafeStock.Back.Services.Compras;
 using CafeStock.Back.Services.Facturas;
 using CafeStock.Back.Services.Productos;
 using CafeStock.Back.Services.Proveedores;
+using ApexCharts;
 using CafeStock.Blazor.Components;
 using MudBlazor.Services;
 using Serilog;
@@ -35,6 +36,14 @@ try
     builder.Services.AddRazorComponents()
         .AddInteractiveServerComponents();
     builder.Services.AddMudServices();
+    // Paleta café de la app como colores por defecto de todas las gráficas
+    builder.Services.AddApexCharts(e =>
+    {
+        e.GlobalOptions = new ApexChartBaseOptions
+        {
+            Colors = new List<string> { "#6D4C41", "#C17817" }
+        };
+    });
     builder.Services.AddScoped<CafeStock.Blazor.Services.PdfService>();
     builder.Services.Configure<CafeStock.Blazor.Services.EmailSettings>(builder.Configuration.GetSection("Email"));
     builder.Services.AddScoped<CafeStock.Blazor.Services.EmailService>();
