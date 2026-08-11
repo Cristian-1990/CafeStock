@@ -1,8 +1,10 @@
 @page "/lista-compra"
 @inject IProductoService ProductoService
 @inject IProveedorService ProveedorService
+@inject CafeStock.Back.Services.Compras.ICompraService CompraService
 @inject CafeStock.Blazor.Services.PdfService PdfService
 @inject CafeStock.Blazor.Services.EmailService EmailService
+@inject IDialogService DialogService
 @inject ISnackbar Snackbar
 
 <PageTitle>Compra</PageTitle>
@@ -25,65 +27,65 @@ else
         <MudButton Variant="Variant.Outlined"
                    Color="Color.Secondary"
                    StartIcon="@Icons.Material.Filled.Email"
-                   OnClick="CrearListaCompra"
-                   Disabled="_creandoListaCompra">
-            @(_creandoListaCompra ? "Enviando..." : "Crear lista de la compra")
+                   OnClick="RealizarPedido"
+                   Disabled="_realizandoPedido">
+            @(_realizandoPedido ? "Enviando..." : "Realizar pedido")
         </MudButton>
     </div>
 
-    <MudPaper Class="pa-4" Elevation="2">
-        <MudText Class="mb-3">Productos que necesitas comprar hoy:</MudText>
-        <MudTable Items="_productos" Hover="true" Striped="true" Elevation="0">
-            <HeaderContent>
-                <MudTh>Producto</MudTh>
-                <MudTh>Cantidad a comprar</MudTh>
-                <MudTh>Cantidad recibida</MudTh>
-                <MudTh>Acciones</MudTh>
-            </HeaderContent>
-            <RowTemplate>
-                <MudTd DataLabel="Producto">@context.Nombre</MudTd>
-                <MudTd DataLabel="Cantidad a comprar">
-                    <MudText Typo="Typo.subtitle1" Style="color:#7A2410; font-weight:700;">@context.CantidadAComprar</MudText>
-                </MudTd>
-                <MudTd DataLabel="Cantidad recibida">
-                    <MudNumericField T="int"
-                                      Value="_cantidadesRecibidas[context.Id]"
-                                      ValueChanged="@((int v) => _cantidadesRecibidas[context.Id] = v)"
-                                      Min="1"
-                                      Variant="Variant.Outlined"
-                                      Style="max-width:100px;"/>
-                </MudTd>
-                <MudTd DataLabel="Acciones">
-                    <MudButton Variant="Variant.Filled"
-                               Color="Color.Primary"
-                               Size="Size.Small"
-                               StartIcon="@Icons.Material.Filled.Check"
-                               OnClick="@(() => ConfirmarRecepcionAsync(context))">
-                        Confirmar
-                    </MudButton>
-                </MudTd>
-            </RowTemplate>
-        </MudTable>
-    </MudPaper>
+    @foreach (var grupo in _grupos)
+    {
+        var proveedorId = grupo.Proveedor?.Id;
+        var nombreProveedor = grupo.Proveedor?.Nombre ?? "Sin proveedor asignado";
+        <MudPaper Class="pa-4 mb-4" Elevation="2">
+            <MudText Typo="Typo.h6" Class="mb-3" Style="color:#3E2723;">
+                @nombreProveedor
+            </MudText>
+
+            <MudTable Items="grupo.Productos" Hover="true" Striped="true" Elevation="0">
+                <HeaderContent>
+                    <MudTh>Producto</MudTh>
+                    <MudTh>Cantidad a recibir</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Producto">@context.Nombre</MudTd>
+                    <MudTd DataLabel="Cantidad a recibir">
+                        <MudNumericField T="int"
+                                          Value="_cantidadesRecibidas[context.Id]"
+                                          ValueChanged="@((int v) => _cantidadesRecibidas[context.Id] = v)"
+                                          Min="0"
+                                          Variant="Variant.Outlined"
+                                          Style="max-width:100px;"/>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       Class="mt-3"
+                       StartIcon="@Icons.Material.Filled.Check"
+                       OnClick="@(() => ConfirmarRecepcionGrupoAsync(proveedorId, nombreProveedor, grupo.Productos))"
+                       Disabled="_confirmandoGrupo.Contains(proveedorId)">
+                @(_confirmandoGrupo.Contains(proveedorId) ? "Confirmando..." : "Confirmar recepción")
+            </MudButton>
+        </MudPaper>
+    }
 }
 
 @code {
     private IEnumerable<Producto> _productos = [];
-    private Dictionary<int, Proveedor> _proveedoresPorId = [];
+    private IEnumerable<Proveedor> _proveedores = [];
     private Dictionary<int, int> _cantidadesRecibidas = [];
+    private HashSet<int?> _confirmandoGrupo = [];
     private bool _cargando = true;
-    private bool _creandoListaCompra;
+    private bool _realizandoPedido;
 
-    private IEnumerable<Producto> _productosSupermercado =>
-        _productos.Where(p =>
-            p.ProveedorId.HasValue &&
-            _proveedoresPorId.TryGetValue(p.ProveedorId.Value, out var proveedor) &&
-            proveedor.EsSupermercadoGenerico);
+    private IEnumerable<(Proveedor? Proveedor, List<Producto> Productos)> _grupos =>
+        AgrupadorProveedor.AgruparPorProveedor(_productos, _proveedores);
 
     protected override async Task OnInitializedAsync()
     {
-        var proveedores = await ProveedorService.GetAllAsync();
-        _proveedoresPorId = proveedores.ToDictionary(p => p.Id);
+        _proveedores = await ProveedorService.GetAllAsync();
         await CargarAsync();
     }
 
@@ -94,21 +96,14 @@ else
         _cargando = false;
     }
 
-    private async Task CrearListaCompra()
+    private async Task RealizarPedido()
     {
-        var productosSupermercado = _productosSupermercado.ToList();
-        if (!productosSupermercado.Any())
-        {
-            Snackbar.Add("No hay productos de supermercado pendientes de comprar", Severity.Warning);
-            return;
-        }
-
-        _creandoListaCompra = true;
+        _realizandoPedido = true;
         try
         {
-            var pdf = PdfService.GenerarListaCompra(productosSupermercado);
+            var pdf = PdfService.GenerarListaCompra(_productos, _proveedores);
             await EmailService.EnviarListaCompraAsync(pdf);
-            Snackbar.Add("Lista de la compra enviada por email", Severity.Success);
+            Snackbar.Add("Pedido enviado por email", Severity.Success);
         }
         catch (Exception ex)
         {
@@ -116,22 +111,78 @@ else
         }
         finally
         {
-            _creandoListaCompra = false;
+            _realizandoPedido = false;
         }
     }
 
-    private async Task ConfirmarRecepcionAsync(Producto producto)
+    /// <summary>
+    /// Pide una confirmación extra antes de procesar la recepción del grupo — actualiza stock
+    /// y registra una Compra, así que conviene un paso de seguridad antes de disparar la acción.
+    /// </summary>
+    private async Task ConfirmarRecepcionGrupoAsync(int? proveedorId, string nombreProveedor, List<Producto> productosGrupo)
     {
-        var cantidadRecibida = _cantidadesRecibidas[producto.Id];
-        var resultado = await ProductoService.ConfirmarRecepcionAsync(producto.Id, cantidadRecibida);
-        if (resultado.IsSuccess)
+        var parameters = new DialogParameters<ConfirmDialog>
         {
-            Snackbar.Add($"Stock repuesto: {producto.Nombre} (+{cantidadRecibida})", Severity.Success);
+            { x => x.ContentText, $"¿Seguro que quieres confirmar la recepción de '{nombreProveedor}'? Esto actualizará el stock y registrará la compra; no se puede deshacer." },
+            { x => x.ConfirmText, "Confirmar" },
+            { x => x.CancelText, "Cancelar" }
+        };
+
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Confirmar recepción", parameters);
+        var resultado = await dialog.Result;
+
+        if (resultado is not null && !resultado.Canceled)
+            await ProcesarRecepcionGrupoAsync(proveedorId, productosGrupo);
+    }
+
+    /// <summary>
+    /// Por cada producto con cantidad > 0 y precio unitario fijado (el que tiene el producto,
+    /// no editable aquí), actualiza su stock (ConfirmarRecepcionAsync, que ya soporta recepción
+    /// parcial) y añade una línea a la Compra que se registra al final. Los productos con
+    /// cantidad 0 o sin precio fijado se saltan sin bloquear el resto del grupo.
+    /// </summary>
+    private async Task ProcesarRecepcionGrupoAsync(int? proveedorId, List<Producto> productosGrupo)
+    {
+        _confirmandoGrupo.Add(proveedorId);
+        try
+        {
+            var lineas = new List<LineaCompra>();
+            foreach (var producto in productosGrupo)
+            {
+                var cantidad = _cantidadesRecibidas[producto.Id];
+
+                if (cantidad <= 0 || producto.PrecioUnitario <= 0)
+                    continue;
+
+                var resultado = await ProductoService.ConfirmarRecepcionAsync(producto.Id, cantidad);
+                if (resultado.IsSuccess)
+                {
+                    lineas.Add(new LineaCompra { ProductoId = producto.Id, Cantidad = cantidad, PrecioUnitario = producto.PrecioUnitario });
+                }
+                else
+                {
+                    Snackbar.Add($"{producto.Nombre}: {resultado.Error.Message}", Severity.Error);
+                }
+            }
+
+            if (!lineas.Any())
+            {
+                Snackbar.Add("Ningún producto de este grupo tenía cantidad y precio válidos", Severity.Warning);
+                return;
+            }
+
+            var compra = new Compra { ProveedorId = proveedorId, Fecha = DateTime.Now, Lineas = lineas };
+            var resultadoCompra = await CompraService.CreateAsync(compra);
+            if (resultadoCompra.IsSuccess)
+                Snackbar.Add($"Recepción confirmada: {lineas.Count} producto(s)", Severity.Success);
+            else
+                Snackbar.Add(resultadoCompra.Error.Message, Severity.Error);
+
             await CargarAsync();
         }
-        else
+        finally
         {
-            Snackbar.Add(resultado.Error.Message, Severity.Error);
+            _confirmandoGrupo.Remove(proveedorId);
         }
     }
 }

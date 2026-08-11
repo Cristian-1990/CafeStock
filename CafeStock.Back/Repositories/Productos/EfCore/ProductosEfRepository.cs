@@ -27,6 +27,7 @@ public class ProductosEfRepository : IProductoRepository
         if (_initialized) return;
         using var context = CreateContext();
         await context.EnsureCreatedAsync();
+        await context.AsegurarColumnaPrecioUnitarioAsync();
         _initialized = true;
     }
     
@@ -85,6 +86,7 @@ public class ProductosEfRepository : IProductoRepository
             entity.Descripcion = producto.Descripcion;
             entity.ImagenUrl = producto.ImagenUrl;
             entity.ProveedorId = producto.ProveedorId;
+            entity.PrecioUnitario = producto.PrecioUnitario;
             await context.SaveChangesAsync();
             return Result.Success<Producto, DomainError>(entity.ToProducto());
         }

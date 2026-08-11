@@ -1,4 +1,5 @@
 ﻿using CafeStock.Back.Models;
+using CafeStock.Back.Services.Productos;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
@@ -14,10 +15,17 @@ public class PdfService
         _webHostEnvironment = webHostEnvironment;
     }
 
-    public byte[] GenerarListaCompra(IEnumerable<Producto> productos)
+    /// <summary>
+    /// Genera la lista de la compra agrupada por proveedor (mismo agrupado que el informe de
+    /// pedido, vía AgrupadorProveedor): un bloque con el nombre del proveedor remarcado y
+    /// debajo una tabla Producto/Cantidad/Precio unitario de sus productos; los que no tienen
+    /// proveedor van al final bajo "Sin proveedor asignado".
+    /// </summary>
+    public byte[] GenerarListaCompra(IEnumerable<Producto> productos, IEnumerable<Proveedor> proveedores)
     {
         QuestPDF.Settings.License = LicenseType.Community;
 
+        var grupos = AgrupadorProveedor.AgruparPorProveedor(productos, proveedores);
         var logoBytes = LeerLogo();
 
         var documento = Document.Create(container =>
@@ -46,28 +54,46 @@ public class PdfService
 
                 page.Content()
                     .PaddingVertical(1, Unit.Centimetre)
-                    .Table(table =>
+                    .Column(column =>
                     {
-                        table.ColumnsDefinition(columns =>
+                        column.Spacing(20);
+                        foreach (var grupo in grupos)
                         {
-                            columns.RelativeColumn(3);
-                            columns.RelativeColumn(1);
-                        });
+                            var titulo = grupo.Proveedor?.Nombre ?? "Sin proveedor asignado";
+                            column.Item().Column(grupoColumn =>
+                            {
+                                grupoColumn.Item()
+                                    .Background("#E9DCC4")
+                                    .Padding(8)
+                                    .Text(titulo).FontSize(16).Bold().FontColor("#3E2723");
 
-                        table.Header(header =>
-                        {
-                            header.Cell().Background("#E9DCC4").Padding(8)
-                                .Text("Producto").FontColor("#3E2723").Bold();
-                            header.Cell().Background("#E9DCC4").Padding(8)
-                                .Text("Cantidad").FontColor("#3E2723").Bold();
-                        });
+                                grupoColumn.Item().Table(table =>
+                                {
+                                    table.ColumnsDefinition(columns =>
+                                    {
+                                        columns.RelativeColumn(3);
+                                        columns.RelativeColumn(1);
+                                        columns.RelativeColumn(1);
+                                    });
 
-                        foreach (var producto in productos)
-                        {
-                            table.Cell().BorderBottom(1).BorderColor("#E3D2AE").Padding(8)
-                                .Text(producto.Nombre).FontColor("#2C2C2A");
-                            table.Cell().BorderBottom(1).BorderColor("#E3D2AE").Padding(8)
-                                .Text(producto.CantidadAComprar.ToString()).FontColor("#2C2C2A");
+                                    table.Header(header =>
+                                    {
+                                        header.Cell().Padding(6).Text("Producto").FontColor("#3E2723").Bold().FontSize(11);
+                                        header.Cell().Padding(6).Text("Cantidad").FontColor("#3E2723").Bold().FontSize(11);
+                                        header.Cell().Padding(6).Text("Precio unitario").FontColor("#3E2723").Bold().FontSize(11);
+                                    });
+
+                                    foreach (var producto in grupo.Productos)
+                                    {
+                                        table.Cell().BorderBottom(1).BorderColor("#E3D2AE").Padding(6)
+                                            .Text(producto.Nombre).FontColor("#2C2C2A");
+                                        table.Cell().BorderBottom(1).BorderColor("#E3D2AE").Padding(6)
+                                            .Text(producto.CantidadAComprar.ToString()).FontColor("#2C2C2A");
+                                        table.Cell().BorderBottom(1).BorderColor("#E3D2AE").Padding(6)
+                                            .Text($"{producto.PrecioUnitario:F2} €").FontColor("#2C2C2A");
+                                    }
+                                });
+                            });
                         }
                     });
 
@@ -95,12 +121,7 @@ public class PdfService
     {
         QuestPDF.Settings.License = LicenseType.Community;
 
-        var proveedoresPorId = proveedores.ToDictionary(p => p.Id);
-        var grupos = productos
-            .GroupBy(p => p.ProveedorId.HasValue && proveedoresPorId.ContainsKey(p.ProveedorId.Value) ? p.ProveedorId : null)
-            .OrderBy(g => g.Key is null)
-            .ThenBy(g => g.Key.HasValue ? proveedoresPorId[g.Key.Value].Nombre : string.Empty);
-
+        var grupos = AgrupadorProveedor.AgruparPorProveedor(productos, proveedores);
         var logoBytes = LeerLogo();
 
         var documento = Document.Create(container =>
@@ -134,7 +155,7 @@ public class PdfService
                         column.Spacing(14);
                         foreach (var grupo in grupos)
                         {
-                            var titulo = grupo.Key.HasValue ? proveedoresPorId[grupo.Key.Value].Nombre : "Sin proveedor asignado";
+                            var titulo = grupo.Proveedor?.Nombre ?? "Sin proveedor asignado";
                             column.Item().Column(grupoColumn =>
                             {
                                 grupoColumn.Item()
@@ -142,7 +163,7 @@ public class PdfService
                                     .Padding(8)
                                     .Text(titulo).FontSize(16).Bold().FontColor("#3E2723");
 
-                                foreach (var producto in grupo)
+                                foreach (var producto in grupo.Productos)
                                 {
                                     grupoColumn.Item().PaddingLeft(12).PaddingTop(4)
                                         .Text($"{producto.Nombre} — {producto.CantidadAComprar}")

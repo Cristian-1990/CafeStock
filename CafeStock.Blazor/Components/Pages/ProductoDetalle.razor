@@ -1,9 +1,6 @@
 @page "/productos/{Id:int}"
 @inject IProductoService ProductoService
 @inject IProveedorService ProveedorService
-@inject IDialogService DialogService
-@inject ISnackbar Snackbar
-@inject NavigationManager Navigation
 
 <PageTitle>@(_producto?.Nombre ?? "Producto")</PageTitle>
 
@@ -69,9 +66,13 @@ else
     </div>
 
     <MudPaper Class="pa-4 mb-4" Elevation="1" Style="max-width:300px;">
-        <div class="d-flex align-center">
+        <div class="d-flex align-center mb-2">
             <MudIcon Icon="@Icons.Material.Filled.Inventory" Class="mr-2"/>
             <MudText Typo="Typo.body1">Stock actual / máximo: <b>@_producto.StockActual / @_producto.StockMaximo</b></MudText>
+        </div>
+        <div class="d-flex align-center">
+            <MudIcon Icon="@Icons.Material.Filled.Euro" Class="mr-2"/>
+            <MudText Typo="Typo.body1">Precio unitario: <b>@_producto.PrecioUnitario.ToString("F2") €</b></MudText>
         </div>
     </MudPaper>
 
@@ -81,12 +82,6 @@ else
                    StartIcon="@Icons.Material.Filled.Edit"
                    Href="@($"/productos/editar/{Id}")">
             Editar
-        </MudButton>
-        <MudButton Variant="Variant.Filled"
-                   Color="Color.Error"
-                   StartIcon="@Icons.Material.Filled.Delete"
-                   OnClick="ConfirmarEliminarAsync">
-            Eliminar
         </MudButton>
     </div>
 }
@@ -115,35 +110,5 @@ else
             }
         }
         _cargando = false;
-    }
-
-    private async Task ConfirmarEliminarAsync()
-    {
-        var parameters = new DialogParameters<ConfirmDialog>
-        {
-            { x => x.ContentText, $"¿Seguro que quieres eliminar '{_producto!.Nombre}'? Esta acción no se puede deshacer." },
-            { x => x.ConfirmText, "Eliminar" },
-            { x => x.CancelText, "Cancelar" }
-        };
-
-        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Eliminar producto", parameters);
-        var resultado = await dialog.Result;
-
-        if (resultado is not null && !resultado.Canceled)
-            await EliminarAsync();
-    }
-
-    private async Task EliminarAsync()
-    {
-        var resultado = await ProductoService.DeleteAsync(Id);
-        if (resultado.IsSuccess)
-        {
-            Snackbar.Add($"Producto '{_producto!.Nombre}' eliminado correctamente", Severity.Success);
-            Navigation.NavigateTo("/productos");
-        }
-        else
-        {
-            Snackbar.Add(resultado.Error.Message, Severity.Error);
-        }
     }
 }

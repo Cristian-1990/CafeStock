@@ -12,6 +12,7 @@ public record Producto
     public string Descripcion { get; set; } = string.Empty;
     public string ImagenUrl { get; set; } = string.Empty;
     public int? ProveedorId { get; set; }
+    public decimal PrecioUnitario { get; set; }
     public int CantidadAComprar => Math.Max(0, StockMaximo - StockActual);//Prodpiedad autocalculada
 
 };

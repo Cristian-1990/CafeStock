@@ -106,4 +106,23 @@ public class ValidadorProductoTest
         // Assert
         resultado.IsFailure.Should().BeTrue();
     }
+
+    [Test]
+    public void Validar_PrecioUnitarioNegativo_DevuelveFailure()
+    {
+        // Arrange
+        var producto = new Producto
+        {
+            Nombre = "Azúcar",
+            StockActual = 2,
+            StockMaximo = 5,
+            PrecioUnitario = -0.5m
+        };
+
+        // Act
+        var resultado = _validador.Validar(producto);
+
+        // Assert
+        resultado.IsFailure.Should().BeTrue();
+    }
 }

@@ -2,7 +2,6 @@
 @inject IProductoService ProductoService
 @inject IProveedorService ProveedorService
 @inject NavigationManager Navigation
-@inject IDialogService DialogService
 @inject ISnackbar Snackbar
 @inject CafeStock.Blazor.Services.PdfService PdfService
 @inject CafeStock.Blazor.Services.EmailService EmailService
@@ -55,6 +54,27 @@
     }
 </div>
 
+@if (_proveedorSeleccionadoObj is not null)
+{
+    <div class="d-flex align-center mb-4" style="gap:1rem;">
+        @if (!string.IsNullOrWhiteSpace(_proveedorSeleccionadoObj.ImagenUrl))
+        {
+            <div style="width:144px; height:144px; border-radius:8px; overflow:hidden; flex-shrink:0; background-color:#F5F0EB;">
+                <img src="@_proveedorSeleccionadoObj.ImagenUrl" alt="@_proveedorSeleccionadoObj.Nombre"
+                     style="width:100%; height:100%; object-fit:contain; object-position:center; display:block;"/>
+            </div>
+        }
+        else
+        {
+            <div class="d-flex align-center justify-center flex-shrink-0"
+                 style="width:144px; height:144px; background-color:#F5F0EB; border-radius:8px;">
+                <MudIcon Icon="@Icons.Material.Filled.LocalShipping" Style="font-size:4rem; color:#6D4C41;"/>
+            </div>
+        }
+        <MudText Typo="Typo.h6" Style="color:#3E2723;">@_proveedorSeleccionadoObj.Nombre</MudText>
+    </div>
+}
+
 @if (_cargando)
 {
     <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
@@ -71,6 +91,7 @@ else
             <MudTh>Actual</MudTh>
             <MudTh>Necesario</MudTh>
             <MudTh>Máximo</MudTh>
+            <MudTh>Precio</MudTh>
             <MudTh>Acciones</MudTh>
         </HeaderContent>
         <RowTemplate>
@@ -82,21 +103,14 @@ else
                 </MudText>
             </MudTd>
             <MudTd DataLabel="Máximo">@context.StockMaximo</MudTd>
+            <MudTd DataLabel="Precio">@context.PrecioUnitario.ToString("F2") €</MudTd>
             <MudTd DataLabel="Acciones">
                 <MudButton Variant="Variant.Filled"
                            Color="Color.Secondary"
                            Size="Size.Small"
                            StartIcon="@Icons.Material.Filled.Edit"
-                           Href="@($"/productos/editar/{context.Id}")"
-                           Class="mr-2">
+                           Href="@($"/productos/editar/{context.Id}")">
                     Editar
-                </MudButton>
-                <MudButton Variant="Variant.Filled"
-                           Color="Color.Error"
-                           Size="Size.Small"
-                           StartIcon="@Icons.Material.Filled.Delete"
-                           OnClick="() => ConfirmarEliminarAsync(context.Id, context.Nombre)">
-                    Eliminar
                 </MudButton>
             </MudTd>
         </RowTemplate>
@@ -111,6 +125,9 @@ else
     private bool _generandoPedido;
     private string _busqueda = string.Empty;
     private int? _proveedorSeleccionado;
+
+    private Proveedor? _proveedorSeleccionadoObj =>
+        _proveedores.FirstOrDefault(p => p.Id == _proveedorSeleccionado);
 
     private IEnumerable<Producto> _productosFiltrados =>
         _productos
@@ -144,33 +161,4 @@ else
         }
     }
 
-    private async Task ConfirmarEliminarAsync(int id, string nombre)
-    {
-        var parameters = new DialogParameters<ConfirmDialog>
-        {
-            { x => x.ContentText, $"¿Seguro que quieres eliminar '{nombre}'? Esta acción no se puede deshacer." },
-            { x => x.ConfirmText, "Eliminar" },
-            { x => x.CancelText, "Cancelar" }
-        };
-
-        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Eliminar producto", parameters);
-        var resultado = await dialog.Result;
-
-        if (resultado is not null && !resultado.Canceled)
-            await EliminarAsync(id, nombre);
-    }
-
-    private async Task EliminarAsync(int id, string nombre)
-    {
-        var resultado = await ProductoService.DeleteAsync(id);
-        if (resultado.IsSuccess)
-        {
-            Snackbar.Add($"Producto '{nombre}' eliminado correctamente", Severity.Success);
-            _productos = await ProductoService.GetAllAsync();
-        }
-        else
-        {
-            Snackbar.Add(resultado.Error.Message, Severity.Error);
-        }
-    }
 }

@@ -1,6 +1,8 @@
 using CafeStock.Back.Infrastructure;
+using CafeStock.Back.Repositories.Compras.Base;
 using CafeStock.Back.Repositories.Productos.Base;
 using CafeStock.Back.Repositories.Proveedores.Base;
+using CafeStock.Back.Services.Compras;
 using CafeStock.Back.Services.Productos;
 using CafeStock.Back.Services.Proveedores;
 using CafeStock.Blazor.Components;
@@ -48,6 +50,9 @@ try
     builder.Services.AddSingleton(provider.GetService<IProveedorRepository>()!);
     builder.Services.AddScoped<IProveedorService, CafeStock.Back.Services.Proveedores.ProveedorService>();
     builder.Services.AddScoped<CafeStock.Back.Validators.Common.IValidador<CafeStock.Back.Models.Proveedor>, CafeStock.Back.Validators.Proveedores.ValidadorProveedor>();
+    builder.Services.AddSingleton(provider.GetService<ICompraRepository>()!);
+    builder.Services.AddScoped<ICompraService, CafeStock.Back.Services.Compras.CompraService>();
+    builder.Services.AddScoped<CafeStock.Back.Validators.Common.IValidador<CafeStock.Back.Models.Compra>, CafeStock.Back.Validators.Compras.ValidadorCompra>();
 
     var app = builder.Build();
 

@@ -3,6 +3,8 @@
 @inject IProductoService ProductoService
 @inject IProveedorService ProveedorService
 @inject NavigationManager Navigation
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
 
 <PageTitle>@(_esNuevo ? "Nuevo producto" : "Editar producto")</PageTitle>
 
@@ -33,6 +35,15 @@
                      Label="Stock máximo"
                      Variant="Variant.Outlined"
                      Min="0"
+                     Class="mb-4"/>
+
+    <MudNumericField @bind-Value="_precioUnitario"
+                     Label="Precio unitario"
+                     Variant="Variant.Outlined"
+                     Min="0"
+                     Format="F2"
+                     Adornment="Adornment.End"
+                     AdornmentText="€"
                      Class="mb-4"/>
 
     <MudSelect @bind-Value="_unidad"
@@ -92,6 +103,15 @@
                    Href="/productos">
             Cancelar
         </MudButton>
+        @if (!_esNuevo)
+        {
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Error"
+                       StartIcon="@Icons.Material.Filled.Delete"
+                       OnClick="ConfirmarEliminarAsync">
+                Eliminar producto
+            </MudButton>
+        }
     </div>
 </MudPaper>
 
@@ -101,6 +121,7 @@
     private string _nombre = string.Empty;
     private int _stockActual;
     private int _stockMaximo;
+    private decimal _precioUnitario;
     private UnidadMedida _unidad = UnidadMedida.SinEspecificar;
     private string _descripcion = string.Empty;
     private string _imagenUrl = string.Empty;
@@ -126,6 +147,7 @@
                 _nombre = resultado.Value.Nombre;
                 _stockActual = resultado.Value.StockActual;
                 _stockMaximo = resultado.Value.StockMaximo;
+                _precioUnitario = resultado.Value.PrecioUnitario;
                 _unidad = resultado.Value.Unidad;
                 _descripcion = resultado.Value.Descripcion;
                 _imagenUrl = resultado.Value.ImagenUrl;
@@ -146,6 +168,7 @@
             Nombre = _nombre,
             StockActual = _stockActual,
             StockMaximo = _stockMaximo,
+            PrecioUnitario = _precioUnitario,
             Unidad = _unidad,
             Descripcion = _descripcion,
             ImagenUrl = _imagenUrl,
@@ -162,6 +185,36 @@
         {
             _error = resultado.Error.Message;
             StateHasChanged();
+        }
+    }
+
+    private async Task ConfirmarEliminarAsync()
+    {
+        var parameters = new DialogParameters<ConfirmDialog>
+        {
+            { x => x.ContentText, $"¿Seguro que quieres eliminar '{_nombre}'? Esta acción no se puede deshacer." },
+            { x => x.ConfirmText, "Eliminar" },
+            { x => x.CancelText, "Cancelar" }
+        };
+
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Eliminar producto", parameters);
+        var resultado = await dialog.Result;
+
+        if (resultado is not null && !resultado.Canceled)
+            await EliminarAsync();
+    }
+
+    private async Task EliminarAsync()
+    {
+        var resultado = await ProductoService.DeleteAsync(Id!.Value);
+        if (resultado.IsSuccess)
+        {
+            Snackbar.Add($"Producto '{_nombre}' eliminado correctamente", Severity.Success);
+            Navigation.NavigateTo("/productos");
+        }
+        else
+        {
+            Snackbar.Add(resultado.Error.Message, Severity.Error);
         }
     }
 }
