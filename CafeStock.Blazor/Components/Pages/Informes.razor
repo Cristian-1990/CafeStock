@@ -7,24 +7,90 @@
     <MudText Typo="Typo.h4" Style="color:#3E2723; margin:0;">Informes</MudText>
 </div>
 
-<MudPaper Class="pa-4" Elevation="2" Style="max-width:600px;">
-    <ApexChart TItem="GastoMensual" Title="Gasto mensual (ejemplo)">
-        <ApexPointSeries TItem="GastoMensual"
-                         Items="_datosEjemplo"
+@* TODO: datos de ejemplo, sustituir por consulta real a Compra/LineaCompra cuando se elija el diseño final *@
+
+<MudText Typo="Typo.h6" Class="mb-2" Style="color:#3E2723;">Gasto mensual</MudText>
+<MudPaper Class="pa-4 mb-8" Elevation="2" Style="max-width:600px;">
+    <ApexChart TItem="PuntoDato" Title="Gasto mensual">
+        <ApexPointSeries TItem="PuntoDato"
+                         Items="_gastoMensual"
                          Name="Gasto"
                          SeriesType="SeriesType.Bar"
-                         XValue="e => e.Mes"
-                         YValue="e => (decimal?)e.Total"/>
+                         XValue="e => e.Etiqueta"
+                         YValue="e => (decimal?)e.Valor"/>
+    </ApexChart>
+</MudPaper>
+
+<MudText Typo="Typo.h6" Class="mb-2" Style="color:#3E2723;">Evolución del precio de la Harina</MudText>
+<MudPaper Class="pa-4 mb-8" Elevation="2" Style="max-width:600px;">
+    <ApexChart TItem="PuntoDato" Title="Evolución del precio de la Harina">
+        <ApexPointSeries TItem="PuntoDato"
+                         Items="_precioHarina"
+                         Name="Precio unitario"
+                         SeriesType="SeriesType.Line"
+                         XValue="e => e.Etiqueta"
+                         YValue="e => (decimal?)e.Valor"/>
+    </ApexChart>
+</MudPaper>
+
+<MudText Typo="Typo.h6" Class="mb-2" Style="color:#3E2723;">Reparto de gasto por proveedor</MudText>
+<MudPaper Class="pa-4 mb-8" Elevation="2" Style="max-width:600px;">
+    <ApexChart TItem="PuntoDato" Title="Reparto de gasto por proveedor">
+        <ApexPointSeries TItem="PuntoDato"
+                         Items="_repartoProveedor"
+                         Name="Porcentaje"
+                         SeriesType="SeriesType.Pie"
+                         XValue="e => e.Etiqueta"
+                         YValue="e => (decimal?)e.Valor"/>
+    </ApexChart>
+</MudPaper>
+
+<MudText Typo="Typo.h6" Class="mb-2" Style="color:#3E2723;">Gasto total por proveedor</MudText>
+<MudPaper Class="pa-4 mb-8" Elevation="2" Style="max-width:600px;">
+    <ApexChart TItem="PuntoDato" Title="Gasto total por proveedor">
+        <ApexPointSeries TItem="PuntoDato"
+                         Items="_gastoPorProveedor"
+                         Name="Total"
+                         SeriesType="SeriesType.Bar"
+                         XValue="e => e.Etiqueta"
+                         YValue="e => (decimal?)e.Valor"/>
     </ApexChart>
 </MudPaper>
 
 @code {
-    private readonly List<GastoMensual> _datosEjemplo =
+    // TODO: datos de ejemplo, sustituir por consulta real a Compra/LineaCompra cuando se elija el diseño final
+
+    private readonly List<PuntoDato> _gastoMensual =
     [
-        new("Ene", 120),
-        new("Feb", 95),
-        new("Mar", 140)
+        new("Ene", 420),
+        new("Feb", 680),
+        new("Mar", 350),
+        new("Abr", 790),
+        new("May", 610),
+        new("Jun", 860)
     ];
 
-    private record GastoMensual(string Mes, int Total);
+    private readonly List<PuntoDato> _precioHarina =
+    [
+        new("15/02", 0.85m),
+        new("02/03", 0.89m),
+        new("20/03", 0.87m),
+        new("05/04", 0.88m),
+        new("22/04", 0.86m),
+        new("10/05", 0.90m)
+    ];
+
+    private readonly List<PuntoDato> _repartoProveedor =
+    [
+        new("Alcampo", 65),
+        new("Priégola", 35)
+    ];
+
+    private readonly List<PuntoDato> _gastoPorProveedor =
+    [
+        new("Alcampo", 2450),
+        new("Priégola", 1180)
+    ];
+
+    private record PuntoDato(string Etiqueta, decimal Valor);
 }
