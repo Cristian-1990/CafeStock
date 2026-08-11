@@ -1,6 +1,8 @@
 @page "/proveedores/{Id:int}"
 @inject IProveedorService ProveedorService
 @inject IProductoService ProductoService
+@inject CafeStock.Back.Services.Facturas.IFacturaService FacturaService
+@inject NavigationManager Navigation
 
 <PageTitle>@(_proveedor?.Nombre ?? "Proveedor")</PageTitle>
 
@@ -131,6 +133,32 @@ else
             </RowTemplate>
         </MudTable>
     }
+
+    <MudText Typo="Typo.h5" Class="mb-2 mt-6" Style="color:#3E2723;">Historial de compras</MudText>
+
+    @if (_cargandoFacturas)
+    {
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
+    }
+    else if (!_facturas.Any())
+    {
+        <MudAlert Severity="Severity.Info">Este proveedor no tiene compras registradas todavía.</MudAlert>
+    }
+    else
+    {
+        <MudTable Items="_facturas" Hover="true" Dense="true" Striped="true" Elevation="2"
+                  OnRowClick="@((TableRowClickEventArgs<Compra> args) => Navigation.NavigateTo($"/facturas/{args.Item!.Id}"))"
+                  RowStyle="cursor:pointer;">
+            <HeaderContent>
+                <MudTh>Fecha</MudTh>
+                <MudTh>Total</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Fecha">@context.Fecha.ToString("dd/MM/yyyy HH:mm")</MudTd>
+                <MudTd DataLabel="Total">@context.Lineas.Sum(l => l.Cantidad * l.PrecioUnitario).ToString("F2") €</MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
 }
 
 @code {
@@ -138,7 +166,9 @@ else
 
     private Proveedor? _proveedor;
     private IEnumerable<Producto> _productos = [];
+    private IEnumerable<Compra> _facturas = [];
     private bool _cargando = true;
+    private bool _cargandoFacturas = true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -150,6 +180,9 @@ else
             _productos = todosLosProductos.Where(p => p.ProveedorId == Id);
         }
         _cargando = false;
+
+        _facturas = (await FacturaService.GetByProveedorAsync(Id)).OrderByDescending(f => f.Fecha);
+        _cargandoFacturas = false;
     }
 
     private bool TieneDatosDeContacto() =>

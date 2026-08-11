@@ -10,4 +10,11 @@ public record Compra
     public int? ProveedorId { get; set; }
     public DateTime Fecha { get; set; }
     public List<LineaCompra> Lineas { get; set; } = [];
+
+    /// <summary>
+    /// Nombre del proveedor ya resuelto, para consultas de solo lectura (Facturas) que no
+    /// quieren obligar a la vista a hacer una búsqueda aparte. Null si no se ha resuelto
+    /// (p.ej. al crear la compra) o si la compra no tiene proveedor asignado.
+    /// </summary>
+    public string? ProveedorNombre { get; set; }
 }

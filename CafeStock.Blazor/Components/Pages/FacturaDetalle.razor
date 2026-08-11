@@ -1,0 +1,77 @@
+@page "/facturas/{Id:int}"
+@inject CafeStock.Back.Services.Facturas.IFacturaService FacturaService
+
+<PageTitle>Factura</PageTitle>
+
+@if (_cargando)
+{
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
+}
+else if (_factura is null)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-4">No se ha encontrado esta factura.</MudAlert>
+    <MudButton Variant="Variant.Filled"
+               Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.ArrowBack"
+               Href="/facturas">
+        Volver al listado
+    </MudButton>
+}
+else
+{
+    <MudButton Variant="Variant.Text"
+               Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.ArrowBack"
+               Href="/facturas"
+               Class="mb-4">
+        Volver al listado
+    </MudButton>
+
+    <div class="mb-4" style="background-color:rgba(109,76,65,0.10); border-radius:12px; padding:16px 24px; display:inline-block;">
+        <MudText Typo="Typo.h4" Style="color:#3E2723; margin:0;">
+            @(_factura.ProveedorNombre ?? "Sin proveedor asignado")
+        </MudText>
+    </div>
+
+    <MudPaper Class="pa-4 mb-4" Elevation="1" Style="max-width:300px;">
+        <div class="d-flex align-center mb-2">
+            <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Class="mr-2"/>
+            <MudText Typo="Typo.body1">Fecha: <b>@_factura.Fecha.ToString("dd/MM/yyyy HH:mm")</b></MudText>
+        </div>
+        <div class="d-flex align-center">
+            <MudIcon Icon="@Icons.Material.Filled.Euro" Class="mr-2"/>
+            <MudText Typo="Typo.body1">Total: <b>@_total.ToString("F2") €</b></MudText>
+        </div>
+    </MudPaper>
+
+    <MudTable Items="_factura.Lineas" Hover="true" Striped="true" Elevation="2">
+        <HeaderContent>
+            <MudTh>Producto</MudTh>
+            <MudTh>Cantidad</MudTh>
+            <MudTh>Precio unitario</MudTh>
+            <MudTh>Subtotal</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Producto">@(context.ProductoNombre ?? $"Producto #{context.ProductoId}")</MudTd>
+            <MudTd DataLabel="Cantidad">@context.Cantidad</MudTd>
+            <MudTd DataLabel="Precio unitario">@context.PrecioUnitario.ToString("F2") €</MudTd>
+            <MudTd DataLabel="Subtotal">@((context.Cantidad * context.PrecioUnitario).ToString("F2")) €</MudTd>
+        </RowTemplate>
+    </MudTable>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Compra? _factura;
+    private bool _cargando = true;
+
+    private decimal _total => _factura?.Lineas.Sum(l => l.Cantidad * l.PrecioUnitario) ?? 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var facturas = await FacturaService.GetAllAsync();
+        _factura = facturas.FirstOrDefault(f => f.Id == Id);
+        _cargando = false;
+    }
+}

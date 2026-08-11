@@ -6,6 +6,7 @@ using CafeStock.Back.Repositories.Productos.EfCore;
 using CafeStock.Back.Repositories.Proveedores.Base;
 using CafeStock.Back.Repositories.Proveedores.EfCore;
 using CafeStock.Back.Services.Compras;
+using CafeStock.Back.Services.Facturas;
 using CafeStock.Back.Services.Productos;
 using CafeStock.Back.Services.Proveedores;
 using CafeStock.Back.Validators.Common;
@@ -51,5 +52,6 @@ public static class DependenciesProvider
         services.AddScoped<IProductoService, ProductoService>();
         services.AddScoped<IProveedorService, ProveedorService>();
         services.AddScoped<ICompraService, CompraService>();
+        services.AddScoped<IFacturaService, FacturaService>();
     }
 }

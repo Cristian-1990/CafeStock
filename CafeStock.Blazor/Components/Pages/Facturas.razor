@@ -1,0 +1,73 @@
+@page "/facturas"
+@inject CafeStock.Back.Services.Facturas.IFacturaService FacturaService
+@inject IProveedorService ProveedorService
+@inject NavigationManager Navigation
+
+<PageTitle>Facturas</PageTitle>
+
+<div class="mb-4" style="background-color:rgba(109,76,65,0.10); border-radius:12px; padding:16px 24px; display:inline-block;">
+    <MudText Typo="Typo.h4" Style="color:#3E2723; margin:0;">Facturas</MudText>
+</div>
+
+@if (_cargando)
+{
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
+}
+else
+{
+    <MudSelect T="int?" @bind-Value="_proveedorSeleccionado"
+               Label="Proveedor"
+               Variant="Variant.Outlined"
+               Clearable="true"
+               Style="max-width:300px;"
+               Class="mb-4">
+        @foreach (var proveedor in _proveedores)
+        {
+            <MudSelectItem T="int?" Value="@proveedor.Id">@proveedor.Nombre</MudSelectItem>
+        }
+    </MudSelect>
+
+    @if (!_facturasFiltradas.Any())
+    {
+        <MudAlert Severity="Severity.Info">No hay facturas que coincidan con este filtro.</MudAlert>
+    }
+    else
+    {
+        <MudTable Items="_facturasFiltradas" Hover="true" Striped="true" Elevation="2"
+                  OnRowClick="@((TableRowClickEventArgs<Compra> args) => Navigation.NavigateTo($"/facturas/{args.Item!.Id}"))"
+                  RowStyle="cursor:pointer;">
+            <HeaderContent>
+                <MudTh>Fecha</MudTh>
+                <MudTh>Proveedor</MudTh>
+                <MudTh>Total</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Fecha">@context.Fecha.ToString("dd/MM/yyyy HH:mm")</MudTd>
+                <MudTd DataLabel="Proveedor">@(context.ProveedorNombre ?? "Sin proveedor asignado")</MudTd>
+                <MudTd DataLabel="Total">@CalcularTotal(context).ToString("F2") €</MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+}
+
+@code {
+    private IEnumerable<Compra> _facturas = [];
+    private IEnumerable<Proveedor> _proveedores = [];
+    private bool _cargando = true;
+    private int? _proveedorSeleccionado;
+
+    private IEnumerable<Compra> _facturasFiltradas =>
+        _facturas
+            .Where(f => _proveedorSeleccionado is null || f.ProveedorId == _proveedorSeleccionado)
+            .OrderByDescending(f => f.Fecha);
+
+    protected override async Task OnInitializedAsync()
+    {
+        _proveedores = await ProveedorService.GetAllAsync();
+        _facturas = await FacturaService.GetAllAsync();
+        _cargando = false;
+    }
+
+    private static decimal CalcularTotal(Compra factura) =>
+        factura.Lineas.Sum(l => l.Cantidad * l.PrecioUnitario);
+}
