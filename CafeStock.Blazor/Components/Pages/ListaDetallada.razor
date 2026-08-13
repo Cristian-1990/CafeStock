@@ -85,9 +85,12 @@ else
                                 <MudIcon Icon="@Icons.Material.Filled.Inventory2" Style="font-size:3rem; color:#6D4C41;"/>
                             </div>
                         }
+                        <div style="background-color:rgba(109,76,65,0.22); text-align:center; padding:8px 12px;">
+                            <MudText Typo="Typo.h6" Style="color:#3E2723;">
+                                @producto.Nombre
+                            </MudText>
+                        </div>
                         <MudCardContent Style="flex-grow:1;">
-                            <MudText Typo="Typo.h6" Style="color:#3E2723;">@producto.Nombre</MudText>
-
                             @if (!string.IsNullOrWhiteSpace(producto.Descripcion))
                             {
                                 <MudText Typo="Typo.body2" Class="mt-1">@producto.Descripcion</MudText>
