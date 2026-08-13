@@ -16,6 +16,7 @@ public static class ProveedorMapper
             Email = proveedor.Email,
             DiaReparto = proveedor.DiaReparto,
             Notas = proveedor.Notas,
+            Direccion = proveedor.Direccion,
             EsSupermercadoGenerico = proveedor.EsSupermercadoGenerico,
         };
     }
@@ -32,6 +33,7 @@ public static class ProveedorMapper
             Email = entity.Email,
             DiaReparto = entity.DiaReparto,
             Notas = entity.Notas,
+            Direccion = entity.Direccion,
             EsSupermercadoGenerico = entity.EsSupermercadoGenerico
         };
     }

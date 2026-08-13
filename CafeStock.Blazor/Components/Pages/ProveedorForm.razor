@@ -54,6 +54,11 @@
                   Variant="Variant.Outlined"
                   Class="mb-4"/>
 
+    <MudTextField @bind-Value="_direccion"
+                  Label="Dirección"
+                  Variant="Variant.Outlined"
+                  Class="mb-4"/>
+
     <MudTextField @bind-Value="_notas"
                   Label="Notas"
                   Variant="Variant.Outlined"
@@ -98,6 +103,7 @@
     private string _personaContacto = string.Empty;
     private string _email = string.Empty;
     private string _diaReparto = string.Empty;
+    private string _direccion = string.Empty;
     private string _notas = string.Empty;
     private bool _esSupermercadoGenerico;
     private string? _error;
@@ -116,6 +122,7 @@
                 _personaContacto = resultado.Value.PersonaContacto;
                 _email = resultado.Value.Email;
                 _diaReparto = resultado.Value.DiaReparto;
+                _direccion = resultado.Value.Direccion;
                 _notas = resultado.Value.Notas;
                 _esSupermercadoGenerico = resultado.Value.EsSupermercadoGenerico;
             }
@@ -137,6 +144,7 @@
             PersonaContacto = _personaContacto,
             Email = _email,
             DiaReparto = _diaReparto,
+            Direccion = _direccion,
             Notas = _notas,
             EsSupermercadoGenerico = _esSupermercadoGenerico
         };

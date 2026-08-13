@@ -81,6 +81,13 @@ public class AppDbContext : DbContext
     public Task AsegurarColumnaPrecioUnitarioAsync() =>
         AsegurarColumnaAsync("Productos", "PrecioUnitario", "TEXT NOT NULL DEFAULT '0'");
 
+    /// <summary>
+    /// Igual que AsegurarColumnaEsSupermercadoGenericoAsync pero para la dirección
+    /// del proveedor, añadida después de que ya hubiera proveedores en producción.
+    /// </summary>
+    public Task AsegurarColumnaDireccionAsync() =>
+        AsegurarColumnaAsync("Proveedores", "Direccion", "TEXT NOT NULL DEFAULT ''");
+
     private async Task AsegurarColumnaAsync(string tabla, string columna, string definicionColumna)
     {
         var conexion = Database.GetDbConnection();

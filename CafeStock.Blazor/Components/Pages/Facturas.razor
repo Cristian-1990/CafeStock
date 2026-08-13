@@ -51,6 +51,12 @@ else
 }
 
 @code {
+    // Permite llegar a esta página ya filtrada por proveedor (p.ej. desde el botón
+    // "Ver facturas" de ProveedorDetalle), reutilizando el mismo filtro de siempre.
+    [SupplyParameterFromQuery(Name = "proveedorId")]
+    [Parameter]
+    public int? ProveedorIdInicial { get; set; }
+
     private IEnumerable<Compra> _facturas = [];
     private IEnumerable<Proveedor> _proveedores = [];
     private bool _cargando = true;
@@ -63,6 +69,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        _proveedorSeleccionado = ProveedorIdInicial;
         _proveedores = await ProveedorService.GetAllAsync();
         _facturas = await FacturaService.GetAllAsync();
         _cargando = false;
