@@ -57,6 +57,69 @@
     </ApexChart>
 </MudPaper>
 
+<MudText Typo="Typo.h6" Class="mb-2" Style="color:#3E2723;">Unidades compradas por mes</MudText>
+<MudPaper Class="pa-4 mb-8" Elevation="2" Style="max-width:600px;">
+    <ApexChart TItem="PuntoDato" Title="Unidades compradas por mes">
+        <ApexPointSeries TItem="PuntoDato"
+                         Items="_unidadesPorMes"
+                         Name="Unidades"
+                         SeriesType="SeriesType.Area"
+                         XValue="e => e.Etiqueta"
+                         YValue="e => (decimal?)e.Valor"/>
+    </ApexChart>
+</MudPaper>
+
+<MudText Typo="Typo.h6" Class="mb-2" Style="color:#3E2723;">Stock actual vs máximo (Harina)</MudText>
+<MudPaper Class="pa-4 mb-8" Elevation="2" Style="max-width:600px;">
+    <ApexChart TItem="PuntoDato" Title="Stock actual vs máximo (Harina)">
+        <ApexPointSeries TItem="PuntoDato"
+                         Items="_stockHarina"
+                         Name="% de stock"
+                         SeriesType="SeriesType.RadialBar"
+                         XValue="e => e.Etiqueta"
+                         YValue="e => (decimal?)e.Valor"/>
+    </ApexChart>
+</MudPaper>
+
+<MudText Typo="Typo.h6" Class="mb-2" Style="color:#3E2723;">Gasto por proveedor y mes</MudText>
+<MudPaper Class="pa-4 mb-8" Elevation="2" Style="max-width:600px;">
+    <ApexChart TItem="PuntoDato" Title="Gasto por proveedor y mes">
+        @foreach (var (proveedor, datosDelMes) in _gastoPorProveedorYMes)
+        {
+            <ApexPointSeries TItem="PuntoDato"
+                             Items="datosDelMes"
+                             Name="@proveedor"
+                             SeriesType="SeriesType.Heatmap"
+                             XValue="e => e.Etiqueta"
+                             YValue="e => (decimal?)e.Valor"/>
+        }
+    </ApexChart>
+</MudPaper>
+
+<MudText Typo="Typo.h6" Class="mb-2" Style="color:#3E2723;">Productos más comprados</MudText>
+<MudPaper Class="pa-4 mb-8" Elevation="2" Style="max-width:600px;">
+    <ApexChart TItem="PuntoDato" Title="Productos más comprados" Options="_opcionesBarrasHorizontales">
+        <ApexPointSeries TItem="PuntoDato"
+                         Items="_productosMasComprados"
+                         Name="Cantidad"
+                         SeriesType="SeriesType.Bar"
+                         XValue="e => e.Etiqueta"
+                         YValue="e => (decimal?)e.Valor"/>
+    </ApexChart>
+</MudPaper>
+
+<MudText Typo="Typo.h6" Class="mb-2" Style="color:#3E2723;">Reparto del gasto: con proveedor vs sin asignar</MudText>
+<MudPaper Class="pa-4 mb-8" Elevation="2" Style="max-width:600px;">
+    <ApexChart TItem="PuntoDato" Title="Reparto del gasto: con proveedor vs sin asignar">
+        <ApexPointSeries TItem="PuntoDato"
+                         Items="_repartoConSinProveedor"
+                         Name="Porcentaje"
+                         SeriesType="SeriesType.Donut"
+                         XValue="e => e.Etiqueta"
+                         YValue="e => (decimal?)e.Valor"/>
+    </ApexChart>
+</MudPaper>
+
 @code {
     // TODO: datos de ejemplo, sustituir por consulta real a Compra/LineaCompra cuando se elija el diseño final
 
@@ -91,6 +154,61 @@
         new("Alcampo", 2450),
         new("Priégola", 1180)
     ];
+
+    private readonly List<PuntoDato> _unidadesPorMes =
+    [
+        new("Ene", 60),
+        new("Feb", 85),
+        new("Mar", 50),
+        new("Abr", 100),
+        new("May", 75),
+        new("Jun", 110)
+    ];
+
+    // Harina real (Id=2) tiene StockActual=StockMaximo=8 ahora mismo; para que el
+    // medidor se vea con un hueco real de ejemplo, invento 6 de 8 (75%).
+    private readonly List<PuntoDato> _stockHarina =
+    [
+        new("Harina", 75)
+    ];
+
+    private readonly Dictionary<string, List<PuntoDato>> _gastoPorProveedorYMes = new()
+    {
+        ["Alcampo"] =
+        [
+            new("Ene", 180), new("Feb", 220), new("Mar", 150),
+            new("Abr", 300), new("May", 260), new("Jun", 310)
+        ],
+        ["Priégola"] =
+        [
+            new("Ene", 90), new("Feb", 120), new("Mar", 80),
+            new("Abr", 140), new("May", 110), new("Jun", 130)
+        ]
+    };
+
+    private readonly List<PuntoDato> _productosMasComprados =
+    [
+        new("Harina", 48),
+        new("Azúcar blanco", 42),
+        new("Helado", 35),
+        new("Jamón york", 28),
+        new("Queso Gouda", 22),
+        new("Salmón", 18)
+    ];
+
+    private readonly List<PuntoDato> _repartoConSinProveedor =
+    [
+        new("Con proveedor asignado", 82),
+        new("Sin proveedor asignado", 18)
+    ];
+
+    private readonly ApexChartOptions<PuntoDato> _opcionesBarrasHorizontales = new()
+    {
+        PlotOptions = new PlotOptions
+        {
+            Bar = new PlotOptionsBar { Horizontal = true }
+        }
+    };
 
     private record PuntoDato(string Etiqueta, decimal Valor);
 }
