@@ -31,6 +31,7 @@ public class ComprasEfRepository : ICompraRepository
         await context.AsegurarColumnaMetodoPagoAsync();
         await context.AsegurarColumnaNumeroFacturaProveedorAsync();
         await context.AsegurarColumnaFacturaAdjuntaUrlAsync();
+        await context.AsegurarColumnaNotasCompraAsync();
         _initialized = true;
     }
 
@@ -85,6 +86,29 @@ public class ComprasEfRepository : ICompraRepository
         catch (Exception ex)
         {
             Log.Error(ex, "Error al actualizar los datos de facturación de la compra {Id}", id);
+            return Result.Failure<Compra, DomainError>(CompraErrors.DatabaseError(ex.Message));
+        }
+    }
+
+    /// <summary>
+    /// Actualiza ÚNICAMENTE Notas, sin tocar ningún otro campo de la compra.
+    /// </summary>
+    public async Task<Result<Compra, DomainError>> ActualizarNotasAsync(int id, string notas)
+    {
+        await InitializeAsync();
+        using var context = CreateContext();
+        var entity = await context.Compras.Include(e => e.Lineas).FirstOrDefaultAsync(e => e.Id == id);
+        if (entity is null)
+            return Result.Failure<Compra, DomainError>(CompraErrors.NotFound(id));
+        try
+        {
+            entity.Notas = notas;
+            await context.SaveChangesAsync();
+            return Result.Success<Compra, DomainError>(entity.ToCompra());
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error al actualizar las notas de la compra {Id}", id);
             return Result.Failure<Compra, DomainError>(CompraErrors.DatabaseError(ex.Message));
         }
     }

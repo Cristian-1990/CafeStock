@@ -10,4 +10,5 @@ public class CompraEntity
     public string MetodoPago { get; set; } = string.Empty;
     public string NumeroFacturaProveedor { get; set; } = string.Empty;
     public string FacturaAdjuntaUrl { get; set; } = string.Empty;
+    public string Notas { get; set; } = string.Empty;
 }

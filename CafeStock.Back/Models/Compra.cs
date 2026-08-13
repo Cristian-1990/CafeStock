@@ -25,6 +25,11 @@ public record Compra
     public string FacturaAdjuntaUrl { get; set; } = string.Empty;
 
     /// <summary>
+    /// Notas libres sobre esta compra/factura, opcionales.
+    /// </summary>
+    public string Notas { get; set; } = string.Empty;
+
+    /// <summary>
     /// Nombre del proveedor ya resuelto, para consultas de solo lectura (Facturas) que no
     /// quieren obligar a la vista a hacer una búsqueda aparte. Null si no se ha resuelto
     /// (p.ej. al crear la compra) o si la compra no tiene proveedor asignado.

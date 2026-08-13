@@ -15,7 +15,8 @@ public static class CompraMapper
             Lineas = compra.Lineas.Select(l => l.ToEntity()).ToList(),
             MetodoPago = compra.MetodoPago,
             NumeroFacturaProveedor = compra.NumeroFacturaProveedor,
-            FacturaAdjuntaUrl = compra.FacturaAdjuntaUrl
+            FacturaAdjuntaUrl = compra.FacturaAdjuntaUrl,
+            Notas = compra.Notas
         };
     }
 
@@ -29,7 +30,8 @@ public static class CompraMapper
             Lineas = entity.Lineas.Select(l => l.ToLineaCompra()).ToList(),
             MetodoPago = entity.MetodoPago,
             NumeroFacturaProveedor = entity.NumeroFacturaProveedor,
-            FacturaAdjuntaUrl = entity.FacturaAdjuntaUrl
+            FacturaAdjuntaUrl = entity.FacturaAdjuntaUrl,
+            Notas = entity.Notas
         };
     }
 

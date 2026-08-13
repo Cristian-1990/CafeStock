@@ -14,4 +14,9 @@ public interface ICompraRepository
     /// </summary>
     Task<Result<Compra, DomainError>> ActualizarDatosFacturaAsync(
         int id, string metodoPago, string numeroFacturaProveedor, string facturaAdjuntaUrl);
+
+    /// <summary>
+    /// Actualiza únicamente las notas de una Compra ya registrada.
+    /// </summary>
+    Task<Result<Compra, DomainError>> ActualizarNotasAsync(int id, string notas);
 }

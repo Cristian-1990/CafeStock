@@ -107,6 +107,12 @@ public class AppDbContext : DbContext
     public Task AsegurarColumnaFacturaAdjuntaUrlAsync() =>
         AsegurarColumnaAsync("Compras", "FacturaAdjuntaUrl", "TEXT NOT NULL DEFAULT ''");
 
+    /// <summary>
+    /// Notas libres de Compra, añadidas después de que la tabla ya existiera en producción.
+    /// </summary>
+    public Task AsegurarColumnaNotasCompraAsync() =>
+        AsegurarColumnaAsync("Compras", "Notas", "TEXT NOT NULL DEFAULT ''");
+
     private async Task AsegurarColumnaAsync(string tabla, string columna, string definicionColumna)
     {
         var conexion = Database.GetDbConnection();

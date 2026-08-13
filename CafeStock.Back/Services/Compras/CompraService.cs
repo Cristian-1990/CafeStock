@@ -56,4 +56,12 @@ public class CompraService : ICompraService
                 id, metodoPago, numeroFacturaProveedor);
         return resultado;
     }
+
+    public async Task<Result<Compra, DomainError>> ActualizarNotasAsync(int id, string notas)
+    {
+        var resultado = await _repository.ActualizarNotasAsync(id, notas);
+        if (resultado.IsSuccess)
+            Log.Information("Notas actualizadas: Id={Id}", id);
+        return resultado;
+    }
 }
