@@ -17,6 +17,7 @@ public static class ProveedorMapper
             DiaReparto = proveedor.DiaReparto,
             Notas = proveedor.Notas,
             Direccion = proveedor.Direccion,
+            NifCif = proveedor.NifCif,
             EsSupermercadoGenerico = proveedor.EsSupermercadoGenerico,
         };
     }
@@ -34,6 +35,7 @@ public static class ProveedorMapper
             DiaReparto = entity.DiaReparto,
             Notas = entity.Notas,
             Direccion = entity.Direccion,
+            NifCif = entity.NifCif,
             EsSupermercadoGenerico = entity.EsSupermercadoGenerico
         };
     }

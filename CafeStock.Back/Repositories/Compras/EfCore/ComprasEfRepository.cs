@@ -28,6 +28,9 @@ public class ComprasEfRepository : ICompraRepository
         using var context = CreateContext();
         await context.EnsureCreatedAsync();
         await context.AsegurarTablasComprasAsync();
+        await context.AsegurarColumnaMetodoPagoAsync();
+        await context.AsegurarColumnaNumeroFacturaProveedorAsync();
+        await context.AsegurarColumnaFacturaAdjuntaUrlAsync();
         _initialized = true;
     }
 
@@ -55,6 +58,33 @@ public class ComprasEfRepository : ICompraRepository
         catch (Exception ex)
         {
             Log.Error(ex, "Error al crear la compra (ProveedorId={ProveedorId})", compra.ProveedorId);
+            return Result.Failure<Compra, DomainError>(CompraErrors.DatabaseError(ex.Message));
+        }
+    }
+
+    /// <summary>
+    /// Actualiza ÚNICAMENTE los datos de facturación (MetodoPago, NumeroFacturaProveedor,
+    /// FacturaAdjuntaUrl), sin tocar Fecha, ProveedorId ni las Lineas.
+    /// </summary>
+    public async Task<Result<Compra, DomainError>> ActualizarDatosFacturaAsync(
+        int id, string metodoPago, string numeroFacturaProveedor, string facturaAdjuntaUrl)
+    {
+        await InitializeAsync();
+        using var context = CreateContext();
+        var entity = await context.Compras.Include(e => e.Lineas).FirstOrDefaultAsync(e => e.Id == id);
+        if (entity is null)
+            return Result.Failure<Compra, DomainError>(CompraErrors.NotFound(id));
+        try
+        {
+            entity.MetodoPago = metodoPago;
+            entity.NumeroFacturaProveedor = numeroFacturaProveedor;
+            entity.FacturaAdjuntaUrl = facturaAdjuntaUrl;
+            await context.SaveChangesAsync();
+            return Result.Success<Compra, DomainError>(entity.ToCompra());
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error al actualizar los datos de facturación de la compra {Id}", id);
             return Result.Failure<Compra, DomainError>(CompraErrors.DatabaseError(ex.Message));
         }
     }

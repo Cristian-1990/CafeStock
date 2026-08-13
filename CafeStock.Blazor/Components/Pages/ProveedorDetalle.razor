@@ -56,6 +56,13 @@ else
             <MudText Typo="Typo.subtitle2" Class="mb-2" Style="color:#6D4C41; text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">
                 Contacto
             </MudText>
+            @if (!string.IsNullOrWhiteSpace(_proveedor.NifCif))
+            {
+                <div class="d-flex align-center mb-2">
+                    <MudIcon Icon="@Icons.Material.Filled.Badge" Size="Size.Small" Class="mr-2" Style="color:#6D4C41;"/>
+                    <MudText Typo="Typo.body1">NIF/CIF: @_proveedor.NifCif</MudText>
+                </div>
+            }
             @if (!string.IsNullOrWhiteSpace(_proveedor.Telefono))
             {
                 <div class="d-flex align-center mb-2">
@@ -229,6 +236,7 @@ else
          !string.IsNullOrWhiteSpace(_proveedor.PersonaContacto) ||
          !string.IsNullOrWhiteSpace(_proveedor.Email) ||
          !string.IsNullOrWhiteSpace(_proveedor.DiaReparto) ||
-         !string.IsNullOrWhiteSpace(_proveedor.Direccion));
+         !string.IsNullOrWhiteSpace(_proveedor.Direccion) ||
+         !string.IsNullOrWhiteSpace(_proveedor.NifCif));
 
 }

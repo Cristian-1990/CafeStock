@@ -12,7 +12,10 @@ public static class CompraMapper
             Id = compra.Id,
             ProveedorId = compra.ProveedorId,
             Fecha = compra.Fecha,
-            Lineas = compra.Lineas.Select(l => l.ToEntity()).ToList()
+            Lineas = compra.Lineas.Select(l => l.ToEntity()).ToList(),
+            MetodoPago = compra.MetodoPago,
+            NumeroFacturaProveedor = compra.NumeroFacturaProveedor,
+            FacturaAdjuntaUrl = compra.FacturaAdjuntaUrl
         };
     }
 
@@ -23,7 +26,10 @@ public static class CompraMapper
             Id = entity.Id,
             ProveedorId = entity.ProveedorId,
             Fecha = entity.Fecha,
-            Lineas = entity.Lineas.Select(l => l.ToLineaCompra()).ToList()
+            Lineas = entity.Lineas.Select(l => l.ToLineaCompra()).ToList(),
+            MetodoPago = entity.MetodoPago,
+            NumeroFacturaProveedor = entity.NumeroFacturaProveedor,
+            FacturaAdjuntaUrl = entity.FacturaAdjuntaUrl
         };
     }
 

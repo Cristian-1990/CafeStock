@@ -24,6 +24,11 @@
                   Variant="Variant.Outlined"
                   Class="mb-4"/>
 
+    <MudTextField @bind-Value="_nifCif"
+                  Label="NIF/CIF"
+                  Variant="Variant.Outlined"
+                  Class="mb-4"/>
+
     <MudTextField @bind-Value="_imagenUrl"
                   Label="Imagen (ruta relativa, p.ej. /images/nombre.jpg)"
                   Variant="Variant.Outlined"
@@ -98,6 +103,7 @@
     [Parameter] public int? Id { get; set; }
 
     private string _nombre = string.Empty;
+    private string _nifCif = string.Empty;
     private string _imagenUrl = string.Empty;
     private string _telefono = string.Empty;
     private string _personaContacto = string.Empty;
@@ -117,6 +123,7 @@
             if (resultado.IsSuccess)
             {
                 _nombre = resultado.Value.Nombre;
+                _nifCif = resultado.Value.NifCif;
                 _imagenUrl = resultado.Value.ImagenUrl;
                 _telefono = resultado.Value.Telefono;
                 _personaContacto = resultado.Value.PersonaContacto;
@@ -139,6 +146,7 @@
         {
             Id = Id ?? 0,
             Nombre = _nombre,
+            NifCif = _nifCif,
             ImagenUrl = _imagenUrl,
             Telefono = _telefono,
             PersonaContacto = _personaContacto,

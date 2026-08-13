@@ -88,6 +88,25 @@ public class AppDbContext : DbContext
     public Task AsegurarColumnaDireccionAsync() =>
         AsegurarColumnaAsync("Proveedores", "Direccion", "TEXT NOT NULL DEFAULT ''");
 
+    /// <summary>
+    /// Igual que AsegurarColumnaDireccionAsync pero para el NIF/CIF del proveedor.
+    /// </summary>
+    public Task AsegurarColumnaNifCifAsync() =>
+        AsegurarColumnaAsync("Proveedores", "NifCif", "TEXT NOT NULL DEFAULT ''");
+
+    /// <summary>
+    /// Datos de facturación de Compra (método de pago, número de factura del proveedor y
+    /// factura adjunta), añadidos después de que la tabla Compras ya existiera en producción.
+    /// </summary>
+    public Task AsegurarColumnaMetodoPagoAsync() =>
+        AsegurarColumnaAsync("Compras", "MetodoPago", "TEXT NOT NULL DEFAULT ''");
+
+    public Task AsegurarColumnaNumeroFacturaProveedorAsync() =>
+        AsegurarColumnaAsync("Compras", "NumeroFacturaProveedor", "TEXT NOT NULL DEFAULT ''");
+
+    public Task AsegurarColumnaFacturaAdjuntaUrlAsync() =>
+        AsegurarColumnaAsync("Compras", "FacturaAdjuntaUrl", "TEXT NOT NULL DEFAULT ''");
+
     private async Task AsegurarColumnaAsync(string tabla, string columna, string definicionColumna)
     {
         var conexion = Database.GetDbConnection();

@@ -14,5 +14,6 @@ public record Proveedor
     public string DiaReparto { get; set; } = string.Empty;
     public string Notas { get; set; } = string.Empty;
     public string Direccion { get; set; } = string.Empty;
+    public string NifCif { get; set; } = string.Empty;
     public bool EsSupermercadoGenerico { get; set; } = false;
 };

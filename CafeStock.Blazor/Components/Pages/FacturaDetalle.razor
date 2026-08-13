@@ -1,5 +1,7 @@
 @page "/facturas/{Id:int}"
 @inject CafeStock.Back.Services.Facturas.IFacturaService FacturaService
+@inject CafeStock.Back.Services.Compras.ICompraService CompraService
+@inject ISnackbar Snackbar
 
 <PageTitle>Factura</PageTitle>
 
@@ -44,6 +46,46 @@ else
         </div>
     </MudPaper>
 
+    <MudPaper Class="pa-4 mb-4" Elevation="1" Style="max-width:400px;">
+        <MudText Typo="Typo.subtitle2" Class="mb-2" Style="color:#6D4C41; text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">
+            Datos de factura
+        </MudText>
+
+        <MudSelect T="string" @bind-Value="_metodoPago"
+                   Label="Método de pago"
+                   Variant="Variant.Outlined"
+                   Clearable="true"
+                   Class="mb-4">
+            <MudSelectItem T="string" Value="@("Efectivo")">Efectivo</MudSelectItem>
+            <MudSelectItem T="string" Value="@("Transferencia")">Transferencia</MudSelectItem>
+            <MudSelectItem T="string" Value="@("Domiciliado")">Domiciliado</MudSelectItem>
+        </MudSelect>
+
+        <MudTextField @bind-Value="_numeroFacturaProveedor"
+                      Label="Número de factura del proveedor"
+                      Variant="Variant.Outlined"
+                      Class="mb-4"/>
+
+        <MudTextField @bind-Value="_facturaAdjuntaUrl"
+                      Label="Factura adjunta (ruta relativa, p.ej. /facturas/nombre.pdf)"
+                      Variant="Variant.Outlined"
+                      Class="mb-4"/>
+
+        @if (!string.IsNullOrWhiteSpace(_factura.FacturaAdjuntaUrl))
+        {
+            <MudLink Href="@_factura.FacturaAdjuntaUrl" Target="_blank" Class="mb-4 d-block">
+                Ver factura adjunta
+            </MudLink>
+        }
+
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Save"
+                   OnClick="GuardarDatosFacturaAsync">
+            Guardar
+        </MudButton>
+    </MudPaper>
+
     <MudTable Items="_factura.Lineas" Hover="true" Striped="true" Elevation="2">
         <HeaderContent>
             <MudTh>Producto</MudTh>
@@ -66,12 +108,50 @@ else
     private Compra? _factura;
     private bool _cargando = true;
 
+    // string? porque MudSelect Clearable puede dejarlos a null; se normalizan a "" al guardar.
+    private string? _metodoPago = string.Empty;
+    private string? _numeroFacturaProveedor = string.Empty;
+    private string? _facturaAdjuntaUrl = string.Empty;
+
     private decimal _total => _factura?.Lineas.Sum(l => l.Cantidad * l.PrecioUnitario) ?? 0;
 
     protected override async Task OnInitializedAsync()
     {
         var facturas = await FacturaService.GetAllAsync();
         _factura = facturas.FirstOrDefault(f => f.Id == Id);
+        if (_factura is not null)
+        {
+            _metodoPago = _factura.MetodoPago;
+            _numeroFacturaProveedor = _factura.NumeroFacturaProveedor;
+            _facturaAdjuntaUrl = _factura.FacturaAdjuntaUrl;
+        }
         _cargando = false;
+    }
+
+    private async Task GuardarDatosFacturaAsync()
+    {
+        if (_factura is null) return;
+
+        var metodoPago = _metodoPago ?? string.Empty;
+        var numeroFacturaProveedor = _numeroFacturaProveedor ?? string.Empty;
+        var facturaAdjuntaUrl = _facturaAdjuntaUrl ?? string.Empty;
+
+        var resultado = await CompraService.ActualizarDatosFacturaAsync(
+            _factura.Id, metodoPago, numeroFacturaProveedor, facturaAdjuntaUrl);
+
+        if (resultado.IsSuccess)
+        {
+            _factura = _factura with
+            {
+                MetodoPago = metodoPago,
+                NumeroFacturaProveedor = numeroFacturaProveedor,
+                FacturaAdjuntaUrl = facturaAdjuntaUrl
+            };
+            Snackbar.Add("Datos de factura guardados", Severity.Success);
+        }
+        else
+        {
+            Snackbar.Add(resultado.Error.Message, Severity.Error);
+        }
     }
 }
