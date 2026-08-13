@@ -1,5 +1,8 @@
 @page "/informes"
 @using ApexCharts
+@inject CafeStock.Back.Services.Facturas.IFacturaService FacturaService
+@inject IProductoService ProductoService
+@inject IProveedorService ProveedorService
 
 <PageTitle>Informes</PageTitle>
 
@@ -7,202 +10,198 @@
     <MudText Typo="Typo.h4" Style="color:#3E2723; margin:0;">Informes</MudText>
 </div>
 
-@* TODO: datos de ejemplo, sustituir por consulta real a Compra/LineaCompra cuando se elija el diseño final *@
-
-<MudText Typo="Typo.h6" Class="mb-2" Style="color:#3E2723;">Gasto mensual</MudText>
-<MudPaper Class="pa-4 mb-8" Elevation="2" Style="max-width:600px;">
-    <ApexChart TItem="PuntoDato" Title="Gasto mensual">
-        <ApexPointSeries TItem="PuntoDato"
-                         Items="_gastoMensual"
-                         Name="Gasto"
-                         SeriesType="SeriesType.Bar"
-                         XValue="e => e.Etiqueta"
-                         YValue="e => (decimal?)e.Valor"/>
-    </ApexChart>
-</MudPaper>
-
-<MudText Typo="Typo.h6" Class="mb-2" Style="color:#3E2723;">Evolución del precio de la Harina</MudText>
-<MudPaper Class="pa-4 mb-8" Elevation="2" Style="max-width:600px;">
-    <ApexChart TItem="PuntoDato" Title="Evolución del precio de la Harina">
-        <ApexPointSeries TItem="PuntoDato"
-                         Items="_precioHarina"
-                         Name="Precio unitario"
-                         SeriesType="SeriesType.Line"
-                         XValue="e => e.Etiqueta"
-                         YValue="e => (decimal?)e.Valor"/>
-    </ApexChart>
-</MudPaper>
-
-<MudText Typo="Typo.h6" Class="mb-2" Style="color:#3E2723;">Reparto de gasto por proveedor</MudText>
-<MudPaper Class="pa-4 mb-8" Elevation="2" Style="max-width:600px;">
-    <ApexChart TItem="PuntoDato" Title="Reparto de gasto por proveedor">
-        <ApexPointSeries TItem="PuntoDato"
-                         Items="_repartoProveedor"
-                         Name="Porcentaje"
-                         SeriesType="SeriesType.Pie"
-                         XValue="e => e.Etiqueta"
-                         YValue="e => (decimal?)e.Valor"/>
-    </ApexChart>
-</MudPaper>
-
-<MudText Typo="Typo.h6" Class="mb-2" Style="color:#3E2723;">Gasto total por proveedor</MudText>
-<MudPaper Class="pa-4 mb-8" Elevation="2" Style="max-width:600px;">
-    <ApexChart TItem="PuntoDato" Title="Gasto total por proveedor">
-        <ApexPointSeries TItem="PuntoDato"
-                         Items="_gastoPorProveedor"
-                         Name="Total"
-                         SeriesType="SeriesType.Bar"
-                         XValue="e => e.Etiqueta"
-                         YValue="e => (decimal?)e.Valor"/>
-    </ApexChart>
-</MudPaper>
-
-<MudText Typo="Typo.h6" Class="mb-2" Style="color:#3E2723;">Unidades compradas por mes</MudText>
-<MudPaper Class="pa-4 mb-8" Elevation="2" Style="max-width:600px;">
-    <ApexChart TItem="PuntoDato" Title="Unidades compradas por mes">
-        <ApexPointSeries TItem="PuntoDato"
-                         Items="_unidadesPorMes"
-                         Name="Unidades"
-                         SeriesType="SeriesType.Area"
-                         XValue="e => e.Etiqueta"
-                         YValue="e => (decimal?)e.Valor"/>
-    </ApexChart>
-</MudPaper>
-
-<MudText Typo="Typo.h6" Class="mb-2" Style="color:#3E2723;">Stock actual vs máximo (Harina)</MudText>
-<MudPaper Class="pa-4 mb-8" Elevation="2" Style="max-width:600px;">
-    <ApexChart TItem="PuntoDato" Title="Stock actual vs máximo (Harina)">
-        <ApexPointSeries TItem="PuntoDato"
-                         Items="_stockHarina"
-                         Name="% de stock"
-                         SeriesType="SeriesType.RadialBar"
-                         XValue="e => e.Etiqueta"
-                         YValue="e => (decimal?)e.Valor"/>
-    </ApexChart>
-</MudPaper>
-
-<MudText Typo="Typo.h6" Class="mb-2" Style="color:#3E2723;">Gasto por proveedor y mes</MudText>
-<MudPaper Class="pa-4 mb-8" Elevation="2" Style="max-width:600px;">
-    <ApexChart TItem="PuntoDato" Title="Gasto por proveedor y mes">
-        @foreach (var (proveedor, datosDelMes) in _gastoPorProveedorYMes)
+@if (_cargando)
+{
+    <MudProgressCircular Color="MudBlazor.Color.Primary" Indeterminate="true"/>
+}
+else
+{
+    @* 1. Gasto del mes actual *@
+    <MudText Typo="Typo.h5" Class="mb-2" Style="color:#3E2723;">Gasto del mes actual</MudText>
+    <MudPaper Class="pa-6 mb-8" Elevation="2" Style="max-width:400px;">
+        <MudText Typo="Typo.h3" Style="color:#3E2723; font-weight:700;">@_gastoMesActual.ToString("F2") €</MudText>
+        @if (_variacionPct is decimal variacion)
         {
-            <ApexPointSeries TItem="PuntoDato"
-                             Items="datosDelMes"
-                             Name="@proveedor"
-                             SeriesType="SeriesType.Heatmap"
-                             XValue="e => e.Etiqueta"
-                             YValue="e => (decimal?)e.Valor"/>
+            <div class="d-flex align-center mt-2">
+                <MudIcon Icon="@(variacion <= 0 ? Icons.Material.Filled.TrendingDown : Icons.Material.Filled.TrendingUp)"
+                         Style="@($"color:{(variacion <= 0 ? "#3B6D11" : "#993C1D")};")"
+                         Class="mr-1"/>
+                <MudText Typo="Typo.body2" Style="@($"color:{(variacion <= 0 ? "#3B6D11" : "#993C1D")}; font-weight:600;")">
+                    @(Math.Abs(variacion).ToString("F1"))% respecto al mes anterior
+                </MudText>
+            </div>
         }
-    </ApexChart>
-</MudPaper>
+        else
+        {
+            <MudText Typo="Typo.body2" Class="mt-2" Style="color:#9E9E9E;">Sin compras el mes anterior para comparar</MudText>
+        }
+    </MudPaper>
 
-<MudText Typo="Typo.h6" Class="mb-2" Style="color:#3E2723;">Productos más comprados</MudText>
-<MudPaper Class="pa-4 mb-8" Elevation="2" Style="max-width:600px;">
-    <ApexChart TItem="PuntoDato" Title="Productos más comprados" Options="_opcionesBarrasHorizontales">
-        <ApexPointSeries TItem="PuntoDato"
-                         Items="_productosMasComprados"
-                         Name="Cantidad"
-                         SeriesType="SeriesType.Bar"
-                         XValue="e => e.Etiqueta"
-                         YValue="e => (decimal?)e.Valor"/>
-    </ApexChart>
-</MudPaper>
+    @* 2. Gasto por proveedor *@
+    <MudText Typo="Typo.h5" Class="mb-2" Style="color:#3E2723;">Gasto por proveedor</MudText>
+    <div class="d-flex gap-2 mb-3">
+        <MudChip T="string" Color="@(_rangoGastoProveedor == RangoFechas.EsteMes ? MudBlazor.Color.Primary : MudBlazor.Color.Default)"
+                 Variant="@(_rangoGastoProveedor == RangoFechas.EsteMes ? Variant.Filled : Variant.Outlined)"
+                 OnClick="@(() => CambiarRangoGastoProveedorAsync(RangoFechas.EsteMes))">
+            Este mes
+        </MudChip>
+        <MudChip T="string" Color="@(_rangoGastoProveedor == RangoFechas.Ultimos3Meses ? MudBlazor.Color.Primary : MudBlazor.Color.Default)"
+                 Variant="@(_rangoGastoProveedor == RangoFechas.Ultimos3Meses ? Variant.Filled : Variant.Outlined)"
+                 OnClick="@(() => CambiarRangoGastoProveedorAsync(RangoFechas.Ultimos3Meses))">
+            Últimos 3 meses
+        </MudChip>
+        <MudChip T="string" Color="@(_rangoGastoProveedor == RangoFechas.Todo ? MudBlazor.Color.Primary : MudBlazor.Color.Default)"
+                 Variant="@(_rangoGastoProveedor == RangoFechas.Todo ? Variant.Filled : Variant.Outlined)"
+                 OnClick="@(() => CambiarRangoGastoProveedorAsync(RangoFechas.Todo))">
+            Todo
+        </MudChip>
+    </div>
+    @if (!_gastoPorProveedor.Any())
+    {
+        <MudAlert Severity="Severity.Info" Class="mb-8">No hay compras registradas en este rango.</MudAlert>
+    }
+    else
+    {
+        <MudPaper Class="pa-4 mb-8" Elevation="2" Style="max-width:600px;">
+            <ApexChart TItem="PuntoDato" @ref="_chartGastoProveedor" Title="Gasto por proveedor" Options="_opcionesBarrasGastoProveedor">
+                <ApexPointSeries TItem="PuntoDato"
+                                 Items="_gastoPorProveedor"
+                                 Name="Gasto"
+                                 SeriesType="SeriesType.Bar"
+                                 XValue="e => e.Etiqueta"
+                                 YValue="e => (decimal?)e.Valor"/>
+            </ApexChart>
+        </MudPaper>
+    }
 
-<MudText Typo="Typo.h6" Class="mb-2" Style="color:#3E2723;">Reparto del gasto: con proveedor vs sin asignar</MudText>
-<MudPaper Class="pa-4 mb-8" Elevation="2" Style="max-width:600px;">
-    <ApexChart TItem="PuntoDato" Title="Reparto del gasto: con proveedor vs sin asignar">
-        <ApexPointSeries TItem="PuntoDato"
-                         Items="_repartoConSinProveedor"
-                         Name="Porcentaje"
-                         SeriesType="SeriesType.Donut"
-                         XValue="e => e.Etiqueta"
-                         YValue="e => (decimal?)e.Valor"/>
-    </ApexChart>
-</MudPaper>
+    @* 3. Evolución de precio por producto *@
+    <MudText Typo="Typo.h5" Class="mb-2" Style="color:#3E2723;">Evolución de precio por producto</MudText>
+    <MudAutocomplete T="Producto" @bind-Value="_productoSeleccionado" @bind-Value:after="OnCambioProductoSeleccionadoAsync"
+                      Label="Producto"
+                      Placeholder="Escribe el nombre del producto..."
+                      SearchFunc="BuscarProductos"
+                      ToStringFunc="@(p => p?.Nombre)"
+                      Clearable="true"
+                      Variant="Variant.Outlined"
+                      Style="max-width:300px;"
+                      Class="mb-4"/>
+    @if (_productoSeleccionado is null)
+    {
+        <MudAlert Severity="Severity.Info" Class="mb-8">Elige un producto para ver la evolución de su precio.</MudAlert>
+    }
+    else if (_evolucionPrecioProducto.Count < 2)
+    {
+        <MudAlert Severity="Severity.Info" Class="mb-8">No hay suficiente historial para este producto.</MudAlert>
+    }
+    else
+    {
+        <MudPaper Class="pa-4 mb-8" Elevation="2" Style="max-width:600px;">
+            <ApexChart TItem="PuntoDato" @ref="_chartEvolucionPrecio" Title="Evolución de precio">
+                <ApexPointSeries TItem="PuntoDato"
+                                 Items="_evolucionPrecioProducto"
+                                 Name="Precio unitario"
+                                 SeriesType="SeriesType.Line"
+                                 XValue="e => e.Etiqueta"
+                                 YValue="e => (decimal?)e.Valor"/>
+            </ApexChart>
+        </MudPaper>
+    }
+
+    @* 4. Productos con más peso en el gasto (por gasto TOTAL, no por cantidad) *@
+    <MudText Typo="Typo.h5" Class="mb-2" Style="color:#3E2723;">Productos con más peso en el gasto</MudText>
+    @if (!_productosPorGastoTotal.Any())
+    {
+        <MudAlert Severity="Severity.Info" Class="mb-8">No hay compras registradas todavía.</MudAlert>
+    }
+    else
+    {
+        <MudPaper Class="pa-4 mb-8" Elevation="2" Style="max-width:600px;">
+            <ApexChart TItem="PuntoDato" Title="Productos con más peso en el gasto" Options="_opcionesBarrasProductosGasto">
+                <ApexPointSeries TItem="PuntoDato"
+                                 Items="_productosPorGastoTotal"
+                                 Name="Gasto total"
+                                 SeriesType="SeriesType.Bar"
+                                 XValue="e => e.Etiqueta"
+                                 YValue="e => (decimal?)e.Valor"/>
+            </ApexChart>
+        </MudPaper>
+    }
+
+    @* 5. Gasto por método de pago *@
+    <MudText Typo="Typo.h5" Class="mb-2" Style="color:#3E2723;">Gasto por método de pago</MudText>
+    @if (!_gastoPorMetodoPago.Any())
+    {
+        <MudAlert Severity="Severity.Info" Class="mb-8">No hay compras registradas todavía.</MudAlert>
+    }
+    else
+    {
+        <MudPaper Class="pa-4 mb-8" Elevation="2" Style="max-width:600px;">
+            <ApexChart TItem="PuntoDato" Title="Gasto por método de pago">
+                <ApexPointSeries TItem="PuntoDato"
+                                 Items="_gastoPorMetodoPago"
+                                 Name="Gasto"
+                                 SeriesType="SeriesType.Donut"
+                                 XValue="e => e.Etiqueta"
+                                 YValue="e => (decimal?)e.Valor"/>
+            </ApexChart>
+        </MudPaper>
+    }
+
+    @* 6. Proveedores sin compra reciente (aviso, no gráfico) *@
+    <MudText Typo="Typo.h5" Class="mb-2" Style="color:#3E2723;">Proveedores sin compra reciente</MudText>
+    @if (!_proveedoresSinCompraReciente.Any())
+    {
+        <MudAlert Severity="Severity.Success" Class="mb-8">Todos los proveedores con reparto asignado tienen compras recientes.</MudAlert>
+    }
+    else
+    {
+        <div class="mb-8">
+            @foreach (var alerta in _proveedoresSinCompraReciente)
+            {
+                <MudAlert Severity="Severity.Warning" Class="mb-2" Style="max-width:600px;">
+                    <b>@alerta.Nombre</b> — @(alerta.DiasDesdeUltimaCompra is int dias ? $"Última compra: hace {dias} días" : "Sin compras registradas")
+                </MudAlert>
+            }
+        </div>
+    }
+}
 
 @code {
-    // TODO: datos de ejemplo, sustituir por consulta real a Compra/LineaCompra cuando se elija el diseño final
+    private const int UmbralDiasSinCompra = 14;
 
-    private readonly List<PuntoDato> _gastoMensual =
-    [
-        new("Ene", 420),
-        new("Feb", 680),
-        new("Mar", 350),
-        new("Abr", 790),
-        new("May", 610),
-        new("Jun", 860)
-    ];
+    private enum RangoFechas { EsteMes, Ultimos3Meses, Todo }
 
-    private readonly List<PuntoDato> _precioHarina =
-    [
-        new("15/02", 0.85m),
-        new("02/03", 0.89m),
-        new("20/03", 0.87m),
-        new("05/04", 0.88m),
-        new("22/04", 0.86m),
-        new("10/05", 0.90m)
-    ];
+    private bool _cargando = true;
+    private List<Compra> _compras = [];
+    private List<Producto> _productos = [];
+    private List<Proveedor> _proveedores = [];
 
-    private readonly List<PuntoDato> _repartoProveedor =
-    [
-        new("Alcampo", 65),
-        new("Priégola", 35)
-    ];
+    // 1. Gasto del mes actual
+    private decimal _gastoMesActual;
+    private decimal? _variacionPct;
 
-    private readonly List<PuntoDato> _gastoPorProveedor =
-    [
-        new("Alcampo", 2450),
-        new("Priégola", 1180)
-    ];
+    // 2. Gasto por proveedor
+    private RangoFechas _rangoGastoProveedor = RangoFechas.Todo;
+    private List<PuntoDato> _gastoPorProveedor = [];
+    private ApexChart<PuntoDato>? _chartGastoProveedor;
 
-    private readonly List<PuntoDato> _unidadesPorMes =
-    [
-        new("Ene", 60),
-        new("Feb", 85),
-        new("Mar", 50),
-        new("Abr", 100),
-        new("May", 75),
-        new("Jun", 110)
-    ];
+    // 3. Evolución de precio por producto
+    private Producto? _productoSeleccionado;
+    private List<PuntoDato> _evolucionPrecioProducto = [];
+    private ApexChart<PuntoDato>? _chartEvolucionPrecio;
 
-    // Harina real (Id=2) tiene StockActual=StockMaximo=8 ahora mismo; para que el
-    // medidor se vea con un hueco real de ejemplo, invento 6 de 8 (75%).
-    private readonly List<PuntoDato> _stockHarina =
-    [
-        new("Harina", 75)
-    ];
+    // 4. Productos con más peso en el gasto
+    private List<PuntoDato> _productosPorGastoTotal = [];
 
-    private readonly Dictionary<string, List<PuntoDato>> _gastoPorProveedorYMes = new()
-    {
-        ["Alcampo"] =
-        [
-            new("Ene", 180), new("Feb", 220), new("Mar", 150),
-            new("Abr", 300), new("May", 260), new("Jun", 310)
-        ],
-        ["Priégola"] =
-        [
-            new("Ene", 90), new("Feb", 120), new("Mar", 80),
-            new("Abr", 140), new("May", 110), new("Jun", 130)
-        ]
-    };
+    // 5. Gasto por método de pago
+    private List<PuntoDato> _gastoPorMetodoPago = [];
 
-    private readonly List<PuntoDato> _productosMasComprados =
-    [
-        new("Harina", 48),
-        new("Azúcar blanco", 42),
-        new("Helado", 35),
-        new("Jamón york", 28),
-        new("Queso Gouda", 22),
-        new("Salmón", 18)
-    ];
+    // 6. Proveedores sin compra reciente
+    private List<ProveedorAlerta> _proveedoresSinCompraReciente = [];
 
-    private readonly List<PuntoDato> _repartoConSinProveedor =
-    [
-        new("Con proveedor asignado", 82),
-        new("Sin proveedor asignado", 18)
-    ];
-
-    private readonly ApexChartOptions<PuntoDato> _opcionesBarrasHorizontales = new()
+    // Dos instancias separadas (no una compartida): dos ApexChart montados a la vez
+    // reutilizando el mismo objeto Options daba un gráfico en blanco sin excepción alguna.
+    private readonly ApexChartOptions<PuntoDato> _opcionesBarrasGastoProveedor = new()
     {
         PlotOptions = new PlotOptions
         {
@@ -210,5 +209,150 @@
         }
     };
 
+    private readonly ApexChartOptions<PuntoDato> _opcionesBarrasProductosGasto = new()
+    {
+        PlotOptions = new PlotOptions
+        {
+            Bar = new PlotOptionsBar { Horizontal = true }
+        }
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        _compras = (await FacturaService.GetAllAsync()).ToList();
+        _productos = (await ProductoService.GetAllAsync()).OrderBy(p => p.Nombre).ToList();
+        _proveedores = (await ProveedorService.GetAllAsync()).ToList();
+
+        CalcularGastoMesActual();
+        _gastoPorProveedor = CalcularGastoPorProveedor(_rangoGastoProveedor);
+        _productosPorGastoTotal = CalcularProductosPorGastoTotal();
+        _gastoPorMetodoPago = CalcularGastoPorMetodoPago();
+        _proveedoresSinCompraReciente = CalcularProveedoresSinCompraReciente();
+
+        _cargando = false;
+    }
+
+    // ---- 1. Gasto del mes actual ----
+
+    private void CalcularGastoMesActual()
+    {
+        var ahora = DateTime.Now;
+        var inicioMesActual = new DateTime(ahora.Year, ahora.Month, 1);
+        var inicioMesAnterior = inicioMesActual.AddMonths(-1);
+
+        _gastoMesActual = _compras
+            .Where(c => c.Fecha >= inicioMesActual && c.Fecha < inicioMesActual.AddMonths(1))
+            .SelectMany(c => c.Lineas)
+            .Sum(l => l.Cantidad * l.PrecioUnitario);
+
+        var gastoMesAnterior = _compras
+            .Where(c => c.Fecha >= inicioMesAnterior && c.Fecha < inicioMesActual)
+            .SelectMany(c => c.Lineas)
+            .Sum(l => l.Cantidad * l.PrecioUnitario);
+
+        _variacionPct = gastoMesAnterior > 0
+            ? (_gastoMesActual - gastoMesAnterior) / gastoMesAnterior * 100
+            : null;
+    }
+
+    // ---- 2. Gasto por proveedor ----
+
+    private async Task CambiarRangoGastoProveedorAsync(RangoFechas rango)
+    {
+        _rangoGastoProveedor = rango;
+        _gastoPorProveedor = CalcularGastoPorProveedor(rango);
+        // Guarda defensiva: si ya no queda ningún dato el gráfico se desmonta (rama else de
+        // arriba), así que no llamamos a UpdateSeriesAsync sobre una instancia que va a morir.
+        if (_gastoPorProveedor.Any() && _chartGastoProveedor is not null)
+            await _chartGastoProveedor.UpdateSeriesAsync();
+    }
+
+    private List<PuntoDato> CalcularGastoPorProveedor(RangoFechas rango) =>
+        FiltrarPorRango(_compras, rango)
+            .GroupBy(c => c.ProveedorNombre ?? "Sin proveedor asignado")
+            .Select(g => new PuntoDato(g.Key, g.SelectMany(c => c.Lineas).Sum(l => l.Cantidad * l.PrecioUnitario)))
+            .OrderByDescending(p => p.Valor)
+            .ToList();
+
+    private static IEnumerable<Compra> FiltrarPorRango(IEnumerable<Compra> compras, RangoFechas rango)
+    {
+        var ahora = DateTime.Now;
+        return rango switch
+        {
+            RangoFechas.EsteMes => compras.Where(c => c.Fecha.Year == ahora.Year && c.Fecha.Month == ahora.Month),
+            RangoFechas.Ultimos3Meses => compras.Where(c => c.Fecha >= ahora.AddMonths(-3)),
+            _ => compras
+        };
+    }
+
+    // ---- 3. Evolución de precio por producto ----
+
+    private Task<IEnumerable<Producto>> BuscarProductos(string valor, CancellationToken token)
+    {
+        var resultado = string.IsNullOrWhiteSpace(valor)
+            ? _productos.AsEnumerable()
+            : _productos.Where(p => p.Nombre.Contains(valor, StringComparison.OrdinalIgnoreCase));
+        return Task.FromResult(resultado);
+    }
+
+    private async Task OnCambioProductoSeleccionadoAsync()
+    {
+        _evolucionPrecioProducto = CalcularEvolucionPrecio(_productoSeleccionado?.Id);
+        // Misma guarda defensiva que en el punto 2: si no hay suficiente historial el gráfico
+        // no se monta (rama else de arriba), así que no actualizamos una instancia inexistente.
+        if (_evolucionPrecioProducto.Count >= 2 && _chartEvolucionPrecio is not null)
+            await _chartEvolucionPrecio.UpdateSeriesAsync();
+    }
+
+    private List<PuntoDato> CalcularEvolucionPrecio(int? productoId)
+    {
+        if (productoId is null) return [];
+        return _compras
+            .SelectMany(c => c.Lineas.Where(l => l.ProductoId == productoId).Select(l => new { c.Fecha, l.PrecioUnitario }))
+            .OrderBy(x => x.Fecha)
+            .Select(x => new PuntoDato(x.Fecha.ToString("dd/MM/yy"), x.PrecioUnitario))
+            .ToList();
+    }
+
+    // ---- 4. Productos con más peso en el gasto ----
+
+    private List<PuntoDato> CalcularProductosPorGastoTotal() =>
+        _compras
+            .SelectMany(c => c.Lineas)
+            .GroupBy(l => l.ProductoNombre ?? $"Producto #{l.ProductoId}")
+            .Select(g => new PuntoDato(g.Key, g.Sum(l => l.Cantidad * l.PrecioUnitario)))
+            .OrderByDescending(p => p.Valor)
+            .Take(10)
+            .ToList();
+
+    // ---- 5. Gasto por método de pago ----
+
+    private List<PuntoDato> CalcularGastoPorMetodoPago() =>
+        _compras
+            .GroupBy(c => string.IsNullOrWhiteSpace(c.MetodoPago) ? "Sin especificar" : c.MetodoPago)
+            .Select(g => new PuntoDato(g.Key, g.SelectMany(c => c.Lineas).Sum(l => l.Cantidad * l.PrecioUnitario)))
+            .OrderByDescending(p => p.Valor)
+            .ToList();
+
+    // ---- 6. Proveedores sin compra reciente ----
+
+    private List<ProveedorAlerta> CalcularProveedoresSinCompraReciente()
+    {
+        var ultimaCompraPorProveedor = _compras
+            .Where(c => c.ProveedorId is not null)
+            .GroupBy(c => c.ProveedorId!.Value)
+            .ToDictionary(g => g.Key, g => g.Max(c => c.Fecha));
+
+        return _proveedores
+            .Where(p => !string.IsNullOrWhiteSpace(p.DiaReparto))
+            .Select(p => ultimaCompraPorProveedor.TryGetValue(p.Id, out var ultimaFecha)
+                ? new ProveedorAlerta(p.Nombre, (DateTime.Now - ultimaFecha).Days)
+                : new ProveedorAlerta(p.Nombre, null))
+            .Where(a => a.DiasDesdeUltimaCompra is null or > UmbralDiasSinCompra)
+            .OrderByDescending(a => a.DiasDesdeUltimaCompra ?? int.MaxValue)
+            .ToList();
+    }
+
     private record PuntoDato(string Etiqueta, decimal Valor);
+    private record ProveedorAlerta(string Nombre, int? DiasDesdeUltimaCompra);
 }
