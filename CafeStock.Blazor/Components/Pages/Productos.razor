@@ -13,6 +13,12 @@
 </div>
 
 <div class="d-flex gap-2 mb-4">
+    <MudButton Variant="Variant.Filled"
+               Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.Checklist"
+               Href="/stock/realizar">
+        Realizar stock
+    </MudButton>
     @if (_productosParaComprar.Any())
     {
         <MudButton Variant="Variant.Outlined"

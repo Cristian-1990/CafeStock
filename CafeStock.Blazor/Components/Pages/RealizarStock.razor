@@ -1,0 +1,166 @@
+@page "/stock/realizar"
+@inject IProductoService ProductoService
+@inject IProveedorService ProveedorService
+@inject ISnackbar Snackbar
+
+<PageTitle>Realizar stock</PageTitle>
+
+<div class="mb-4" style="background-color:rgba(109,76,65,0.10); border-radius:12px; padding:16px 24px; display:inline-block;">
+    <MudText Typo="Typo.h4" Style="color:#3E2723; margin:0;">Realizar stock</MudText>
+</div>
+
+@if (_cargando)
+{
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
+}
+else if (!_enRecuento)
+{
+    <MudText Typo="Typo.body1" Class="mb-4">Elige un proveedor para empezar a contar sus productos.</MudText>
+
+    <MudGrid>
+        @foreach (var proveedor in _proveedores)
+        {
+            <MudItem xs="12" sm="6" md="4">
+                <MudCard Elevation="2"
+                         Style="height:100%; cursor:pointer;"
+                         @onclick="@(() => SeleccionarProveedor(proveedor))">
+                    @if (!string.IsNullOrWhiteSpace(proveedor.ImagenUrl))
+                    {
+                        <div style="height:160px; overflow:hidden; background-color:#F5F0EB;">
+                            <img src="@proveedor.ImagenUrl" alt="@proveedor.Nombre"
+                                 style="width:100%; height:100%; object-fit:contain; object-position:center; display:block;"/>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="d-flex align-center justify-center"
+                             style="height:160px; background-color:#F5F0EB;">
+                            <MudIcon Icon="@Icons.Material.Filled.LocalShipping" Style="font-size:3rem; color:#6D4C41;"/>
+                        </div>
+                    }
+                    <MudCardContent>
+                        <MudText Typo="Typo.h6" Style="color:#3E2723;">@proveedor.Nombre</MudText>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        }
+
+        <MudItem xs="12" sm="6" md="4">
+            <MudCard Elevation="2"
+                     Style="height:100%; cursor:pointer;"
+                     @onclick="SeleccionarSinProveedor">
+                <div class="d-flex align-center justify-center"
+                     style="height:160px; background-color:#F5F0EB;">
+                    <MudIcon Icon="@Icons.Material.Filled.HelpOutline" Style="font-size:3rem; color:#6D4C41;"/>
+                </div>
+                <MudCardContent>
+                    <MudText Typo="Typo.h6" Style="color:#3E2723;">Sin proveedor asignado</MudText>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+}
+else
+{
+    <MudButton Variant="Variant.Text"
+               Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.ArrowBack"
+               OnClick="Volver"
+               Class="mb-4">
+        Volver
+    </MudButton>
+
+    <MudText Typo="Typo.h5" Class="mb-4" Style="color:#3E2723;">@_nombreGrupoSeleccionado</MudText>
+
+    @if (!_productosDelGrupo.Any())
+    {
+        <MudAlert Severity="Severity.Info">Este grupo no tiene productos.</MudAlert>
+    }
+    else
+    {
+        <MudTable Items="_productosDelGrupo" Hover="true" Striped="true" Elevation="2">
+            <HeaderContent>
+                <MudTh>Nombre</MudTh>
+                <MudTh>Cantidad actual</MudTh>
+                <MudTh></MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Nombre">@context.Nombre</MudTd>
+                <MudTd DataLabel="Cantidad actual">
+                    <MudNumericField T="int" @bind-Value="context.StockActual" Min="0" Variant="Variant.Outlined" Style="max-width:120px;"/>
+                </MudTd>
+                <MudTd>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               Size="Size.Small"
+                               StartIcon="@Icons.Material.Filled.Save"
+                               OnClick="@(() => GuardarAsync(context))">
+                        Guardar
+                    </MudButton>
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+}
+
+@code {
+    private List<Producto> _productos = [];
+    private IEnumerable<Proveedor> _proveedores = [];
+    private bool _cargando = true;
+
+    // Ninguno de los dos marcado = paso 1 (elegir grupo).
+    private Proveedor? _grupoSeleccionado;
+    private bool _sinProveedorSeleccionado;
+
+    private bool _enRecuento => _grupoSeleccionado is not null || _sinProveedorSeleccionado;
+
+    private string _nombreGrupoSeleccionado =>
+        _sinProveedorSeleccionado ? "Sin proveedor asignado" : _grupoSeleccionado?.Nombre ?? string.Empty;
+
+    private IEnumerable<Producto> _productosDelGrupo
+    {
+        get
+        {
+            if (_sinProveedorSeleccionado)
+                return _productos.Where(p => p.ProveedorId is null).ToList();
+            if (_grupoSeleccionado is null)
+                return [];
+            var proveedorId = _grupoSeleccionado.Id;
+            return _productos.Where(p => p.ProveedorId == proveedorId).ToList();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _proveedores = await ProveedorService.GetAllAsync();
+        _productos = (await ProductoService.GetAllAsync()).ToList();
+        _cargando = false;
+    }
+
+    private void SeleccionarProveedor(Proveedor proveedor)
+    {
+        _sinProveedorSeleccionado = false;
+        _grupoSeleccionado = proveedor;
+    }
+
+    private void SeleccionarSinProveedor()
+    {
+        _sinProveedorSeleccionado = true;
+        _grupoSeleccionado = null;
+    }
+
+    private void Volver()
+    {
+        _grupoSeleccionado = null;
+        _sinProveedorSeleccionado = false;
+    }
+
+    private async Task GuardarAsync(Producto producto)
+    {
+        var resultado = await ProductoService.ActualizarStockActualAsync(producto.Id, producto.StockActual);
+        if (resultado.IsSuccess)
+            Snackbar.Add("Stock actualizado", Severity.Success);
+        else
+            Snackbar.Add(resultado.Error.Message, Severity.Error);
+    }
+}

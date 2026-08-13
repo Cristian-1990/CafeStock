@@ -78,4 +78,17 @@ public class ProductoService : IProductoService
     {
         return await _repository.ProductosUrgentes();
     }
+
+    public async Task<Result<Producto, DomainError>> ActualizarStockActualAsync(int id, int nuevaCantidad)
+    {
+        if (nuevaCantidad < 0)
+            return Result.Failure<Producto, DomainError>(
+                ProductoErrors.Validation(["El stock no puede ser menor que 0"]));
+
+        var resultado = await _repository.ActualizarStockActualAsync(id, nuevaCantidad);
+        if (resultado.IsSuccess)
+            Log.Information("Stock actual actualizado por recuento: Id={Id}, Nombre={Nombre}, NuevaCantidad={NuevaCantidad}",
+                resultado.Value.Id, resultado.Value.Nombre, nuevaCantidad);
+        return resultado;
+    }
 }

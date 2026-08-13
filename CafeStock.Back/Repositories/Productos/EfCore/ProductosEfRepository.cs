@@ -148,4 +148,24 @@ public class ProductosEfRepository : IProductoRepository
             .Select(e => e.ToProducto())
             .ToListAsync();
     }
+
+    public async Task<Result<Producto, DomainError>> ActualizarStockActualAsync(int id, int nuevaCantidad)
+    {
+        await InitializeAsync();
+        using var context = CreateContext();
+        var entity = await context.Productos.FindAsync(id);
+        if (entity is null)
+            return Result.Failure<Producto, DomainError>(ProductoErrors.NotFound(id));
+        try
+        {
+            entity.StockActual = nuevaCantidad;
+            await context.SaveChangesAsync();
+            return Result.Success<Producto, DomainError>(entity.ToProducto());
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error al actualizar el stock actual del producto {Id}", id);
+            return Result.Failure<Producto, DomainError>(ProductoErrors.DatabaseError(ex.Message));
+        }
+    }
 }
