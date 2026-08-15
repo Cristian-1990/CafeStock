@@ -151,26 +151,27 @@ else
         {
             <MudAlert Severity="Severity.Info">No hay productos que coincidan con esta búsqueda.</MudAlert>
         }
+        else if (!_mostrarPestanasUnidad)
+        {
+            @TablaProductos(_productosFiltrados)
+        }
         else
         {
-            <MudTable Items="_productosFiltrados" Hover="true" Striped="true" Elevation="2">
-                <HeaderContent>
-                    <MudTh>Nombre</MudTh>
-                    <MudTh>Actual</MudTh>
-                    <MudTh>Necesario</MudTh>
-                    <MudTh>Precio</MudTh>
-                </HeaderContent>
-                <RowTemplate>
-                    <MudTd DataLabel="Nombre">@context.Nombre</MudTd>
-                    <MudTd DataLabel="Actual">@context.StockActual</MudTd>
-                    <MudTd DataLabel="Necesario">
-                        <MudText Style="@($"color:{(context.CantidadAComprar > 0 ? "#7A2410" : "#3B6D11")}; font-weight:700;")">
-                            @context.CantidadAComprar
-                        </MudText>
-                    </MudTd>
-                    <MudTd DataLabel="Precio">@context.PrecioUnitario.ToString("F2") €</MudTd>
-                </RowTemplate>
-            </MudTable>
+            @if (_productosFiltrados.Any(p => p.Unidad.Grupo() == GrupoUnidadMedida.Peso))
+            {
+                <MudText Typo="Typo.subtitle1" Class="mb-2" Style="color:#3E2723;">Por peso</MudText>
+                @TablaProductos(_productosFiltrados.Where(p => p.Unidad.Grupo() == GrupoUnidadMedida.Peso))
+            }
+            @if (_productosFiltrados.Any(p => p.Unidad.Grupo() == GrupoUnidadMedida.Unidad))
+            {
+                <MudText Typo="Typo.subtitle1" Class="mb-2 mt-6" Style="color:#3E2723;">Por unidad</MudText>
+                @TablaProductos(_productosFiltrados.Where(p => p.Unidad.Grupo() == GrupoUnidadMedida.Unidad))
+            }
+            @if (_productosFiltrados.Any(p => p.Unidad.Grupo() == GrupoUnidadMedida.SinClasificar))
+            {
+                <MudText Typo="Typo.subtitle1" Class="mb-2 mt-6" Style="color:#3E2723;">Sin clasificar</MudText>
+                @TablaProductos(_productosFiltrados.Where(p => p.Unidad.Grupo() == GrupoUnidadMedida.SinClasificar))
+            }
         }
     }
 
@@ -214,6 +215,36 @@ else
     private IEnumerable<Producto> _productosFiltrados =>
         _productos.Where(p => string.IsNullOrWhiteSpace(_busquedaProductos) ||
                                p.Nombre.Contains(_busquedaProductos, StringComparison.OrdinalIgnoreCase));
+
+    // División puramente visual de la tabla de productos por tipo de unidad de
+    // medida (ver CafeStock.Blazor.Services.UnidadMedidaExtensions). No tiene
+    // ningún efecto sobre Compra/Factura.
+    //
+    // Se decide sobre el total de productos del proveedor (no sobre los
+    // filtrados por búsqueda) para que las pestañas no aparezcan/desaparezcan
+    // mientras el usuario escribe en el buscador.
+    private bool _mostrarPestanasUnidad =>
+        _productos.Select(p => p.Unidad.Grupo()).Distinct().Count() > 1;
+
+    private RenderFragment<IEnumerable<Producto>> TablaProductos => productos =>
+        @<MudTable Items="productos" Hover="true" Striped="true" Elevation="2">
+            <HeaderContent>
+                <MudTh>Nombre</MudTh>
+                <MudTh>Actual</MudTh>
+                <MudTh>Necesario</MudTh>
+                <MudTh>Precio</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Nombre">@context.Nombre</MudTd>
+                <MudTd DataLabel="Actual">@context.StockActual</MudTd>
+                <MudTd DataLabel="Necesario">
+                    <MudText Style="@($"color:{(context.CantidadAComprar > 0 ? "#7A2410" : "#3B6D11")}; font-weight:700;")">
+                        @context.CantidadAComprar
+                    </MudText>
+                </MudTd>
+                <MudTd DataLabel="Precio">@context.PrecioUnitario.ToString("F2") €</MudTd>
+            </RowTemplate>
+        </MudTable>;
 
     protected override async Task OnInitializedAsync()
     {
