@@ -91,15 +91,6 @@ else
                             </MudText>
                         </div>
                         <MudCardContent Style="flex-grow:1;">
-                            @if (!string.IsNullOrWhiteSpace(producto.Descripcion))
-                            {
-                                <MudText Typo="Typo.body2" Class="mt-1">@producto.Descripcion</MudText>
-                            }
-                            else
-                            {
-                                <MudText Typo="Typo.body2" Class="mt-1" Style="color:#9E9E9E; font-style:italic;">Sin descripción</MudText>
-                            }
-
                             @if (producto.ProveedorId is not null && _proveedoresPorId.TryGetValue(producto.ProveedorId.Value, out var nombreProveedor))
                             {
                                 <MudChip T="string" Size="Size.Small" Color="Color.Secondary" Class="mt-2">@nombreProveedor</MudChip>

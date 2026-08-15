@@ -45,16 +45,16 @@
 </div>
 
 <div class="d-flex flex-wrap gap-2 mb-4">
-    <MudChip T="string" Color="@(_proveedorSeleccionado is null ? Color.Primary : Color.Default)"
-             Variant="@(_proveedorSeleccionado is null ? Variant.Filled : Variant.Outlined)"
-             OnClick="@(() => _proveedorSeleccionado = null)">
+    <MudChip T="string" Color="@(_todosSeleccionado ? Color.Primary : Color.Default)"
+             Variant="@(_todosSeleccionado ? Variant.Filled : Variant.Outlined)"
+             OnClick="@(() => { _proveedorSeleccionado = null; _todosSeleccionado = true; })">
         Todos
     </MudChip>
     @foreach (var proveedor in _proveedores)
     {
         <MudChip T="string" Color="@(_proveedorSeleccionado == proveedor.Id ? Color.Primary : Color.Default)"
                  Variant="@(_proveedorSeleccionado == proveedor.Id ? Variant.Filled : Variant.Outlined)"
-                 OnClick="@(() => _proveedorSeleccionado = proveedor.Id)">
+                 OnClick="@(() => { _proveedorSeleccionado = proveedor.Id; _todosSeleccionado = false; })">
             @proveedor.Nombre
         </MudChip>
     }
@@ -85,6 +85,10 @@
 {
     <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
 }
+else if (!_filtroActivo)
+{
+    <MudAlert Severity="Severity.Info">Elige "Todos" o un proveedor para ver los productos.</MudAlert>
+}
 else if (!_productosFiltrados.Any())
 {
     <MudAlert Severity="Severity.Info">No hay productos que coincidan con estos filtros.</MudAlert>
@@ -98,7 +102,6 @@ else
             <MudTh>Necesario</MudTh>
             <MudTh>Máximo</MudTh>
             <MudTh>Precio</MudTh>
-            <MudTh>Acciones</MudTh>
         </HeaderContent>
         <RowTemplate>
             <MudTd DataLabel="Nombre">@context.Nombre</MudTd>
@@ -110,15 +113,6 @@ else
             </MudTd>
             <MudTd DataLabel="Máximo">@context.StockMaximo</MudTd>
             <MudTd DataLabel="Precio">@context.PrecioUnitario.ToString("F2") €</MudTd>
-            <MudTd DataLabel="Acciones">
-                <MudButton Variant="Variant.Filled"
-                           Color="Color.Secondary"
-                           Size="Size.Small"
-                           StartIcon="@Icons.Material.Filled.Edit"
-                           Href="@($"/productos/editar/{context.Id}")">
-                    Editar
-                </MudButton>
-            </MudTd>
         </RowTemplate>
     </MudTable>
 }
@@ -131,14 +125,19 @@ else
     private bool _generandoPedido;
     private string _busqueda = string.Empty;
     private int? _proveedorSeleccionado;
+    private bool _todosSeleccionado;
 
     private Proveedor? _proveedorSeleccionadoObj =>
         _proveedores.FirstOrDefault(p => p.Id == _proveedorSeleccionado);
 
+    private bool _filtroActivo => _todosSeleccionado || _proveedorSeleccionado is not null;
+
     private IEnumerable<Producto> _productosFiltrados =>
-        _productos
-            .Where(p => string.IsNullOrWhiteSpace(_busqueda) || p.Nombre.Contains(_busqueda, StringComparison.OrdinalIgnoreCase))
-            .Where(p => _proveedorSeleccionado is null || p.ProveedorId == _proveedorSeleccionado);
+        !_filtroActivo
+            ? []
+            : _productos
+                .Where(p => string.IsNullOrWhiteSpace(_busqueda) || p.Nombre.Contains(_busqueda, StringComparison.OrdinalIgnoreCase))
+                .Where(p => _proveedorSeleccionado is null || p.ProveedorId == _proveedorSeleccionado);
 
     protected override async Task OnInitializedAsync()
     {
