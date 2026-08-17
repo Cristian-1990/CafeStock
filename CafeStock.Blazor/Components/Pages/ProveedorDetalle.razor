@@ -126,8 +126,6 @@ else
         </MudButton>
     </div>
 
-    <MudText Typo="Typo.h5" Class="mb-2" Style="color:#3E2723;">Productos de este proveedor</MudText>
-
     @if (!_productos.Any())
     {
         <MudAlert Severity="Severity.Info">Este proveedor no tiene productos asignados todavía.</MudAlert>
@@ -159,12 +157,12 @@ else
         {
             @if (_productosFiltrados.Any(p => p.Unidad.Grupo() == GrupoUnidadMedida.Peso))
             {
-                <MudText Typo="Typo.subtitle1" Class="mb-2" Style="color:#3E2723;">Por peso</MudText>
+                <MudText Typo="Typo.subtitle1" Class="mb-2" Style="color:#3E2723;">@(EsPuchero ? "Uso cafetería" : "Por peso")</MudText>
                 @TablaProductos(_productosFiltrados.Where(p => p.Unidad.Grupo() == GrupoUnidadMedida.Peso))
             }
             @if (_productosFiltrados.Any(p => p.Unidad.Grupo() == GrupoUnidadMedida.Unidad))
             {
-                <MudText Typo="Typo.subtitle1" Class="mb-2 mt-6" Style="color:#3E2723;">Por unidad</MudText>
+                <MudText Typo="Typo.subtitle1" Class="mb-2 mt-6" Style="color:#3E2723;">@(EsPuchero ? "Venta al público" : "Por unidad")</MudText>
                 @TablaProductos(_productosFiltrados.Where(p => p.Unidad.Grupo() == GrupoUnidadMedida.Unidad))
             }
             @if (_productosFiltrados.Any(p => p.Unidad.Grupo() == GrupoUnidadMedida.SinClasificar))
@@ -216,23 +214,32 @@ else
         _productos.Where(p => string.IsNullOrWhiteSpace(_busquedaProductos) ||
                                p.Nombre.Contains(_busquedaProductos, StringComparison.OrdinalIgnoreCase));
 
+    // Puchero es el único proveedor con distinción entre uso interno de
+    // cafetería y venta al público; el resto de proveedores no manejan esta
+    // distinción, así que conservan los títulos genéricos "Por peso"/"Por unidad".
+    private bool EsPuchero =>
+        string.Equals(_proveedor?.Nombre, "Puchero", StringComparison.OrdinalIgnoreCase);
+
     // División puramente visual de la tabla de productos por tipo de unidad de
     // medida (ver CafeStock.Blazor.Services.UnidadMedidaExtensions). No tiene
     // ningún efecto sobre Compra/Factura.
+    //
+    // Solo aplica a Puchero: el resto de proveedores no manejan esta distinción
+    // y siempre muestran una única tabla, como antes.
     //
     // Se decide sobre el total de productos del proveedor (no sobre los
     // filtrados por búsqueda) para que las pestañas no aparezcan/desaparezcan
     // mientras el usuario escribe en el buscador.
     private bool _mostrarPestanasUnidad =>
-        _productos.Select(p => p.Unidad.Grupo()).Distinct().Count() > 1;
+        EsPuchero && _productos.Select(p => p.Unidad.Grupo()).Distinct().Count() > 1;
 
     private RenderFragment<IEnumerable<Producto>> TablaProductos => productos =>
         @<MudTable Items="productos" Hover="true" Striped="true" Elevation="2">
             <HeaderContent>
-                <MudTh>Nombre</MudTh>
-                <MudTh>Actual</MudTh>
-                <MudTh>Necesario</MudTh>
-                <MudTh>Precio</MudTh>
+                <MudTh Style="background-color:var(--mud-palette-primary); color:var(--mud-palette-primary-text);">Nombre</MudTh>
+                <MudTh Style="background-color:var(--mud-palette-primary); color:var(--mud-palette-primary-text);">Actual</MudTh>
+                <MudTh Style="background-color:var(--mud-palette-primary); color:var(--mud-palette-primary-text);">Necesario</MudTh>
+                <MudTh Style="background-color:var(--mud-palette-primary); color:var(--mud-palette-primary-text);">Precio</MudTh>
             </HeaderContent>
             <RowTemplate>
                 <MudTd DataLabel="Nombre">@context.Nombre</MudTd>

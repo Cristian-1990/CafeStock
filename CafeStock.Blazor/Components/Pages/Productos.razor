@@ -118,6 +118,12 @@ else
 }
 
 @code {
+    // Permite llegar a esta página ya filtrada por proveedor (p.ej. desde el botón
+    // "Ver productos" de Facturas), reutilizando el mismo filtro por chips de siempre.
+    [SupplyParameterFromQuery(Name = "proveedorId")]
+    [Parameter]
+    public int? ProveedorIdInicial { get; set; }
+
     private IEnumerable<Producto> _productos = [];
     private IEnumerable<Proveedor> _proveedores = [];
     private IEnumerable<Producto> _productosParaComprar = [];
@@ -144,6 +150,12 @@ else
         _proveedores = await ProveedorService.GetAllAsync();
         _productos = await ProductoService.GetAllAsync();
         _productosParaComprar = await ProductoService.GetProductosBajoMinimoAsync();
+
+        if (ProveedorIdInicial is not null)
+        {
+            _proveedorSeleccionado = ProveedorIdInicial;
+        }
+
         _cargando = false;
     }
 
