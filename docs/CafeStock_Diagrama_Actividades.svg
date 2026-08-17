@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1160" viewBox="0 0 900 1160" font-family="Segoe UI, Arial, sans-serif">
+  <defs>
+    <marker id="flecha" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#6D4C41"/>
+    </marker>
+  </defs>
+
+  <!-- Fondo -->
+  <rect x="0" y="0" width="900" height="1160" fill="#F5EFE6"/>
+
+  <!-- Titulo -->
+  <text x="450" y="34" text-anchor="middle" font-size="22" font-weight="bold" fill="#3E2723">CafeStock — Diagrama de Actividades</text>
+  <text x="450" y="54" text-anchor="middle" font-size="12" font-style="italic" fill="#6D4C41">Confirmar recepción de pedido (con recepción parcial)</text>
+
+  <!-- Inicio -->
+  <circle cx="450" cy="90" r="16" fill="#6D4C41"/>
+
+  <!-- Flechas del flujo principal -->
+  <line x1="450" y1="106" x2="450" y2="130" stroke="#6D4C41" stroke-width="1.8" marker-end="url(#flecha)"/>
+  <line x1="450" y1="180" x2="450" y2="230" stroke="#6D4C41" stroke-width="1.8" marker-end="url(#flecha)"/>
+  <line x1="450" y1="280" x2="450" y2="330" stroke="#6D4C41" stroke-width="1.8" marker-end="url(#flecha)"/>
+  <line x1="450" y1="380" x2="450" y2="430" stroke="#6D4C41" stroke-width="1.8" marker-end="url(#flecha)"/>
+  <line x1="450" y1="480" x2="450" y2="530" stroke="#6D4C41" stroke-width="1.8" marker-end="url(#flecha)"/>
+  <line x1="450" y1="580" x2="450" y2="630" stroke="#6D4C41" stroke-width="1.8" marker-end="url(#flecha)"/>
+
+  <!-- Paso 1 -->
+  <rect x="170" y="130" width="560" height="50" rx="14" fill="#F5EFE6" stroke="#6D4C41" stroke-width="2"/>
+  <text x="450" y="160" text-anchor="middle" font-size="13.5" fill="#2C2C2A">Trabajador introduce la cantidad recibida por producto</text>
+
+  <!-- Paso 2 -->
+  <rect x="170" y="230" width="560" height="50" rx="14" fill="#F5EFE6" stroke="#6D4C41" stroke-width="2"/>
+  <text x="450" y="260" text-anchor="middle" font-size="13.5" fill="#2C2C2A">Clic en "Confirmar recepción" (por proveedor)</text>
+
+  <!-- Paso 3 -->
+  <rect x="170" y="330" width="560" height="50" rx="14" fill="#F5EFE6" stroke="#6D4C41" stroke-width="2"/>
+  <text x="450" y="360" text-anchor="middle" font-size="13.5" fill="#2C2C2A">El sistema valida que la cantidad sea mayor que 0</text>
+
+  <!-- Paso 4 -->
+  <rect x="170" y="430" width="560" height="50" rx="14" fill="#F5EFE6" stroke="#6D4C41" stroke-width="2"/>
+  <text x="450" y="460" text-anchor="middle" font-size="13.5" fill="#2C2C2A">ConfirmarRecepcionAsync: suma la cantidad a StockActual</text>
+
+  <!-- Paso 5 -->
+  <rect x="170" y="530" width="560" height="50" rx="14" fill="#F5EFE6" stroke="#6D4C41" stroke-width="2"/>
+  <text x="450" y="560" text-anchor="middle" font-size="13.5" fill="#2C2C2A">Se recalcula el déficit: StockMáximo − StockActual</text>
+
+  <!-- Decision -->
+  <polygon points="450,630 620,685 450,740 280,685" fill="#C17817" fill-opacity="0.10" stroke="#6D4C41" stroke-width="2"/>
+  <text x="450" y="678" text-anchor="middle" font-size="13" fill="#2C2C2A">¿Cantidad recibida</text>
+  <text x="450" y="696" text-anchor="middle" font-size="13" fill="#2C2C2A">cubre el déficit?</text>
+
+  <!-- Rama Si -->
+  <line x1="280" y1="685" x2="225" y2="760" stroke="#6D4C41" stroke-width="1.8" marker-end="url(#flecha)"/>
+  <text x="245" y="715" font-size="13" font-weight="bold" fill="#3E2723">Sí</text>
+
+  <!-- Rama No -->
+  <line x1="620" y1="685" x2="675" y2="760" stroke="#6D4C41" stroke-width="1.8" marker-end="url(#flecha)"/>
+  <text x="638" y="715" font-size="13" font-weight="bold" fill="#3E2723">No</text>
+
+  <!-- Caja Si -->
+  <rect x="35" y="760" width="380" height="95" rx="14" fill="#F5EFE6" stroke="#6D4C41" stroke-width="2"/>
+  <text x="225" y="787" text-anchor="middle" font-size="13.5" font-weight="bold" fill="#2C2C2A">CantidadAComprar = 0</text>
+  <text x="225" y="807" text-anchor="middle" font-size="13" fill="#2C2C2A">→ el producto sale de la</text>
+  <text x="225" y="827" text-anchor="middle" font-size="13" fill="#2C2C2A">lista de pendientes de pedido</text>
+
+  <!-- Caja No -->
+  <rect x="485" y="760" width="380" height="95" rx="14" fill="#F5EFE6" stroke="#6D4C41" stroke-width="2"/>
+  <text x="675" y="787" text-anchor="middle" font-size="13.5" font-weight="bold" fill="#2C2C2A">CantidadAComprar &gt; 0</text>
+  <text x="675" y="807" text-anchor="middle" font-size="13" fill="#2C2C2A">→ el producto permanece en la lista</text>
+  <text x="675" y="827" text-anchor="middle" font-size="13" fill="#2C2C2A">con el déficit recalculado</text>
+
+  <!-- Reconvergencia -->
+  <line x1="225" y1="855" x2="435" y2="900" stroke="#6D4C41" stroke-width="1.8" marker-end="url(#flecha)"/>
+  <line x1="675" y1="855" x2="465" y2="900" stroke="#6D4C41" stroke-width="1.8" marker-end="url(#flecha)"/>
+  <polygon points="450,885 465,900 450,915 435,900" fill="#F5EFE6" stroke="#6D4C41" stroke-width="1.5"/>
+  <line x1="450" y1="915" x2="450" y2="955" stroke="#6D4C41" stroke-width="1.8" marker-end="url(#flecha)"/>
+
+  <!-- Paso final -->
+  <rect x="170" y="955" width="560" height="70" rx="14" fill="#F5EFE6" stroke="#6D4C41" stroke-width="2"/>
+  <text x="450" y="985" text-anchor="middle" font-size="13.5" fill="#2C2C2A">Se registra la Compra + LineaCompra</text>
+  <text x="450" y="1005" text-anchor="middle" font-size="13.5" fill="#2C2C2A">y se confirma con un Snackbar</text>
+
+  <line x1="450" y1="1025" x2="450" y2="1046" stroke="#6D4C41" stroke-width="1.8" marker-end="url(#flecha)"/>
+
+  <!-- Fin -->
+  <circle cx="450" cy="1070" r="18" fill="none" stroke="#6D4C41" stroke-width="2"/>
+  <circle cx="450" cy="1070" r="10" fill="#6D4C41"/>
+
+  <!-- Leyenda -->
+  <rect x="60" y="1110" width="780" height="40" fill="#F5EFE6" stroke="#C17817" stroke-width="1.5"/>
+  <text x="450" y="1134" text-anchor="middle" font-size="13" fill="#3E2723">
+    ● = inicio&#160;&#160;&#160;|&#160;&#160;&#160;◎ = fin&#160;&#160;&#160;|&#160;&#160;&#160;rectángulo redondeado = acción&#160;&#160;&#160;|&#160;&#160;&#160;rombo = decisión / fusión de ramas
+  </text>
+</svg>

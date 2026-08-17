@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="800" viewBox="0 0 1100 800" font-family="Segoe UI, Arial, sans-serif">
+  <defs>
+    <marker id="flecha" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#6D4C41"/>
+    </marker>
+  </defs>
+
+  <!-- Fondo -->
+  <rect x="0" y="0" width="1100" height="800" fill="#F5EFE6"/>
+
+  <!-- Titulo -->
+  <text x="550" y="30" text-anchor="middle" font-size="22" font-weight="bold" fill="#3E2723">CafeStock — Diagrama de Estados</text>
+  <text x="550" y="50" text-anchor="middle" font-size="12" font-style="italic" fill="#6D4C41">Ciclo de vida de Producto durante el proceso de reposición</text>
+
+  <!-- ===================== TRANSICIONES ===================== -->
+  <!-- Suficiente -> Bajo -->
+  <line x1="460" y1="185" x2="330" y2="510" stroke="#6D4C41" stroke-width="1.8" marker-end="url(#flecha)"/>
+  <text x="395" y="335" text-anchor="middle" font-size="12.5" fill="#2C2C2A">baja el stock</text>
+  <text x="395" y="352" text-anchor="middle" font-size="10.5" font-style="italic" fill="#6D4C41">(StockActual &lt; StockMáximo)</text>
+
+  <!-- Bajo -> PedidoGenerado -->
+  <line x1="390" y1="557" x2="730" y2="545" stroke="#6D4C41" stroke-width="1.8" marker-end="url(#flecha)"/>
+  <text x="560" y="536" text-anchor="middle" font-size="12.5" fill="#2C2C2A">se genera el pedido (Lista de la compra)</text>
+
+  <!-- PedidoGenerado -> Suficiente -->
+  <line x1="820" y1="510" x2="640" y2="185" stroke="#6D4C41" stroke-width="1.8" marker-end="url(#flecha)"/>
+  <text x="730" y="335" text-anchor="middle" font-size="12.5" fill="#2C2C2A">recepción COMPLETA</text>
+  <text x="730" y="352" text-anchor="middle" font-size="10.5" font-style="italic" fill="#6D4C41">(cantidad recibida = déficit)</text>
+
+  <!-- PedidoGenerado -> Bajo (parcial, curva) -->
+  <path d="M730,580 Q560,662 390,600" fill="none" stroke="#6D4C41" stroke-width="1.8" marker-end="url(#flecha)"/>
+  <text x="560" y="678" text-anchor="middle" font-size="12.5" fill="#2C2C2A">recepción PARCIAL</text>
+  <text x="560" y="695" text-anchor="middle" font-size="10.5" font-style="italic" fill="#6D4C41">(cantidad recibida &lt; déficit)</text>
+
+  <!-- ===================== ESTADO INICIAL ===================== -->
+  <circle cx="550" cy="55" r="14" fill="#6D4C41"/>
+  <line x1="550" y1="69" x2="550" y2="113" stroke="#6D4C41" stroke-width="1.8" marker-end="url(#flecha)"/>
+
+  <!-- ===================== ESTADO: Stock suficiente ===================== -->
+  <g>
+    <rect x="410" y="115" width="280" height="70" rx="20" fill="#F5EFE6" stroke="#6D4C41" stroke-width="2"/>
+    <text x="550" y="147" text-anchor="middle" font-size="15" font-weight="bold" fill="#3E2723">Stock suficiente</text>
+    <text x="550" y="167" text-anchor="middle" font-size="10.5" font-style="italic" fill="#6D4C41">(StockActual = StockMáximo)</text>
+  </g>
+
+  <!-- ===================== ESTADO: Stock bajo ===================== -->
+  <g>
+    <rect x="70" y="510" width="320" height="95" rx="20" fill="#F5EFE6" stroke="#6D4C41" stroke-width="2"/>
+    <text x="230" y="538" text-anchor="middle" font-size="15" font-weight="bold" fill="#3E2723">Stock bajo —</text>
+    <text x="230" y="558" text-anchor="middle" font-size="15" font-weight="bold" fill="#3E2723">pendiente de pedido</text>
+    <text x="230" y="578" text-anchor="middle" font-size="10.5" font-style="italic" fill="#6D4C41">(StockActual &lt; StockMáximo)</text>
+  </g>
+
+  <!-- ===================== ESTADO: Pedido generado ===================== -->
+  <g>
+    <rect x="730" y="510" width="280" height="70" rx="20" fill="#F5EFE6" stroke="#6D4C41" stroke-width="2"/>
+    <text x="870" y="542" text-anchor="middle" font-size="15" font-weight="bold" fill="#3E2723">Pedido generado</text>
+    <text x="870" y="562" text-anchor="middle" font-size="10.5" font-style="italic" fill="#6D4C41">(paso del proceso; no es un campo persistido)</text>
+  </g>
+
+  <!-- ===================== LEYENDA ===================== -->
+  <rect x="60" y="730" width="980" height="42" fill="#F5EFE6" stroke="#C17817" stroke-width="1.5"/>
+  <text x="550" y="756" text-anchor="middle" font-size="13" fill="#3E2723">
+    ● = estado inicial&#160;&#160;&#160;|&#160;&#160;&#160;rectángulo redondeado = estado&#160;&#160;&#160;|&#160;&#160;&#160;cada transición está etiquetada con el evento que la dispara
+  </text>
+</svg>

@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1250" height="900" viewBox="0 0 1250 900" font-family="Segoe UI, Arial, sans-serif">
+  <!-- Fondo -->
+  <rect x="0" y="0" width="1250" height="900" fill="#F5EFE6"/>
+
+  <!-- Titulo -->
+  <text x="625" y="34" text-anchor="middle" font-size="22" font-weight="bold" fill="#3E2723">CafeStock — Diagrama de Despliegue</text>
+  <text x="625" y="54" text-anchor="middle" font-size="12" font-style="italic" fill="#6D4C41">Infraestructura física real: un Raspberry Pi 5 sirve la app a las tablets de la barra a través del router</text>
+
+  <!-- ===================== LINEAS DE COMUNICACION (debajo de los nodos) ===================== -->
+  <!-- Tablet 1 -> Router -->
+  <line x1="258" y1="194" x2="570" y2="334" stroke="#6D4C41" stroke-width="1.8"/>
+  <rect x="300" y="238" width="128" height="16" fill="#F5EFE6"/>
+  <text x="364" y="250" text-anchor="middle" font-size="11" font-style="italic" fill="#3E2723">HTTP / SignalR (Wi-Fi)</text>
+
+  <!-- Tablet 2 -> Router -->
+  <line x1="618" y1="194" x2="621" y2="334" stroke="#6D4C41" stroke-width="1.8"/>
+  <rect x="628" y="256" width="128" height="16" fill="#F5EFE6"/>
+  <text x="692" y="268" font-size="11" font-style="italic" fill="#3E2723">HTTP / SignalR (Wi-Fi)</text>
+
+  <!-- Tablet 3 -> Router -->
+  <line x1="978" y1="194" x2="672" y2="334" stroke="#6D4C41" stroke-width="1.8"/>
+  <rect x="812" y="238" width="128" height="16" fill="#F5EFE6"/>
+  <text x="876" y="250" text-anchor="middle" font-size="11" font-style="italic" fill="#3E2723">HTTP / SignalR (Wi-Fi)</text>
+
+  <!-- Router -> Raspberry Pi 5 -->
+  <line x1="621" y1="414" x2="621" y2="538" stroke="#6D4C41" stroke-width="1.8"/>
+  <rect x="631" y="466" width="168" height="16" fill="#F5EFE6"/>
+  <text x="635" y="478" font-size="11" font-style="italic" fill="#3E2723">HTTP / SignalR (red local)</text>
+
+  <!-- ===================== NODO: Tablet 1 ===================== -->
+  <g>
+    <polygon points="168,104 182,90 362,90 348,104" fill="#C17817" fill-opacity="0.12" stroke="#6D4C41" stroke-width="1.5"/>
+    <polygon points="348,104 362,90 362,180 348,194" fill="#6D4C41" fill-opacity="0.15" stroke="#6D4C41" stroke-width="1.5"/>
+    <rect x="168" y="104" width="180" height="90" fill="#F5EFE6" stroke="#6D4C41" stroke-width="2"/>
+    <text x="258" y="120" text-anchor="middle" font-size="10" font-style="italic" fill="#6D4C41">«device»</text>
+    <text x="258" y="138" text-anchor="middle" font-size="14" font-weight="bold" fill="#3E2723">Tablet #1</text>
+    <rect x="183" y="150" width="150" height="36" fill="#F5EFE6" stroke="#C17817" stroke-width="1.5"/>
+    <text x="258" y="172" text-anchor="middle" font-size="11" fill="#2C2C2A">Navegador (Chrome)</text>
+  </g>
+
+  <!-- ===================== NODO: Tablet 2 ===================== -->
+  <g>
+    <polygon points="528,104 542,90 722,90 708,104" fill="#C17817" fill-opacity="0.12" stroke="#6D4C41" stroke-width="1.5"/>
+    <polygon points="708,104 722,90 722,180 708,194" fill="#6D4C41" fill-opacity="0.15" stroke="#6D4C41" stroke-width="1.5"/>
+    <rect x="528" y="104" width="180" height="90" fill="#F5EFE6" stroke="#6D4C41" stroke-width="2"/>
+    <text x="618" y="120" text-anchor="middle" font-size="10" font-style="italic" fill="#6D4C41">«device»</text>
+    <text x="618" y="138" text-anchor="middle" font-size="14" font-weight="bold" fill="#3E2723">Tablet #2</text>
+    <rect x="543" y="150" width="150" height="36" fill="#F5EFE6" stroke="#C17817" stroke-width="1.5"/>
+    <text x="618" y="172" text-anchor="middle" font-size="11" fill="#2C2C2A">Navegador (Chrome)</text>
+  </g>
+
+  <!-- ===================== NODO: Tablet 3 ===================== -->
+  <g>
+    <polygon points="888,104 902,90 1082,90 1068,104" fill="#C17817" fill-opacity="0.12" stroke="#6D4C41" stroke-width="1.5"/>
+    <polygon points="1068,104 1082,90 1082,180 1068,194" fill="#6D4C41" fill-opacity="0.15" stroke="#6D4C41" stroke-width="1.5"/>
+    <rect x="888" y="104" width="180" height="90" fill="#F5EFE6" stroke="#6D4C41" stroke-width="2"/>
+    <text x="978" y="120" text-anchor="middle" font-size="10" font-style="italic" fill="#6D4C41">«device»</text>
+    <text x="978" y="138" text-anchor="middle" font-size="14" font-weight="bold" fill="#3E2723">Tablet #3</text>
+    <rect x="903" y="150" width="150" height="36" fill="#F5EFE6" stroke="#C17817" stroke-width="1.5"/>
+    <text x="978" y="172" text-anchor="middle" font-size="11" fill="#2C2C2A">Navegador (Chrome)</text>
+  </g>
+
+  <!-- ===================== NODO: Router ===================== -->
+  <g>
+    <polygon points="541,334 555,320 715,320 701,334" fill="#C17817" fill-opacity="0.12" stroke="#6D4C41" stroke-width="1.5"/>
+    <polygon points="701,334 715,320 715,400 701,414" fill="#6D4C41" fill-opacity="0.15" stroke="#6D4C41" stroke-width="1.5"/>
+    <rect x="541" y="334" width="160" height="80" fill="#F5EFE6" stroke="#6D4C41" stroke-width="2"/>
+    <text x="621" y="352" text-anchor="middle" font-size="10" font-style="italic" fill="#6D4C41">«device»</text>
+    <text x="621" y="372" text-anchor="middle" font-size="14" font-weight="bold" fill="#3E2723">Router</text>
+    <text x="621" y="392" text-anchor="middle" font-size="10" font-style="italic" fill="#6D4C41">(Wi-Fi / Ethernet)</text>
+  </g>
+
+  <!-- ===================== NODO: Raspberry Pi 5 ===================== -->
+  <g>
+    <polygon points="451,538 469,520 809,520 791,538" fill="#C17817" fill-opacity="0.12" stroke="#6D4C41" stroke-width="1.5"/>
+    <polygon points="791,538 809,520 809,740 791,758" fill="#6D4C41" fill-opacity="0.15" stroke="#6D4C41" stroke-width="1.5"/>
+    <rect x="451" y="538" width="340" height="220" fill="#F5EFE6" stroke="#6D4C41" stroke-width="2"/>
+    <text x="621" y="556" text-anchor="middle" font-size="10" font-style="italic" fill="#6D4C41">«device»</text>
+    <text x="621" y="578" text-anchor="middle" font-size="16" font-weight="bold" fill="#3E2723">Raspberry Pi 5</text>
+    <rect x="471" y="596" width="300" height="50" fill="#F5EFE6" stroke="#C17817" stroke-width="1.5"/>
+    <text x="621" y="618" text-anchor="middle" font-size="10" font-style="italic" fill="#6D4C41">«artifact»</text>
+    <text x="621" y="634" text-anchor="middle" font-size="12.5" fill="#2C2C2A">CafeStock.Blazor (Kestrel :5294)</text>
+    <rect x="471" y="662" width="300" height="50" fill="#F5EFE6" stroke="#C17817" stroke-width="1.5"/>
+    <text x="621" y="684" text-anchor="middle" font-size="10" font-style="italic" fill="#6D4C41">«artifact»</text>
+    <text x="621" y="700" text-anchor="middle" font-size="12.5" fill="#2C2C2A">cafestock.db (SQLite)</text>
+    <text x="621" y="732" text-anchor="middle" font-size="10" font-style="italic" fill="#6D4C41">Raspberry Pi OS (Linux)</text>
+  </g>
+
+  <!-- ===================== LEYENDA ===================== -->
+  <rect x="70" y="830" width="1110" height="42" fill="#F5EFE6" stroke="#C17817" stroke-width="1.5"/>
+  <text x="625" y="856" text-anchor="middle" font-size="13" fill="#3E2723">
+    «device» = nodo físico (borde marrón)&#160;&#160;&#160;|&#160;&#160;&#160;«artifact» = componente software desplegado (borde ámbar)&#160;&#160;&#160;|&#160;&#160;&#160;las líneas son rutas de comunicación de red
+  </text>
+</svg>
