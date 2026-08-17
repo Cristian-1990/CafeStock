@@ -133,7 +133,10 @@ else
     protected override async Task OnInitializedAsync()
     {
         _proveedores = await ProveedorService.GetAllAsync();
-        _productos = (await ProductoService.GetAllAsync()).ToList();
+        // Los productos con seguimiento individual (ver Producto.SeguimientoIndividual) no
+        // se cuentan aquí: su stock se controla desde "Vender", el recuento manual semanal
+        // no tiene sentido para ellos.
+        _productos = (await ProductoService.GetAllAsync()).Where(p => !p.SeguimientoIndividual).ToList();
         _cargando = false;
     }
 

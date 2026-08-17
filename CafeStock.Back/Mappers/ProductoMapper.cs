@@ -17,6 +17,7 @@ public static class ProductoMapper
            ImagenUrl = producto.ImagenUrl,
            ProveedorId = producto.ProveedorId,
            PrecioUnitario = producto.PrecioUnitario,
+           SeguimientoIndividual = producto.SeguimientoIndividual,
        };
     }
 
@@ -32,7 +33,8 @@ public static class ProductoMapper
             Descripcion = entity.Descripcion,
             ImagenUrl = entity.ImagenUrl,
             ProveedorId = entity.ProveedorId,
-            PrecioUnitario = entity.PrecioUnitario
+            PrecioUnitario = entity.PrecioUnitario,
+            SeguimientoIndividual = entity.SeguimientoIndividual
         };
     }
 }

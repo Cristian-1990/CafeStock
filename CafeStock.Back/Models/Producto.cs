@@ -15,4 +15,12 @@ public record Producto
     public decimal PrecioUnitario { get; set; }
     public int CantidadAComprar => Math.Max(0, StockMaximo - StockActual);//Prodpiedad autocalculada
 
+    /// <summary>
+    /// Activa el registro de venta/consumo individual (ver RegistroCafe y la pantalla
+    /// Vender): en vez de recontarse semanalmente en Realizar Stock, su StockActual baja de
+    /// uno en uno según se van registrando ventas. Pensado para casos muy concretos (los
+    /// cafés); el resto de productos sigue funcionando exactamente igual que siempre.
+    /// </summary>
+    public bool SeguimientoIndividual { get; set; }
+
 };

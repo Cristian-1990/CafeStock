@@ -1,5 +1,6 @@
 ﻿using CafeStock.Back.Models;
 using CafeStock.Back.Repositories.Productos.EfCore;
+using CafeStock.Back.Repositories.Proveedores.EfCore;
 using FluentAssertions;
 
 namespace CafeStock.Tests.Repositories;
@@ -160,5 +161,54 @@ public class ProductosEfRepositoryTest
         // Assert
         urgentes.Should().HaveCount(1);
         urgentes.First().Nombre.Should().Be("Café");
+    }
+
+    [Test]
+    public async Task Initialize_ProveedorPucheroConDosBrasil_ActivaSeguimientoIndividualYRenombra()
+    {
+        // Arrange: los dos cafés de Puchero, tal y como están guardados hoy (mismo nombre,
+        // distinta unidad). Se crean con instancias de repositorio "de usar y tirar", distintas
+        // de _repository, para que su propio InitializeAsync no dispare la migración antes de
+        // que estos datos existan (igual que en un arranque real: los datos ya están en el
+        // .db, y la migración corre en la primera llamada tras el arranque de la app).
+        var proveedoresRepo = new ProveedoresEfRepository(_connectionString);
+        var puchero = await proveedoresRepo.CreateAsync(new Proveedor { Nombre = "Puchero" });
+        var productosSeed = new ProductosEfRepository(_connectionString);
+        await productosSeed.CreateAsync(new Producto
+        {
+            Nombre = "Brasil", Unidad = UnidadMedida.Kg, StockActual = 12, StockMaximo = 12, ProveedorId = puchero.Value.Id
+        });
+        await productosSeed.CreateAsync(new Producto
+        {
+            Nombre = "Brasil", Unidad = UnidadMedida.Unidades, StockActual = 4, StockMaximo = 4, ProveedorId = puchero.Value.Id
+        });
+
+        // Act: _repository (fresca, _initialized aún en false) dispara la migración en su
+        // primera llamada — como al arrancar la app de verdad.
+        var productos = (await _repository.GetAllAsync()).ToList();
+
+        // Assert
+        var grano = productos.Single(p => p.Unidad == UnidadMedida.Kg);
+        grano.Nombre.Should().Be("Brasil — Grano 1kg");
+        grano.SeguimientoIndividual.Should().BeTrue();
+
+        var cuarto = productos.Single(p => p.Unidad == UnidadMedida.Unidades);
+        cuarto.Nombre.Should().Be("Brasil — Cuarto 250g");
+        cuarto.SeguimientoIndividual.Should().BeTrue();
+    }
+
+    [Test]
+    public async Task Initialize_SinProveedorPuchero_NoActivaNiRenombraNada()
+    {
+        // Arrange: un producto que por casualidad también se llama "Brasil" pero no es de
+        // Puchero (o Puchero no existe todavía) no debe verse afectado
+        await _repository.CreateAsync(new Producto { Nombre = "Brasil", StockActual = 1, StockMaximo = 1 });
+
+        // Act
+        var productos = (await _repository.GetAllAsync()).ToList();
+
+        // Assert
+        productos.Single().Nombre.Should().Be("Brasil");
+        productos.Single().SeguimientoIndividual.Should().BeFalse();
     }
 }

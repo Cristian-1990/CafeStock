@@ -1,0 +1,138 @@
+@page "/vender"
+@inject IProductoService ProductoService
+@inject IRegistroCafeService RegistroCafeService
+@inject ISnackbar Snackbar
+
+<PageTitle>Vender</PageTitle>
+
+<div class="mb-4" style="background-color:rgba(109,76,65,0.10); border-radius:12px; padding:16px 24px; display:inline-block;">
+    <MudText Typo="Typo.h4" Style="color:#3E2723; margin:0;">Vender</MudText>
+</div>
+
+@if (_cargando)
+{
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
+}
+else if (!_productos.Any())
+{
+    <MudAlert Severity="Severity.Info">Todavía no hay ningún producto con seguimiento individual activado.</MudAlert>
+}
+else
+{
+    <MudPaper Class="pa-6 mb-6" Elevation="2" Style="max-width:500px;">
+        <MudSelect T="int?" @bind-Value="_productoId"
+                   Label="Producto"
+                   Variant="Variant.Outlined"
+                   Class="mb-4">
+            @foreach (var producto in _productos)
+            {
+                <MudSelectItem T="int?" Value="@producto.Id">@producto.Nombre (@producto.StockActual disponibles)</MudSelectItem>
+            }
+        </MudSelect>
+
+        <MudTextField @bind-Value="_nombreTrabajador"
+                      Label="Nombre del trabajador"
+                      Variant="Variant.Outlined"
+                      Immediate="true"
+                      Class="mb-4"/>
+
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.LocalCafe"
+                   Disabled="@(!PuedeRegistrar || _registrando)"
+                   OnClick="RegistrarAsync">
+            @(_registrando ? "Registrando..." : "Registrar")
+        </MudButton>
+    </MudPaper>
+
+    <MudExpansionPanels>
+        <MudExpansionPanel Text="Historial">
+            @if (_cargandoHistorial)
+            {
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Small"/>
+            }
+            else if (!_historial.Any())
+            {
+                <MudText Typo="Typo.body2" Style="color:#9E9E9E; font-style:italic;">Todavía no se ha registrado ninguna venta.</MudText>
+            }
+            else
+            {
+                <MudTable Items="_historial" Hover="true" Dense="true" Striped="true" Elevation="0">
+                    <HeaderContent>
+                        <MudTh>Producto</MudTh>
+                        <MudTh>Trabajador</MudTh>
+                        <MudTh>Fecha</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Producto">@(context.ProductoNombre ?? "—")</MudTd>
+                        <MudTd DataLabel="Trabajador">@context.NombreTrabajador</MudTd>
+                        <MudTd DataLabel="Fecha">@context.Fecha.ToString("dd/MM/yyyy HH:mm")</MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+        </MudExpansionPanel>
+    </MudExpansionPanels>
+}
+
+@code {
+    private List<Producto> _productos = [];
+    private List<RegistroCafe> _historial = [];
+    private int? _productoId;
+    private string _nombreTrabajador = string.Empty;
+    private bool _cargando = true;
+    private bool _cargandoHistorial = true;
+    private bool _registrando;
+
+    private bool PuedeRegistrar => _productoId is not null && !string.IsNullOrWhiteSpace(_nombreTrabajador);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarProductosAsync();
+        _cargando = false;
+
+        await CargarHistorialAsync();
+    }
+
+    private async Task CargarProductosAsync()
+    {
+        // Todos los productos con seguimiento individual, sin depender de nombres concretos:
+        // el día que se dé de alta otro origen de café (u otro producto con este flag),
+        // aparece aquí solo.
+        _productos = (await ProductoService.GetAllAsync()).Where(p => p.SeguimientoIndividual).ToList();
+    }
+
+    private async Task CargarHistorialAsync()
+    {
+        _cargandoHistorial = true;
+        _historial = (await RegistroCafeService.GetUltimosAsync()).ToList();
+        _cargandoHistorial = false;
+    }
+
+    private async Task RegistrarAsync()
+    {
+        if (!PuedeRegistrar) return;
+
+        _registrando = true;
+        try
+        {
+            var resultado = await RegistroCafeService.RegistrarVentaAsync(_productoId!.Value, _nombreTrabajador);
+            if (resultado.IsSuccess)
+            {
+                Snackbar.Add("Venta registrada", Severity.Success);
+                // Solo se limpia el nombre: el producto se queda seleccionado para que el
+                // siguiente trabajador pueda registrar la suya sin fricción.
+                _nombreTrabajador = string.Empty;
+                await CargarProductosAsync();
+                await CargarHistorialAsync();
+            }
+            else
+            {
+                Snackbar.Add(resultado.Error.Message, Severity.Error);
+            }
+        }
+        finally
+        {
+            _registrando = false;
+        }
+    }
+}

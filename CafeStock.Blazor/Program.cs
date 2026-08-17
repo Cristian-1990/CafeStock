@@ -2,10 +2,12 @@ using CafeStock.Back.Infrastructure;
 using CafeStock.Back.Repositories.Compras.Base;
 using CafeStock.Back.Repositories.Productos.Base;
 using CafeStock.Back.Repositories.Proveedores.Base;
+using CafeStock.Back.Repositories.RegistrosCafe.Base;
 using CafeStock.Back.Services.Compras;
 using CafeStock.Back.Services.Facturas;
 using CafeStock.Back.Services.Productos;
 using CafeStock.Back.Services.Proveedores;
+using CafeStock.Back.Services.RegistrosCafe;
 using ApexCharts;
 using CafeStock.Blazor.Components;
 using MudBlazor.Services;
@@ -64,6 +66,8 @@ try
     builder.Services.AddScoped<ICompraService, CafeStock.Back.Services.Compras.CompraService>();
     builder.Services.AddScoped<CafeStock.Back.Validators.Common.IValidador<CafeStock.Back.Models.Compra>, CafeStock.Back.Validators.Compras.ValidadorCompra>();
     builder.Services.AddScoped<IFacturaService, CafeStock.Back.Services.Facturas.FacturaService>();
+    builder.Services.AddSingleton(provider.GetService<IRegistroCafeRepository>()!);
+    builder.Services.AddScoped<IRegistroCafeService, CafeStock.Back.Services.RegistrosCafe.RegistroCafeService>();
 
     var app = builder.Build();
 

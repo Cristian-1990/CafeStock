@@ -28,6 +28,8 @@ public class ProductosEfRepository : IProductoRepository
         using var context = CreateContext();
         await context.EnsureCreatedAsync();
         await context.AsegurarColumnaPrecioUnitarioAsync();
+        await context.AsegurarColumnaSeguimientoIndividualAsync();
+        await context.AsegurarSeguimientoIndividualCafePucheroAsync();
         _initialized = true;
     }
     
@@ -70,6 +72,11 @@ public class ProductosEfRepository : IProductoRepository
         }
     }
 
+    /// <summary>
+    /// No copia SeguimientoIndividual a propósito: es un interruptor que solo activa la
+    /// migración de datos (nunca el formulario de edición, que ni lo muestra), así que
+    /// UpdateAsync no debe poder resetearlo sin querer al editar cualquier otro campo.
+    /// </summary>
     public async Task<Result<Producto, DomainError>> UpdateAsync(int id, Producto producto)
     {
         await InitializeAsync();

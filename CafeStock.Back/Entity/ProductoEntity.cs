@@ -14,4 +14,5 @@ public class ProductoEntity
     public int? ProveedorId { get; set; }
     public ProveedorEntity? Proveedor { get; set; }
     public decimal PrecioUnitario { get; set; }
+    public bool SeguimientoIndividual { get; set; }
 }

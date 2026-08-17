@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using CafeStock.Back.Models;
+using Microsoft.EntityFrameworkCore;
 namespace CafeStock.Back.Entity;
 /// <summary>
 /// Hereda de dbContext para tener todas sus funcionalidades
@@ -16,6 +17,7 @@ public class AppDbContext : DbContext
     public DbSet<ProveedorEntity> Proveedores { get; set; } = null!;
     public DbSet<CompraEntity> Compras { get; set; } = null!;
     public DbSet<LineaCompraEntity> LineasCompra { get; set; } = null!;
+    public DbSet<RegistroCafeEntity> RegistrosCafe { get; set; } = null!;
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) //
     {
@@ -55,6 +57,14 @@ public class AppDbContext : DbContext
             .HasOne(l => l.Producto)
             .WithMany()
             .HasForeignKey(l => l.ProductoId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Los registros de venta/consumo son historial ligado a su producto: si se elimina
+        // el producto, sus registros se eliminan con él (igual que LineaCompra).
+        modelBuilder.Entity<RegistroCafeEntity>()
+            .HasOne(r => r.Producto)
+            .WithMany()
+            .HasForeignKey(r => r.ProductoId)
             .OnDelete(DeleteBehavior.Cascade);
     }
 
@@ -112,6 +122,13 @@ public class AppDbContext : DbContext
     /// </summary>
     public Task AsegurarColumnaNotasCompraAsync() =>
         AsegurarColumnaAsync("Compras", "Notas", "TEXT NOT NULL DEFAULT ''");
+
+    /// <summary>
+    /// Igual que las anteriores, para el campo SeguimientoIndividual de Producto, añadido
+    /// después de que ya hubiera productos en producción (todos arrancan en false).
+    /// </summary>
+    public Task AsegurarColumnaSeguimientoIndividualAsync() =>
+        AsegurarColumnaAsync("Productos", "SeguimientoIndividual", "INTEGER NOT NULL DEFAULT 0");
 
     private async Task AsegurarColumnaAsync(string tabla, string columna, string definicionColumna)
     {
@@ -191,5 +208,70 @@ public class AppDbContext : DbContext
         {
             await conexion.CloseAsync();
         }
+    }
+
+    /// <summary>
+    /// Migración idempotente: crea la tabla RegistrosCafe si no existe todavía (bases de
+    /// datos anteriores a esta funcionalidad). CREATE TABLE IF NOT EXISTS ya es idempotente
+    /// por sí solo.
+    /// </summary>
+    public async Task AsegurarTablaRegistrosCafeAsync()
+    {
+        var conexion = Database.GetDbConnection();
+        await conexion.OpenAsync();
+        try
+        {
+            await using var comando = conexion.CreateCommand();
+            comando.CommandText = """
+                CREATE TABLE IF NOT EXISTS RegistrosCafe (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ProductoId INTEGER NOT NULL,
+                    NombreTrabajador TEXT NOT NULL,
+                    Fecha TEXT NOT NULL,
+                    FOREIGN KEY (ProductoId) REFERENCES Productos(Id) ON DELETE CASCADE
+                )
+                """;
+            await comando.ExecuteNonQueryAsync();
+        }
+        finally
+        {
+            await conexion.CloseAsync();
+        }
+    }
+
+    /// <summary>
+    /// Migración de datos, idempotente y de un solo uso: activa SeguimientoIndividual en los
+    /// dos cafés de Puchero (hasta ahora ambos guardados como "Brasil", diferenciados solo por
+    /// Unidad) y les da un nombre descriptivo. Solo actúa mientras el nombre siga siendo
+    /// "Brasil": una vez renombrados, no vuelve a encontrar candidatos y no hace nada en
+    /// arranques posteriores. Requiere que la columna SeguimientoIndividual ya exista
+    /// (llamar después de AsegurarColumnaSeguimientoIndividualAsync).
+    /// </summary>
+    public async Task AsegurarSeguimientoIndividualCafePucheroAsync()
+    {
+        var puchero = await Proveedores.FirstOrDefaultAsync(p => p.Nombre == "Puchero");
+        if (puchero is null) return;
+
+        var candidatos = await Productos
+            .Where(p => p.ProveedorId == puchero.Id && p.Nombre == "Brasil")
+            .ToListAsync();
+        if (!candidatos.Any()) return;
+
+        foreach (var producto in candidatos)
+        {
+            switch (producto.Unidad)
+            {
+                case UnidadMedida.Kg:
+                    producto.Nombre = "Brasil — Grano 1kg";
+                    producto.SeguimientoIndividual = true;
+                    break;
+                case UnidadMedida.Unidades:
+                    producto.Nombre = "Brasil — Cuarto 250g";
+                    producto.SeguimientoIndividual = true;
+                    break;
+            }
+        }
+
+        await SaveChangesAsync();
     }
 }

@@ -5,10 +5,13 @@ using CafeStock.Back.Repositories.Productos.Base;
 using CafeStock.Back.Repositories.Productos.EfCore;
 using CafeStock.Back.Repositories.Proveedores.Base;
 using CafeStock.Back.Repositories.Proveedores.EfCore;
+using CafeStock.Back.Repositories.RegistrosCafe.Base;
+using CafeStock.Back.Repositories.RegistrosCafe.EfCore;
 using CafeStock.Back.Services.Compras;
 using CafeStock.Back.Services.Facturas;
 using CafeStock.Back.Services.Productos;
 using CafeStock.Back.Services.Proveedores;
+using CafeStock.Back.Services.RegistrosCafe;
 using CafeStock.Back.Validators.Common;
 using CafeStock.Back.Validators.Compras;
 using CafeStock.Back.Validators.Productos;
@@ -45,6 +48,8 @@ public static class DependenciesProvider
             new ProveedoresEfRepository(connectionString));
         services.AddSingleton<ICompraRepository>(sp =>
             new ComprasEfRepository(connectionString));
+        services.AddSingleton<IRegistroCafeRepository>(sp =>
+            new RegistrosCafeEfRepository(connectionString));
     }
 
     private static void RegisterServices(IServiceCollection services)
@@ -53,5 +58,6 @@ public static class DependenciesProvider
         services.AddScoped<IProveedorService, ProveedorService>();
         services.AddScoped<ICompraService, CompraService>();
         services.AddScoped<IFacturaService, FacturaService>();
+        services.AddScoped<IRegistroCafeService, RegistroCafeService>();
     }
 }
