@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1250" height="920" viewBox="0 0 1250 920" font-family="Segoe UI, Arial, sans-serif">
+  <!-- Fondo -->
+  <rect x="0" y="0" width="1250" height="920" fill="#F5EFE6"/>
+
+  <!-- Título -->
+  <text x="625" y="38" text-anchor="middle" font-size="22" font-weight="bold" fill="#3E2723">CafeStock — Diagrama de Clases (Dominio)</text>
+  <text x="625" y="58" text-anchor="middle" font-size="12" font-style="italic" fill="#6D4C41">Asociaciones simples con multiplicidad UML</text>
+
+  <!-- ===================== RELACIONES (debajo de las cajas) ===================== -->
+  <!-- Proveedor con Producto -->
+  <line x1="320" y1="170" x2="460" y2="170" stroke="#6D4C41" stroke-width="1.8"/>
+  <text x="329" y="163" font-size="12" fill="#3E2723">0..1</text>
+  <text x="451" y="163" text-anchor="end" font-size="12" fill="#3E2723">0..*</text>
+
+  <!-- Proveedor con Compra -->
+  <line x1="190" y1="266" x2="190" y2="420" stroke="#6D4C41" stroke-width="1.8"/>
+  <text x="198" y="280" font-size="12" fill="#3E2723">0..1</text>
+  <text x="198" y="412" font-size="12" fill="#3E2723">0..*</text>
+
+  <!-- Producto con RegistroCafe -->
+  <line x1="780" y1="180" x2="900" y2="180" stroke="#6D4C41" stroke-width="1.8"/>
+  <text x="789" y="173" font-size="12" fill="#3E2723">1</text>
+  <text x="891" y="173" text-anchor="end" font-size="12" fill="#3E2723">0..*</text>
+
+  <!-- Compra con LineaCompra (codo) -->
+  <polyline points="190,586 190,615 500,615 500,650" fill="none" stroke="#6D4C41" stroke-width="1.8"/>
+  <text x="198" y="600" font-size="12" fill="#3E2723">1</text>
+  <text x="460" y="644" font-size="12" fill="#3E2723">1..*</text>
+
+  <!-- Producto con LineaCompra (codo) -->
+  <polyline points="620,306 620,615 650,615 650,650" fill="none" stroke="#6D4C41" stroke-width="1.8"/>
+  <text x="628" y="320" font-size="12" fill="#3E2723">1</text>
+  <text x="659" y="644" font-size="12" fill="#3E2723">0..*</text>
+
+  <!-- ===================== CLASE: Proveedor ===================== -->
+  <g>
+    <rect x="60" y="80" width="260" height="186" fill="#F5EFE6" stroke="#6D4C41" stroke-width="2"/>
+    <line x1="60" y1="114" x2="320" y2="114" stroke="#6D4C41" stroke-width="1.5"/>
+    <text x="190" y="103" text-anchor="middle" font-size="16" font-weight="bold" fill="#3E2723">Proveedor</text>
+    <text x="76" y="134" font-size="13" fill="#2C2C2A">+ Id : int</text>
+    <text x="76" y="154" font-size="13" fill="#2C2C2A">+ Nombre : string</text>
+    <text x="76" y="174" font-size="13" fill="#2C2C2A">+ Telefono : string</text>
+    <text x="76" y="194" font-size="13" fill="#2C2C2A">+ Email : string</text>
+    <text x="76" y="214" font-size="13" fill="#2C2C2A">+ Direccion : string</text>
+    <text x="76" y="234" font-size="13" fill="#2C2C2A">+ NifCif : string</text>
+    <line x1="60" y1="250" x2="320" y2="250" stroke="#6D4C41" stroke-width="1.5"/>
+  </g>
+
+  <!-- ===================== CLASE: Producto ===================== -->
+  <g>
+    <rect x="460" y="80" width="320" height="226" fill="#F5EFE6" stroke="#6D4C41" stroke-width="2"/>
+    <line x1="460" y1="114" x2="780" y2="114" stroke="#6D4C41" stroke-width="1.5"/>
+    <text x="620" y="103" text-anchor="middle" font-size="16" font-weight="bold" fill="#3E2723">Producto</text>
+    <text x="476" y="134" font-size="13" fill="#2C2C2A">+ Id : int</text>
+    <text x="476" y="154" font-size="13" fill="#2C2C2A">+ Nombre : string</text>
+    <text x="476" y="174" font-size="13" fill="#2C2C2A">+ StockActual : int</text>
+    <text x="476" y="194" font-size="13" fill="#2C2C2A">+ StockMaximo : int</text>
+    <text x="476" y="214" font-size="13" fill="#2C2C2A">+ Unidad : UnidadMedida</text>
+    <text x="476" y="234" font-size="13" fill="#2C2C2A">+ PrecioUnitario : decimal</text>
+    <text x="476" y="254" font-size="13" fill="#2C2C2A">+ ProveedorId : int?<tspan fill="#C17817"> (FK)</tspan></text>
+    <text x="476" y="274" font-size="13" fill="#2C2C2A">+ SeguimientoIndividual : bool</text>
+    <line x1="460" y1="290" x2="780" y2="290" stroke="#6D4C41" stroke-width="1.5"/>
+  </g>
+
+  <!-- ===================== CLASE: RegistroCafe ===================== -->
+  <g>
+    <rect x="900" y="110" width="290" height="146" fill="#F5EFE6" stroke="#6D4C41" stroke-width="2"/>
+    <line x1="900" y1="144" x2="1190" y2="144" stroke="#6D4C41" stroke-width="1.5"/>
+    <text x="1045" y="133" text-anchor="middle" font-size="16" font-weight="bold" fill="#3E2723">RegistroCafe</text>
+    <text x="916" y="164" font-size="13" fill="#2C2C2A">+ Id : int</text>
+    <text x="916" y="184" font-size="13" fill="#2C2C2A">+ ProductoId : int<tspan fill="#C17817"> (FK)</tspan></text>
+    <text x="916" y="204" font-size="13" fill="#2C2C2A">+ NombreTrabajador : string</text>
+    <text x="916" y="224" font-size="13" fill="#2C2C2A">+ Fecha : DateTime</text>
+    <line x1="900" y1="240" x2="1190" y2="240" stroke="#6D4C41" stroke-width="1.5"/>
+  </g>
+
+  <!-- ===================== CLASE: Compra ===================== -->
+  <g>
+    <rect x="60" y="420" width="310" height="166" fill="#F5EFE6" stroke="#6D4C41" stroke-width="2"/>
+    <line x1="60" y1="454" x2="370" y2="454" stroke="#6D4C41" stroke-width="1.5"/>
+    <text x="215" y="443" text-anchor="middle" font-size="16" font-weight="bold" fill="#3E2723">Compra</text>
+    <text x="76" y="474" font-size="13" fill="#2C2C2A">+ Id : int</text>
+    <text x="76" y="494" font-size="13" fill="#2C2C2A">+ ProveedorId : int?<tspan fill="#C17817"> (FK)</tspan></text>
+    <text x="76" y="514" font-size="13" fill="#2C2C2A">+ Fecha : DateTime</text>
+    <text x="76" y="534" font-size="13" fill="#2C2C2A">+ MetodoPago : string</text>
+    <text x="76" y="554" font-size="13" fill="#2C2C2A">+ NumeroFacturaProveedor : string</text>
+    <line x1="60" y1="570" x2="370" y2="570" stroke="#6D4C41" stroke-width="1.5"/>
+  </g>
+
+  <!-- ===================== CLASE: LineaCompra ===================== -->
+  <g>
+    <rect x="460" y="650" width="280" height="166" fill="#F5EFE6" stroke="#6D4C41" stroke-width="2"/>
+    <line x1="460" y1="684" x2="740" y2="684" stroke="#6D4C41" stroke-width="1.5"/>
+    <text x="600" y="673" text-anchor="middle" font-size="16" font-weight="bold" fill="#3E2723">LineaCompra</text>
+    <text x="476" y="704" font-size="13" fill="#2C2C2A">+ Id : int</text>
+    <text x="476" y="724" font-size="13" fill="#2C2C2A">+ CompraId : int<tspan fill="#C17817"> (FK)</tspan></text>
+    <text x="476" y="744" font-size="13" fill="#2C2C2A">+ ProductoId : int<tspan fill="#C17817"> (FK)</tspan></text>
+    <text x="476" y="764" font-size="13" fill="#2C2C2A">+ Cantidad : int</text>
+    <text x="476" y="784" font-size="13" fill="#2C2C2A">+ PrecioUnitario : decimal</text>
+    <line x1="460" y1="800" x2="740" y2="800" stroke="#6D4C41" stroke-width="1.5"/>
+  </g>
+
+  <!-- ===================== LEYENDA ===================== -->
+  <rect x="60" y="855" width="1130" height="40" fill="#F5EFE6" stroke="#C17817" stroke-width="1.5"/>
+  <text x="625" y="879" text-anchor="middle" font-size="13" fill="#3E2723">
+    Multiplicidad: 1 = obligatorio (uno) · 0..1 = opcional (uno) · 0..* = cero o muchos · 1..* = uno o muchos (mínimo uno)&#160;&#160;&#160;|&#160;&#160;&#160;Atributos en ámbar = clave foránea (FK)
+  </text>
+</svg>

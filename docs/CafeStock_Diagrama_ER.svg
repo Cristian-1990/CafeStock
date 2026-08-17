@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1270" height="860" viewBox="0 0 1270 860" font-family="Segoe UI, Arial, sans-serif">
+  <defs>
+    <marker id="flecha" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#6D4C41"/>
+    </marker>
+  </defs>
+
+  <!-- Fondo -->
+  <rect x="0" y="0" width="1270" height="860" fill="#F5EFE6"/>
+
+  <!-- Titulo -->
+  <text x="635" y="38" text-anchor="middle" font-size="22" font-weight="bold" fill="#3E2723">CafeStock — Diagrama Entidad-Relación</text>
+  <text x="635" y="58" text-anchor="middle" font-size="12" font-style="italic" fill="#6D4C41">Cardinalidad 1 / N — la flecha apunta de la clave foránea (N) hacia la tabla referenciada (1)</text>
+
+  <!-- ===================== RELACIONES ===================== -->
+  <!-- Productos hacia Proveedores -->
+  <line x1="470" y1="160" x2="338" y2="160" stroke="#6D4C41" stroke-width="1.8" marker-end="url(#flecha)"/>
+  <text x="462" y="153" text-anchor="end" font-size="12" fill="#3E2723">N</text>
+  <text x="346" y="153" font-size="12" fill="#3E2723">1</text>
+
+  <!-- Compras hacia Proveedores -->
+  <line x1="195" y1="400" x2="195" y2="258" stroke="#6D4C41" stroke-width="1.8" marker-end="url(#flecha)"/>
+  <text x="203" y="392" font-size="12" fill="#3E2723">N</text>
+  <text x="203" y="270" font-size="12" fill="#3E2723">1</text>
+
+  <!-- RegistrosCafe hacia Productos -->
+  <line x1="920" y1="170" x2="808" y2="170" stroke="#6D4C41" stroke-width="1.8" marker-end="url(#flecha)"/>
+  <text x="912" y="163" text-anchor="end" font-size="12" fill="#3E2723">N</text>
+  <text x="816" y="163" font-size="12" fill="#3E2723">1</text>
+
+  <!-- LineasCompra hacia Compras (codo) -->
+  <polyline points="520,620 520,585 195,585 195,558" fill="none" stroke="#6D4C41" stroke-width="1.8" marker-end="url(#flecha)"/>
+  <text x="480" y="614" font-size="12" fill="#3E2723">N</text>
+  <text x="203" y="572" font-size="12" fill="#3E2723">1</text>
+
+  <!-- LineasCompra hacia Productos (codo) -->
+  <polyline points="680,620 680,585 635,585 635,298" fill="none" stroke="#6D4C41" stroke-width="1.8" marker-end="url(#flecha)"/>
+  <text x="688" y="614" font-size="12" fill="#3E2723">N</text>
+  <text x="643" y="312" font-size="12" fill="#3E2723">1</text>
+
+  <!-- ===================== TABLA: Proveedores ===================== -->
+  <g>
+    <rect x="60" y="80" width="270" height="170" fill="#F5EFE6" stroke="#6D4C41" stroke-width="2"/>
+    <rect x="60" y="80" width="270" height="34" fill="#6D4C41"/>
+    <text x="195" y="103" text-anchor="middle" font-size="16" font-weight="bold" fill="#F5EFE6">Proveedores</text>
+    <text x="76" y="134" font-size="13" font-weight="bold" text-decoration="underline" fill="#3E2723">Id : INT</text>
+    <text x="76" y="154" font-size="13" fill="#2C2C2A">Nombre : TEXT</text>
+    <text x="76" y="174" font-size="13" fill="#2C2C2A">Telefono : TEXT</text>
+    <text x="76" y="194" font-size="13" fill="#2C2C2A">Email : TEXT</text>
+    <text x="76" y="214" font-size="13" fill="#2C2C2A">Direccion : TEXT</text>
+    <text x="76" y="234" font-size="13" fill="#2C2C2A">NifCif : TEXT</text>
+  </g>
+
+  <!-- ===================== TABLA: Productos ===================== -->
+  <g>
+    <rect x="470" y="80" width="330" height="210" fill="#F5EFE6" stroke="#6D4C41" stroke-width="2"/>
+    <rect x="470" y="80" width="330" height="34" fill="#6D4C41"/>
+    <text x="635" y="103" text-anchor="middle" font-size="16" font-weight="bold" fill="#F5EFE6">Productos</text>
+    <text x="486" y="134" font-size="13" font-weight="bold" text-decoration="underline" fill="#3E2723">Id : INT</text>
+    <text x="486" y="154" font-size="13" fill="#2C2C2A">Nombre : TEXT</text>
+    <text x="486" y="174" font-size="13" fill="#2C2C2A">StockActual : INT</text>
+    <text x="486" y="194" font-size="13" fill="#2C2C2A">StockMaximo : INT</text>
+    <text x="486" y="214" font-size="13" fill="#2C2C2A">Unidad : INT</text>
+    <text x="486" y="234" font-size="13" fill="#2C2C2A">PrecioUnitario : DECIMAL</text>
+    <text x="486" y="254" font-size="13" fill="#2C2C2A">ProveedorId : INT<tspan fill="#C17817"> (FK, NULL)</tspan></text>
+    <text x="486" y="274" font-size="13" fill="#2C2C2A">SeguimientoIndividual : BOOLEAN</text>
+  </g>
+
+  <!-- ===================== TABLA: RegistrosCafe ===================== -->
+  <g>
+    <rect x="920" y="100" width="290" height="130" fill="#F5EFE6" stroke="#6D4C41" stroke-width="2"/>
+    <rect x="920" y="100" width="290" height="34" fill="#6D4C41"/>
+    <text x="1065" y="123" text-anchor="middle" font-size="16" font-weight="bold" fill="#F5EFE6">RegistrosCafe</text>
+    <text x="936" y="154" font-size="13" font-weight="bold" text-decoration="underline" fill="#3E2723">Id : INT</text>
+    <text x="936" y="174" font-size="13" fill="#2C2C2A">ProductoId : INT<tspan fill="#C17817"> (FK)</tspan></text>
+    <text x="936" y="194" font-size="13" fill="#2C2C2A">NombreTrabajador : TEXT</text>
+    <text x="936" y="214" font-size="13" fill="#2C2C2A">Fecha : DATETIME</text>
+  </g>
+
+  <!-- ===================== TABLA: Compras ===================== -->
+  <g>
+    <rect x="60" y="400" width="330" height="150" fill="#F5EFE6" stroke="#6D4C41" stroke-width="2"/>
+    <rect x="60" y="400" width="330" height="34" fill="#6D4C41"/>
+    <text x="225" y="423" text-anchor="middle" font-size="16" font-weight="bold" fill="#F5EFE6">Compras</text>
+    <text x="76" y="454" font-size="13" font-weight="bold" text-decoration="underline" fill="#3E2723">Id : INT</text>
+    <text x="76" y="474" font-size="13" fill="#2C2C2A">ProveedorId : INT<tspan fill="#C17817"> (FK, NULL)</tspan></text>
+    <text x="76" y="494" font-size="13" fill="#2C2C2A">Fecha : DATETIME</text>
+    <text x="76" y="514" font-size="13" fill="#2C2C2A">MetodoPago : TEXT</text>
+    <text x="76" y="534" font-size="13" fill="#2C2C2A">NumeroFacturaProveedor : TEXT</text>
+  </g>
+
+  <!-- ===================== TABLA: LineasCompra ===================== -->
+  <g>
+    <rect x="470" y="620" width="290" height="150" fill="#F5EFE6" stroke="#6D4C41" stroke-width="2"/>
+    <rect x="470" y="620" width="290" height="34" fill="#6D4C41"/>
+    <text x="615" y="643" text-anchor="middle" font-size="16" font-weight="bold" fill="#F5EFE6">LineasCompra</text>
+    <text x="486" y="674" font-size="13" font-weight="bold" text-decoration="underline" fill="#3E2723">Id : INT</text>
+    <text x="486" y="694" font-size="13" fill="#2C2C2A">CompraId : INT<tspan fill="#C17817"> (FK)</tspan></text>
+    <text x="486" y="714" font-size="13" fill="#2C2C2A">ProductoId : INT<tspan fill="#C17817"> (FK)</tspan></text>
+    <text x="486" y="734" font-size="13" fill="#2C2C2A">Cantidad : INT</text>
+    <text x="486" y="754" font-size="13" fill="#2C2C2A">PrecioUnitario : DECIMAL</text>
+  </g>
+
+  <!-- ===================== LEYENDA ===================== -->
+  <rect x="60" y="795" width="1150" height="40" fill="#F5EFE6" stroke="#C17817" stroke-width="1.5"/>
+  <text x="635" y="819" text-anchor="middle" font-size="13" fill="#3E2723">
+    PK subrayada en negrita = clave primaria&#160;&#160;&#160;|&#160;&#160;&#160;Atributos en ámbar = clave foránea (FK), "NULL" indica que admite valor nulo&#160;&#160;&#160;|&#160;&#160;&#160;1 / N = uno a muchos
+  </text>
+</svg>
