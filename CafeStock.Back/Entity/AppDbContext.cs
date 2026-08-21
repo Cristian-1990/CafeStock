@@ -18,6 +18,8 @@ public class AppDbContext : DbContext
     public DbSet<CompraEntity> Compras { get; set; } = null!;
     public DbSet<LineaCompraEntity> LineasCompra { get; set; } = null!;
     public DbSet<RegistroCafeEntity> RegistrosCafe { get; set; } = null!;
+    public DbSet<PresupuestoEntity> Presupuestos { get; set; } = null!;
+    public DbSet<SnapshotInventarioEntity> SnapshotsInventario { get; set; } = null!;
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) //
     {
@@ -66,6 +68,28 @@ public class AppDbContext : DbContext
             .WithMany()
             .HasForeignKey(r => r.ProductoId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // A diferencia de Producto/Compra, ProveedorId en Presupuesto es obligatorio (un
+        // presupuesto no tiene sentido sin proveedor): si se elimina el proveedor, sus
+        // presupuestos se eliminan con él (Cascade), igual que LineaCompra/RegistroCafe con
+        // sus FK obligatorias, en vez de SetNull (que no sería válido sobre un int no anulable).
+        modelBuilder.Entity<PresupuestoEntity>()
+            .HasOne(p => p.Proveedor)
+            .WithMany()
+            .HasForeignKey(p => p.ProveedorId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Un presupuesto por proveedor y mes/año — ver también la comprobación equivalente en
+        // PresupuestosEfRepository.CreateAsync (más amigable) y AsegurarTablaPresupuestosAsync
+        // (para bases de datos que no pasan por EnsureCreated). Este índice es la garantía real.
+        modelBuilder.Entity<PresupuestoEntity>()
+            .HasIndex(p => new { p.ProveedorId, p.Mes, p.Anio })
+            .IsUnique();
+
+        // Como mucho un snapshot por día — ver también AsegurarTablaSnapshotsInventarioAsync.
+        modelBuilder.Entity<SnapshotInventarioEntity>()
+            .HasIndex(s => s.Fecha)
+            .IsUnique();
     }
 
 /// <summary>
@@ -229,6 +253,66 @@ public class AppDbContext : DbContext
                     NombreTrabajador TEXT NOT NULL,
                     Fecha TEXT NOT NULL,
                     FOREIGN KEY (ProductoId) REFERENCES Productos(Id) ON DELETE CASCADE
+                )
+                """;
+            await comando.ExecuteNonQueryAsync();
+        }
+        finally
+        {
+            await conexion.CloseAsync();
+        }
+    }
+
+    /// <summary>
+    /// Migración idempotente: crea la tabla Presupuestos si no existe todavía (bases de datos
+    /// anteriores a esta funcionalidad). El UNIQUE en la propia definición de columnas cubre
+    /// el mismo índice único que HasIndex()+IsUnique() en OnModelCreating, para bases de datos
+    /// que nunca pasan por EnsureCreated (solo se crearon una vez y desde entonces solo se les
+    /// van añadiendo columnas/tablas nuevas a mano, igual que el resto de AsegurarTablaXxxAsync).
+    /// </summary>
+    public async Task AsegurarTablaPresupuestosAsync()
+    {
+        var conexion = Database.GetDbConnection();
+        await conexion.OpenAsync();
+        try
+        {
+            await using var comando = conexion.CreateCommand();
+            comando.CommandText = """
+                CREATE TABLE IF NOT EXISTS Presupuestos (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ProveedorId INTEGER NOT NULL,
+                    Mes INTEGER NOT NULL,
+                    Anio INTEGER NOT NULL,
+                    ImporteAsignado TEXT NOT NULL,
+                    FOREIGN KEY (ProveedorId) REFERENCES Proveedores(Id) ON DELETE CASCADE,
+                    UNIQUE (ProveedorId, Mes, Anio)
+                )
+                """;
+            await comando.ExecuteNonQueryAsync();
+        }
+        finally
+        {
+            await conexion.CloseAsync();
+        }
+    }
+
+    /// <summary>
+    /// Igual que AsegurarTablaPresupuestosAsync pero para SnapshotsInventario: como mucho un
+    /// snapshot por día (UNIQUE en Fecha).
+    /// </summary>
+    public async Task AsegurarTablaSnapshotsInventarioAsync()
+    {
+        var conexion = Database.GetDbConnection();
+        await conexion.OpenAsync();
+        try
+        {
+            await using var comando = conexion.CreateCommand();
+            comando.CommandText = """
+                CREATE TABLE IF NOT EXISTS SnapshotsInventario (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    Fecha TEXT NOT NULL,
+                    ValorTotal TEXT NOT NULL,
+                    UNIQUE (Fecha)
                 )
                 """;
             await comando.ExecuteNonQueryAsync();

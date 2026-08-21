@@ -1,13 +1,17 @@
 using CafeStock.Back.Infrastructure;
 using CafeStock.Back.Repositories.Compras.Base;
+using CafeStock.Back.Repositories.Presupuestos.Base;
 using CafeStock.Back.Repositories.Productos.Base;
 using CafeStock.Back.Repositories.Proveedores.Base;
 using CafeStock.Back.Repositories.RegistrosCafe.Base;
+using CafeStock.Back.Repositories.SnapshotsInventario.Base;
 using CafeStock.Back.Services.Compras;
 using CafeStock.Back.Services.Facturas;
+using CafeStock.Back.Services.Presupuestos;
 using CafeStock.Back.Services.Productos;
 using CafeStock.Back.Services.Proveedores;
 using CafeStock.Back.Services.RegistrosCafe;
+using CafeStock.Back.Services.SnapshotsInventario;
 using ApexCharts;
 using CafeStock.Blazor.Components;
 using MudBlazor.Services;
@@ -68,6 +72,11 @@ try
     builder.Services.AddScoped<IFacturaService, CafeStock.Back.Services.Facturas.FacturaService>();
     builder.Services.AddSingleton(provider.GetService<IRegistroCafeRepository>()!);
     builder.Services.AddScoped<IRegistroCafeService, CafeStock.Back.Services.RegistrosCafe.RegistroCafeService>();
+    builder.Services.AddSingleton(provider.GetService<IPresupuestoRepository>()!);
+    builder.Services.AddScoped<IPresupuestoService, CafeStock.Back.Services.Presupuestos.PresupuestoService>();
+    builder.Services.AddScoped<CafeStock.Back.Validators.Common.IValidador<CafeStock.Back.Models.Presupuesto>, CafeStock.Back.Validators.Presupuestos.ValidadorPresupuesto>();
+    builder.Services.AddSingleton(provider.GetService<ISnapshotInventarioRepository>()!);
+    builder.Services.AddScoped<ISnapshotInventarioService, CafeStock.Back.Services.SnapshotsInventario.SnapshotInventarioService>();
 
     var app = builder.Build();
 
