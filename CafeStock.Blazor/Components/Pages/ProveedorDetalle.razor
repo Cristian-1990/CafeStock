@@ -2,7 +2,9 @@
 @inject IProveedorService ProveedorService
 @inject IProductoService ProductoService
 @inject CafeStock.Back.Services.Facturas.IFacturaService FacturaService
+@inject CafeStock.Back.Services.Presupuestos.IPresupuestoService PresupuestoService
 @inject NavigationManager Navigation
+@inject ISnackbar Snackbar
 
 <PageTitle>@(_proveedor?.Nombre ?? "Proveedor")</PageTitle>
 
@@ -198,6 +200,47 @@ else
             </RowTemplate>
         </MudTable>
     }
+
+    <MudText Typo="Typo.h5" Class="mb-2 mt-6" Style="color:#3E2723;">Presupuesto mensual</MudText>
+
+    <MudPaper Class="pa-4 mb-4" Elevation="1" Style="max-width:600px;">
+        <div class="d-flex gap-4 flex-wrap mb-2" style="align-items:flex-end;">
+            <MudSelect T="int" @bind-Value="_mesSeleccionado" Label="Mes" Style="min-width:160px;">
+                @for (var i = 1; i <= 12; i++)
+                {
+                    var mes = i;
+                    <MudSelectItem Value="mes">@NombresMeses[mes - 1]</MudSelectItem>
+                }
+            </MudSelect>
+            <MudNumericField T="int" @bind-Value="_anioSeleccionado" Label="Año" Min="2024" Style="max-width:120px;"/>
+            <MudNumericField T="decimal" @bind-Value="_importeSeleccionado" Label="Importe asignado" Min="0" Format="F2" Adornment="Adornment.End" AdornmentText="€" Style="max-width:180px;"/>
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Save"
+                       OnClick="GuardarPresupuestoAsync"
+                       Disabled="_guardandoPresupuesto">
+                @(_guardandoPresupuesto ? "Guardando..." : "Guardar")
+            </MudButton>
+        </div>
+    </MudPaper>
+
+    @if (_presupuestos.Any())
+    {
+        <MudTable Items="_presupuestos.OrderByDescending(p => p.Anio).ThenByDescending(p => p.Mes)" Hover="true" Dense="true" Striped="true" Elevation="2" Style="max-width:600px;">
+            <HeaderContent>
+                <MudTh>Mes</MudTh>
+                <MudTh>Importe asignado</MudTh>
+                <MudTh></MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Mes">@NombresMeses[context.Mes - 1] @context.Anio</MudTd>
+                <MudTd DataLabel="Importe asignado">@context.ImporteAsignado.ToString("F2") €</MudTd>
+                <MudTd>
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="@(() => CargarPresupuestoEnFormulario(context))"/>
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
 }
 
 @code {
@@ -206,9 +249,21 @@ else
     private Proveedor? _proveedor;
     private IEnumerable<Producto> _productos = [];
     private IEnumerable<Compra> _facturas = [];
+    private IEnumerable<Presupuesto> _presupuestos = [];
     private bool _cargando = true;
     private bool _cargandoFacturas = true;
+    private bool _guardandoPresupuesto;
     private string _busquedaProductos = string.Empty;
+
+    private static readonly string[] NombresMeses =
+    [
+        "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+    ];
+
+    private int _mesSeleccionado = DateTime.Now.Month;
+    private int _anioSeleccionado = DateTime.Now.Year;
+    private decimal _importeSeleccionado;
 
     private IEnumerable<Producto> _productosFiltrados =>
         _productos.Where(p => string.IsNullOrWhiteSpace(_busquedaProductos) ||
@@ -266,6 +321,54 @@ else
 
         _facturas = (await FacturaService.GetByProveedorAsync(Id)).OrderByDescending(f => f.Fecha);
         _cargandoFacturas = false;
+
+        _presupuestos = await PresupuestoService.GetByProveedorAsync(Id);
+    }
+
+    /// <summary>
+    /// Un único formulario para crear y editar: si ya hay un presupuesto para el
+    /// Mes/Año seleccionados se actualiza su importe (ActualizarImporteAsync), si no se crea
+    /// uno nuevo. La comprobación de duplicado "de verdad" (y la de que el proveedor exista)
+    /// vive en el repositorio; aquí solo se decide qué llamada hacer según lo que ya se cargó.
+    /// </summary>
+    private async Task GuardarPresupuestoAsync()
+    {
+        _guardandoPresupuesto = true;
+        try
+        {
+            var existente = _presupuestos.FirstOrDefault(p => p.Mes == _mesSeleccionado && p.Anio == _anioSeleccionado);
+
+            var resultado = existente is not null
+                ? await PresupuestoService.ActualizarImporteAsync(existente.Id, _importeSeleccionado)
+                : await PresupuestoService.CreateAsync(new Presupuesto
+                {
+                    ProveedorId = Id,
+                    Mes = _mesSeleccionado,
+                    Anio = _anioSeleccionado,
+                    ImporteAsignado = _importeSeleccionado
+                });
+
+            if (resultado.IsSuccess)
+            {
+                Snackbar.Add("Presupuesto guardado", Severity.Success);
+                _presupuestos = await PresupuestoService.GetByProveedorAsync(Id);
+            }
+            else
+            {
+                Snackbar.Add(resultado.Error.Message, Severity.Error);
+            }
+        }
+        finally
+        {
+            _guardandoPresupuesto = false;
+        }
+    }
+
+    private void CargarPresupuestoEnFormulario(Presupuesto presupuesto)
+    {
+        _mesSeleccionado = presupuesto.Mes;
+        _anioSeleccionado = presupuesto.Anio;
+        _importeSeleccionado = presupuesto.ImporteAsignado;
     }
 
     private bool TieneDatosDeContacto() =>
