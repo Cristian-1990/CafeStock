@@ -83,4 +83,28 @@ public class SnapshotsInventarioEfRepositoryTest
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value.ValorTotal.Should().Be(1234.56m);
     }
+
+    [Test]
+    public async Task GetAllAsync_DevuelveTodosLosSnapshots()
+    {
+        // Arrange
+        await _repository.CreateAsync(new SnapshotInventario { Fecha = new DateOnly(2025, 6, 15), ValorTotal = 1000m });
+        await _repository.CreateAsync(new SnapshotInventario { Fecha = new DateOnly(2025, 6, 16), ValorTotal = 1100m });
+
+        // Act
+        var resultado = await _repository.GetAllAsync();
+
+        // Assert
+        resultado.Should().HaveCount(2);
+    }
+
+    [Test]
+    public async Task GetAllAsync_SinSnapshots_DevuelveVacio()
+    {
+        // Act
+        var resultado = await _repository.GetAllAsync();
+
+        // Assert
+        resultado.Should().BeEmpty();
+    }
 }

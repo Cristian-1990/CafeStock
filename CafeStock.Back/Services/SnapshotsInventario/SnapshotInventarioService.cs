@@ -16,6 +16,11 @@ public class SnapshotInventarioService : ISnapshotInventarioService
         _productoService = productoService;
     }
 
+    public async Task<IEnumerable<SnapshotInventario>> GetAllAsync()
+    {
+        return await _repository.GetAllAsync();
+    }
+
     public async Task AsegurarSnapshotDeHoyAsync()
     {
         var hoy = DateOnly.FromDateTime(DateTime.Now);

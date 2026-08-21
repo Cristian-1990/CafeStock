@@ -31,6 +31,15 @@ public class SnapshotsInventarioEfRepository : ISnapshotInventarioRepository
         _initialized = true;
     }
 
+    public async Task<IEnumerable<SnapshotInventario>> GetAllAsync()
+    {
+        await InitializeAsync();
+        using var context = CreateContext();
+        return await context.SnapshotsInventario
+            .Select(e => e.ToSnapshotInventario())
+            .ToListAsync();
+    }
+
     public async Task<Result<SnapshotInventario, DomainError>> GetByFechaAsync(DateOnly fecha)
     {
         await InitializeAsync();

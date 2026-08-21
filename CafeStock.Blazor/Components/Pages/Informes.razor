@@ -372,6 +372,42 @@ else
             </RowTemplate>
         </MudTable>
     }
+
+    @* 13. Evolución de valor de inventario *@
+    <MudText Typo="Typo.h5" Class="mb-2" Style="color:#3E2723;">Evolución de valor de inventario</MudText>
+    @if (!_snapshotsInventario.Any())
+    {
+        <MudAlert Severity="Severity.Info" Class="mb-8">Todavía no hay ningún snapshot de inventario — el historial empieza a acumularse desde hoy.</MudAlert>
+    }
+    else
+    {
+        <MudPaper Class="pa-6 mb-4" Elevation="2" Style="max-width:400px;">
+            <MudText Typo="Typo.h3" Style="color:#3E2723; font-weight:700;">
+                Valor de inventario actual: @_snapshotsInventario[^1].ValorTotal.ToString("F2") €
+            </MudText>
+            <MudText Typo="Typo.body2" Class="mt-2" Style="color:#9E9E9E;">
+                @_snapshotsInventario[^1].Fecha.ToString("dd/MM/yyyy")
+            </MudText>
+        </MudPaper>
+
+        @if (_snapshotsInventario.Count < 2)
+        {
+            <MudAlert Severity="Severity.Info" Class="mb-8">Aún no hay suficiente historial para ver una evolución — vuelve en unos días.</MudAlert>
+        }
+        else
+        {
+            <MudPaper Class="pa-4 mb-8" Elevation="2" Style="max-width:600px;">
+                <ApexChart TItem="PuntoDato" Title="Evolución de valor de inventario" Options="_opcionesLineaValorInventario">
+                    <ApexPointSeries TItem="PuntoDato"
+                                     Items="_evolucionValorInventario"
+                                     Name="Valor de inventario"
+                                     SeriesType="SeriesType.Line"
+                                     XValue="e => e.Etiqueta"
+                                     YValue="e => (decimal?)e.Valor"/>
+                </ApexChart>
+            </MudPaper>
+        }
+    }
 }
 
 @code {
@@ -436,6 +472,13 @@ else
     private List<PuntoDato> _presupuestoVsRealChartPresupuesto = [];
     private List<PuntoDato> _presupuestoVsRealChartReal = [];
     private ApexChart<PuntoDato>? _chartPresupuestoVsReal;
+
+    // 13. Evolución de valor de inventario
+    // Ordenada por Fecha ascendente: [^1] es el snapshot más reciente (tarjeta destacada) y el
+    // orden natural de la lista es el que necesita la gráfica de línea (igual que
+    // CalcularEvolucionPrecio hace .OrderBy(x => x.Fecha) para el informe 3).
+    private List<SnapshotInventario> _snapshotsInventario = [];
+    private List<PuntoDato> _evolucionValorInventario = [];
 
     // Formatters de ApexCharts (tooltip.y y yaxis.labels): ApexCharts los ejecuta en JS en el
     // navegador, así que no pueden reutilizar el ToString("F2")/("F1") de C# directamente —
@@ -525,6 +568,13 @@ else
         Yaxis = [new YAxis { Labels = new YAxisLabels { Formatter = FormatterEuros } }]
     };
 
+    // Mismo patrón que _opcionesLineaEvolucionPrecio (informe 3): línea, sin PlotOptions.Bar.
+    private readonly ApexChartOptions<PuntoDato> _opcionesLineaValorInventario = new()
+    {
+        Tooltip = new Tooltip { Y = new TooltipY { Formatter = FormatterEuros } },
+        Yaxis = [new YAxis { Labels = new YAxisLabels { Formatter = FormatterEuros } }]
+    };
+
     protected override async Task OnInitializedAsync()
     {
         // No depende de JS ni del circuito interactivo (solo lee/escribe en la base de datos
@@ -536,6 +586,7 @@ else
         _productos = (await ProductoService.GetAllAsync()).OrderBy(p => p.Nombre).ToList();
         _proveedores = (await ProveedorService.GetAllAsync()).ToList();
         _presupuestos = (await PresupuestoService.GetAllAsync()).ToList();
+        _snapshotsInventario = (await SnapshotInventarioService.GetAllAsync()).OrderBy(s => s.Fecha).ToList();
 
         CalcularGastoMesActual();
         _gastoPorProveedor = CalcularGastoPorProveedor(_rangoGastoProveedor);
@@ -557,6 +608,7 @@ else
         _ticketMedioPorProveedor = CalcularTicketMedioPorProveedor();
         _frecuenciaRepartoVsEsperado = CalcularFrecuenciaRepartoVsEsperado();
         RecalcularPresupuestoVsReal();
+        _evolucionValorInventario = _snapshotsInventario.Select(s => new PuntoDato(s.Fecha.ToString("dd/MM/yy"), s.ValorTotal)).ToList();
 
         _cargando = false;
     }
