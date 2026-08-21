@@ -2,8 +2,6 @@
 @inject IProductoService ProductoService
 @inject IProveedorService ProveedorService
 @inject CafeStock.Back.Services.Compras.ICompraService CompraService
-@inject CafeStock.Blazor.Services.PdfService PdfService
-@inject CafeStock.Blazor.Services.EmailService EmailService
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
 
@@ -23,16 +21,6 @@ else if (!_productos.Any())
 }
 else
 {
-    <div class="d-flex gap-2 mb-4">
-        <MudButton Variant="Variant.Outlined"
-                   Color="Color.Secondary"
-                   StartIcon="@Icons.Material.Filled.Email"
-                   OnClick="RealizarPedido"
-                   Disabled="_realizandoPedido">
-            @(_realizandoPedido ? "Enviando..." : "Realizar pedido")
-        </MudButton>
-    </div>
-
     @foreach (var grupo in _grupos)
     {
         var proveedorId = grupo.Proveedor?.Id;
@@ -78,7 +66,6 @@ else
     private Dictionary<int, int> _cantidadesRecibidas = [];
     private HashSet<int?> _confirmandoGrupo = [];
     private bool _cargando = true;
-    private bool _realizandoPedido;
 
     private IEnumerable<(Proveedor? Proveedor, List<Producto> Productos)> _grupos =>
         AgrupadorProveedor.AgruparPorProveedor(_productos, _proveedores);
@@ -94,25 +81,6 @@ else
         _productos = await ProductoService.GetProductosBajoMinimoAsync();
         _cantidadesRecibidas = _productos.ToDictionary(p => p.Id, p => p.CantidadAComprar);
         _cargando = false;
-    }
-
-    private async Task RealizarPedido()
-    {
-        _realizandoPedido = true;
-        try
-        {
-            var pdf = PdfService.GenerarListaCompra(_productos, _proveedores);
-            await EmailService.EnviarListaCompraAsync(pdf);
-            Snackbar.Add("Pedido enviado por email", Severity.Success);
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add(ex.Message, Severity.Error);
-        }
-        finally
-        {
-            _realizandoPedido = false;
-        }
     }
 
     /// <summary>
