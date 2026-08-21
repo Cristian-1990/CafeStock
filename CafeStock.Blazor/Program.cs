@@ -53,6 +53,9 @@ try
     builder.Services.AddScoped<CafeStock.Blazor.Services.PdfService>();
     builder.Services.Configure<CafeStock.Blazor.Services.EmailSettings>(builder.Configuration.GetSection("Email"));
     builder.Services.AddScoped<CafeStock.Blazor.Services.EmailService>();
+    // Scoped, no Singleton: una instancia por circuito (por tablet/pestaña), no compartida
+    // entre todos los usuarios conectados a la vez — ver comentario en MascotSettingsService.
+    builder.Services.AddScoped<CafeStock.Blazor.Services.MascotSettingsService>();
 
     // Configurar la base de datos
     var dbPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "cafestock.db");
