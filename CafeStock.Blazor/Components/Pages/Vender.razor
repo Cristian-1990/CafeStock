@@ -3,10 +3,10 @@
 @inject IRegistroCafeService RegistroCafeService
 @inject ISnackbar Snackbar
 
-<PageTitle>Vender</PageTitle>
+<PageTitle>Venta</PageTitle>
 
 <div class="mb-4" style="background-color:rgba(109,76,65,0.10); border-radius:12px; padding:16px 24px; display:inline-block;">
-    <MudText Typo="Typo.h4" Style="color:#3E2723; margin:0;">Vender</MudText>
+    <MudText Typo="Typo.h4" Style="color:#3E2723; margin:0;">Venta</MudText>
 </div>
 
 @if (_cargando)
@@ -38,7 +38,7 @@ else
 
         <MudButton Variant="Variant.Filled"
                    Color="Color.Primary"
-                   StartIcon="@Icons.Material.Filled.LocalCafe"
+                   StartIcon="@CustomIcons.CoffeeBean"
                    Disabled="@(!PuedeRegistrar || _registrando)"
                    OnClick="RegistrarAsync">
             @(_registrando ? "Registrando..." : "Registrar")

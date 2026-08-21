@@ -134,7 +134,7 @@ else
     {
         _proveedores = await ProveedorService.GetAllAsync();
         // Los productos con seguimiento individual (ver Producto.SeguimientoIndividual) no
-        // se cuentan aquí: su stock se controla desde "Vender", el recuento manual semanal
+        // se cuentan aquí: su stock se controla desde "Venta", el recuento manual semanal
         // no tiene sentido para ellos.
         _productos = (await ProductoService.GetAllAsync()).Where(p => !p.SeguimientoIndividual).ToList();
         _cargando = false;
