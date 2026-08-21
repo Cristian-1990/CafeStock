@@ -6,6 +6,7 @@
 @inject IProductoService ProductoService
 @inject IProveedorService ProveedorService
 @inject CafeStock.Back.Services.SnapshotsInventario.ISnapshotInventarioService SnapshotInventarioService
+@inject CafeStock.Back.Services.Presupuestos.IPresupuestoService PresupuestoService
 
 <PageTitle>Informes</PageTitle>
 
@@ -303,6 +304,74 @@ else
             </RowTemplate>
         </MudTable>
     }
+
+    @* 12. Presupuesto vs Real *@
+    <MudText Typo="Typo.h5" Class="mb-2" Style="color:#3E2723;">Presupuesto vs Real</MudText>
+    <div class="d-flex gap-4 flex-wrap mb-4" style="align-items:flex-end;">
+        <MudSelect T="int" @bind-Value="_mesPresupuestoVsReal" @bind-Value:after="RecalcularPresupuestoVsRealAsync" Label="Mes" Style="min-width:160px;">
+            @for (var i = 1; i <= 12; i++)
+            {
+                var mes = i;
+                <MudSelectItem Value="mes">@NombresMesesInformes[mes - 1]</MudSelectItem>
+            }
+        </MudSelect>
+        <MudNumericField T="int" @bind-Value="_anioPresupuestoVsReal" @bind-Value:after="RecalcularPresupuestoVsRealAsync" Label="Año" Min="2024" Style="max-width:120px;"/>
+    </div>
+
+    @if (!_presupuestoVsReal.Any())
+    {
+        <MudAlert Severity="Severity.Info" Class="mb-8">No hay compras registradas en este mes.</MudAlert>
+    }
+    else
+    {
+        @if (_presupuestoVsRealChartReal.Any())
+        {
+            <MudPaper Class="pa-4 mb-4" Elevation="2" Style="max-width:600px;">
+                <ApexChart TItem="PuntoDato" @ref="_chartPresupuestoVsReal" Title="Presupuesto vs Real (proveedores con presupuesto asignado)" Options="_opcionesBarrasPresupuestoVsReal">
+                    <ApexPointSeries TItem="PuntoDato"
+                                     Items="_presupuestoVsRealChartPresupuesto"
+                                     Name="Presupuesto"
+                                     SeriesType="SeriesType.Bar"
+                                     XValue="e => e.Etiqueta"
+                                     YValue="e => (decimal?)e.Valor"/>
+                    <ApexPointSeries TItem="PuntoDato"
+                                     Items="_presupuestoVsRealChartReal"
+                                     Name="Real"
+                                     SeriesType="SeriesType.Bar"
+                                     XValue="e => e.Etiqueta"
+                                     YValue="e => (decimal?)e.Valor"/>
+                </ApexChart>
+            </MudPaper>
+        }
+
+        <MudTable Items="_presupuestoVsReal" Hover="true" Dense="true" Striped="true" Elevation="2" Class="mb-8" Style="max-width:700px;">
+            <HeaderContent>
+                <MudTh>Proveedor</MudTh>
+                <MudTh>Presupuesto</MudTh>
+                <MudTh>Real</MudTh>
+                <MudTh>% Desviación</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Proveedor">@context.Proveedor</MudTd>
+                <MudTd DataLabel="Presupuesto">
+                    @(context.SinPresupuesto ? "Sin presupuesto" : $"{context.Presupuesto!.Value.ToString("F2")} €")
+                </MudTd>
+                <MudTd DataLabel="Real">@context.Real.ToString("F2") €</MudTd>
+                <MudTd DataLabel="% Desviación">
+                    @if (context.PorcentajeDesviacion is decimal pct)
+                    {
+                        <MudText Style="@($"color:{(pct > 0 ? "#993C1D" : "#3B6D11")}; font-weight:600;")">
+                            @pct.ToString("F1") %
+                        </MudText>
+                    }
+                    else
+                    {
+                        <MudText Style="color:#9E9E9E;">—</MudText>
+                    }
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
 }
 
 @code {
@@ -314,6 +383,7 @@ else
     private List<Compra> _compras = [];
     private List<Producto> _productos = [];
     private List<Proveedor> _proveedores = [];
+    private List<Presupuesto> _presupuestos = [];
 
     // 1. Gasto del mes actual
     private decimal _gastoMesActual;
@@ -353,6 +423,19 @@ else
     // 11. Frecuencia real de compra vs día de reparto esperado
     private const decimal UmbralPorcentajeCumplimientoReparto = 50m;
     private List<InformeReparto> _frecuenciaRepartoVsEsperado = [];
+
+    // 12. Presupuesto vs Real
+    private static readonly string[] NombresMesesInformes =
+    [
+        "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+    ];
+    private int _mesPresupuestoVsReal = DateTime.Now.Month;
+    private int _anioPresupuestoVsReal = DateTime.Now.Year;
+    private List<PresupuestoVsRealFila> _presupuestoVsReal = [];
+    private List<PuntoDato> _presupuestoVsRealChartPresupuesto = [];
+    private List<PuntoDato> _presupuestoVsRealChartReal = [];
+    private ApexChart<PuntoDato>? _chartPresupuestoVsReal;
 
     // Formatters de ApexCharts (tooltip.y y yaxis.labels): ApexCharts los ejecuta en JS en el
     // navegador, así que no pueden reutilizar el ToString("F2")/("F1") de C# directamente —
@@ -436,6 +519,12 @@ else
         Yaxis = [new YAxis { Labels = new YAxisLabels { Formatter = FormatterEuros } }]
     };
 
+    private readonly ApexChartOptions<PuntoDato> _opcionesBarrasPresupuestoVsReal = new()
+    {
+        Tooltip = new Tooltip { Y = new TooltipY { Formatter = FormatterEuros } },
+        Yaxis = [new YAxis { Labels = new YAxisLabels { Formatter = FormatterEuros } }]
+    };
+
     protected override async Task OnInitializedAsync()
     {
         // No depende de JS ni del circuito interactivo (solo lee/escribe en la base de datos
@@ -446,6 +535,7 @@ else
         _compras = (await FacturaService.GetAllAsync()).ToList();
         _productos = (await ProductoService.GetAllAsync()).OrderBy(p => p.Nombre).ToList();
         _proveedores = (await ProveedorService.GetAllAsync()).ToList();
+        _presupuestos = (await PresupuestoService.GetAllAsync()).ToList();
 
         CalcularGastoMesActual();
         _gastoPorProveedor = CalcularGastoPorProveedor(_rangoGastoProveedor);
@@ -466,6 +556,7 @@ else
 
         _ticketMedioPorProveedor = CalcularTicketMedioPorProveedor();
         _frecuenciaRepartoVsEsperado = CalcularFrecuenciaRepartoVsEsperado();
+        RecalcularPresupuestoVsReal();
 
         _cargando = false;
     }
@@ -506,10 +597,24 @@ else
     }
 
     private List<PuntoDato> CalcularGastoPorProveedor(RangoFechas rango) =>
-        FiltrarPorRango(_compras, rango)
-            .GroupBy(c => c.ProveedorNombre ?? "Sin proveedor asignado")
-            .Select(g => new PuntoDato(g.Key, g.SelectMany(c => c.Lineas).Sum(l => l.Cantidad * l.PrecioUnitario)))
-            .OrderByDescending(p => p.Valor)
+        AgruparGastoPorProveedorConId(FiltrarPorRango(_compras, rango))
+            .Select(g => new PuntoDato(g.Nombre, g.Gasto))
+            .ToList();
+
+    /// <summary>
+    /// Núcleo de "Gasto por proveedor" (Σ Cantidad×PrecioUnitario, agrupado por proveedor),
+    /// conservando el ProveedorId además del nombre ya resuelto — el informe 2 y "Presupuesto
+    /// vs Real" (12) reutilizan este mismo cálculo. PuntoDato no basta para el 12: necesita el
+    /// Id para cruzar con Presupuesto.ProveedorId, no solo el nombre.
+    /// </summary>
+    private static List<(int? ProveedorId, string Nombre, decimal Gasto)> AgruparGastoPorProveedorConId(IEnumerable<Compra> compras) =>
+        compras
+            .GroupBy(c => c.ProveedorId)
+            .Select(g => (
+                ProveedorId: g.Key,
+                Nombre: g.First().ProveedorNombre ?? "Sin proveedor asignado",
+                Gasto: g.SelectMany(c => c.Lineas).Sum(l => l.Cantidad * l.PrecioUnitario)))
+            .OrderByDescending(t => t.Gasto)
             .ToList();
 
     private static IEnumerable<Compra> FiltrarPorRango(IEnumerable<Compra> compras, RangoFechas rango)
@@ -741,8 +846,55 @@ else
             .ToList();
     }
 
+    // ---- 12. Presupuesto vs Real ----
+
+    private async Task RecalcularPresupuestoVsRealAsync()
+    {
+        RecalcularPresupuestoVsReal();
+        // Misma guarda defensiva que en los demás informes con selector: si ya no queda
+        // ningún proveedor con presupuesto la gráfica se desmonta (rama @if de arriba), así
+        // que no se llama a UpdateSeriesAsync sobre una instancia que va a morir.
+        if (_presupuestoVsRealChartReal.Any() && _chartPresupuestoVsReal is not null)
+            await _chartPresupuestoVsReal.UpdateSeriesAsync();
+    }
+
+    /// <summary>
+    /// Todos los proveedores con al menos una Compra en el Mes/Año elegido (reutilizando
+    /// AgruparGastoPorProveedorConId, el mismo cálculo del informe 2 — no se repite el
+    /// GroupBy+Sum). Los que no tengan Presupuesto para ese Mes/Año no se excluyen: se marcan
+    /// SinPresupuesto para que la tabla los muestre igualmente, tal como se pidió.
+    /// </summary>
+    private void RecalcularPresupuestoVsReal()
+    {
+        var comprasDelMes = _compras.Where(c => c.Fecha.Year == _anioPresupuestoVsReal && c.Fecha.Month == _mesPresupuestoVsReal);
+        var gastoReal = AgruparGastoPorProveedorConId(comprasDelMes);
+
+        _presupuestoVsReal = gastoReal
+            .Select(g =>
+            {
+                var presupuesto = g.ProveedorId is int proveedorId
+                    ? _presupuestos.FirstOrDefault(p => p.ProveedorId == proveedorId && p.Mes == _mesPresupuestoVsReal && p.Anio == _anioPresupuestoVsReal)
+                    : null;
+                var porcentajeDesviacion = presupuesto is not null && presupuesto.ImporteAsignado > 0
+                    ? (g.Gasto - presupuesto.ImporteAsignado) / presupuesto.ImporteAsignado * 100
+                    : (decimal?)null;
+
+                return new PresupuestoVsRealFila(
+                    g.Nombre, presupuesto?.ImporteAsignado, g.Gasto, porcentajeDesviacion, presupuesto is null);
+            })
+            .OrderByDescending(f => f.Real)
+            .ToList();
+
+        // La gráfica solo tiene sentido para quien tiene los dos valores que comparar; los
+        // "Sin presupuesto" quedan solo en la tabla (nunca excluidos del informe entero).
+        var conPresupuesto = _presupuestoVsReal.Where(f => !f.SinPresupuesto).ToList();
+        _presupuestoVsRealChartPresupuesto = conPresupuesto.Select(f => new PuntoDato(f.Proveedor, f.Presupuesto!.Value)).ToList();
+        _presupuestoVsRealChartReal = conPresupuesto.Select(f => new PuntoDato(f.Proveedor, f.Real)).ToList();
+    }
+
     private record PuntoDato(string Etiqueta, decimal Valor);
     private record ProveedorAlerta(string Nombre, int? DiasDesdeUltimaCompra);
     private record PuntoDatoPpv(string Etiqueta, decimal Valor, decimal PorcentajeDesviacion);
     private record InformeReparto(string Proveedor, string DiaRepartoEsperado, int TotalCompras, int ComprasEnDiaEsperado, decimal PorcentajeCumplimiento, bool Desviacion);
+    private record PresupuestoVsRealFila(string Proveedor, decimal? Presupuesto, decimal Real, decimal? PorcentajeDesviacion, bool SinPresupuesto);
 }

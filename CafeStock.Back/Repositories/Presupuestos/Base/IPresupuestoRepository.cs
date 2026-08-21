@@ -6,6 +6,13 @@ namespace CafeStock.Back.Repositories.Presupuestos.Base;
 
 public interface IPresupuestoRepository
 {
+    /// <summary>
+    /// Todos los presupuestos, de todos los proveedores. Pensado para Informes (Presupuesto
+    /// vs Real), que necesita cruzar el gasto real de un mes con el presupuesto de CADA
+    /// proveedor, no de uno solo — mismo patrón que GetAllAsync en Producto/Proveedor/Compra.
+    /// </summary>
+    Task<IEnumerable<Presupuesto>> GetAllAsync();
+
     Task<IEnumerable<Presupuesto>> GetByProveedorAsync(int proveedorId);
 
     /// <summary>
@@ -29,4 +36,11 @@ public interface IPresupuestoRepository
     /// reasignarlo a otro mes (para eso se crearía uno nuevo).
     /// </summary>
     Task<Result<Presupuesto, DomainError>> ActualizarImporteAsync(int id, decimal nuevoImporte);
+
+    /// <summary>
+    /// Borra un presupuesto. Es la vía de corrección para un Mes/Año elegido por error: como
+    /// ActualizarImporteAsync no puede tocar Mes/Año, la única forma de arreglarlo es borrar y
+    /// crear uno nuevo con los datos correctos.
+    /// </summary>
+    Task<Result<Presupuesto, DomainError>> DeleteAsync(int id);
 }

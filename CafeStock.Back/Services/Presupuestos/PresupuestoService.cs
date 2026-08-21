@@ -19,6 +19,11 @@ public class PresupuestoService : IPresupuestoService
         _validador = validador;
     }
 
+    public async Task<IEnumerable<Presupuesto>> GetAllAsync()
+    {
+        return await _repository.GetAllAsync();
+    }
+
     public async Task<IEnumerable<Presupuesto>> GetByProveedorAsync(int proveedorId)
     {
         return await _repository.GetByProveedorAsync(proveedorId);
@@ -51,6 +56,14 @@ public class PresupuestoService : IPresupuestoService
         var resultado = await _repository.ActualizarImporteAsync(id, nuevoImporte);
         if (resultado.IsSuccess)
             Log.Information("Importe de presupuesto actualizado: Id={Id}, NuevoImporte={NuevoImporte}", id, nuevoImporte);
+        return resultado;
+    }
+
+    public async Task<Result<Presupuesto, DomainError>> DeleteAsync(int id)
+    {
+        var resultado = await _repository.DeleteAsync(id);
+        if (resultado.IsSuccess)
+            Log.Information("Presupuesto eliminado: Id={Id}", id);
         return resultado;
     }
 }

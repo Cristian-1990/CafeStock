@@ -31,6 +31,15 @@ public class PresupuestosEfRepository : IPresupuestoRepository
         _initialized = true;
     }
 
+    public async Task<IEnumerable<Presupuesto>> GetAllAsync()
+    {
+        await InitializeAsync();
+        using var context = CreateContext();
+        return await context.Presupuestos
+            .Select(e => e.ToPresupuesto())
+            .ToListAsync();
+    }
+
     public async Task<IEnumerable<Presupuesto>> GetByProveedorAsync(int proveedorId)
     {
         await InitializeAsync();
@@ -100,6 +109,26 @@ public class PresupuestosEfRepository : IPresupuestoRepository
         catch (Exception ex)
         {
             Log.Error(ex, "Error al actualizar el importe del presupuesto {Id}", id);
+            return Result.Failure<Presupuesto, DomainError>(PresupuestoErrors.DatabaseError(ex.Message));
+        }
+    }
+
+    public async Task<Result<Presupuesto, DomainError>> DeleteAsync(int id)
+    {
+        await InitializeAsync();
+        using var context = CreateContext();
+        var entity = await context.Presupuestos.FindAsync(id);
+        if (entity is null)
+            return Result.Failure<Presupuesto, DomainError>(PresupuestoErrors.NotFound(id));
+        try
+        {
+            context.Presupuestos.Remove(entity);
+            await context.SaveChangesAsync();
+            return Result.Success<Presupuesto, DomainError>(entity.ToPresupuesto());
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error al eliminar el presupuesto {Id}", id);
             return Result.Failure<Presupuesto, DomainError>(PresupuestoErrors.DatabaseError(ex.Message));
         }
     }

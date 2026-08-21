@@ -5,6 +5,7 @@
 @inject CafeStock.Back.Services.Presupuestos.IPresupuestoService PresupuestoService
 @inject NavigationManager Navigation
 @inject ISnackbar Snackbar
+@inject IDialogService DialogService
 
 <PageTitle>@(_proveedor?.Nombre ?? "Proveedor")</PageTitle>
 
@@ -204,23 +205,35 @@ else
     <MudText Typo="Typo.h5" Class="mb-2 mt-6" Style="color:#3E2723;">Presupuesto mensual</MudText>
 
     <MudPaper Class="pa-4 mb-4" Elevation="1" Style="max-width:600px;">
+        @if (_editandoPresupuestoId is not null)
+        {
+            <MudAlert Severity="Severity.Info" Dense="true" Class="mb-3">
+                Editando el importe de @NombresMeses[_mesSeleccionado - 1] @_anioSeleccionado. El mes y el año no se pueden cambiar — si te equivocaste de mes, bórralo y crea uno nuevo.
+            </MudAlert>
+        }
         <div class="d-flex gap-4 flex-wrap mb-2" style="align-items:flex-end;">
-            <MudSelect T="int" @bind-Value="_mesSeleccionado" Label="Mes" Style="min-width:160px;">
+            <MudSelect T="int" @bind-Value="_mesSeleccionado" Label="Mes" Disabled="_editandoPresupuestoId is not null" Style="min-width:160px;">
                 @for (var i = 1; i <= 12; i++)
                 {
                     var mes = i;
                     <MudSelectItem Value="mes">@NombresMeses[mes - 1]</MudSelectItem>
                 }
             </MudSelect>
-            <MudNumericField T="int" @bind-Value="_anioSeleccionado" Label="Año" Min="2024" Style="max-width:120px;"/>
+            <MudNumericField T="int" @bind-Value="_anioSeleccionado" Label="Año" Min="2024" Disabled="_editandoPresupuestoId is not null" Style="max-width:120px;"/>
             <MudNumericField T="decimal" @bind-Value="_importeSeleccionado" Label="Importe asignado" Min="0" Format="F2" Adornment="Adornment.End" AdornmentText="€" Style="max-width:180px;"/>
             <MudButton Variant="Variant.Filled"
                        Color="Color.Primary"
                        StartIcon="@Icons.Material.Filled.Save"
                        OnClick="GuardarPresupuestoAsync"
                        Disabled="_guardandoPresupuesto">
-                @(_guardandoPresupuesto ? "Guardando..." : "Guardar")
+                @(_guardandoPresupuesto ? "Guardando..." : (_editandoPresupuestoId is not null ? "Guardar importe" : "Crear"))
             </MudButton>
+            @if (_editandoPresupuestoId is not null)
+            {
+                <MudButton Variant="Variant.Text" Color="Color.Default" OnClick="CancelarEdicionPresupuesto">
+                    Cancelar
+                </MudButton>
+            }
         </div>
     </MudPaper>
 
@@ -237,6 +250,7 @@ else
                 <MudTd DataLabel="Importe asignado">@context.ImporteAsignado.ToString("F2") €</MudTd>
                 <MudTd>
                     <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="@(() => CargarPresupuestoEnFormulario(context))"/>
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error" OnClick="@(() => BorrarPresupuestoAsync(context))"/>
                 </MudTd>
             </RowTemplate>
         </MudTable>
@@ -264,6 +278,12 @@ else
     private int _mesSeleccionado = DateTime.Now.Month;
     private int _anioSeleccionado = DateTime.Now.Year;
     private decimal _importeSeleccionado;
+
+    // Null = el formulario está en modo "crear" (Mes/Año habilitados). Con valor = modo
+    // "editar importe" de ese presupuesto concreto (Mes/Año bloqueados, ver Disabled en el
+    // MudSelect/MudNumericField de arriba) — evita que cambiar el Mes/Año mientras se edita
+    // acabe creando sin querer un presupuesto nuevo en vez de actualizar el que se quería.
+    private int? _editandoPresupuestoId;
 
     private IEnumerable<Producto> _productosFiltrados =>
         _productos.Where(p => string.IsNullOrWhiteSpace(_busquedaProductos) ||
@@ -326,20 +346,20 @@ else
     }
 
     /// <summary>
-    /// Un único formulario para crear y editar: si ya hay un presupuesto para el
-    /// Mes/Año seleccionados se actualiza su importe (ActualizarImporteAsync), si no se crea
-    /// uno nuevo. La comprobación de duplicado "de verdad" (y la de que el proveedor exista)
-    /// vive en el repositorio; aquí solo se decide qué llamada hacer según lo que ya se cargó.
+    /// Un único formulario para crear y editar, decidido por _editandoPresupuestoId (no por
+    /// buscar en la lista si ya existe uno para ese Mes/Año — con Mes/Año bloqueados durante
+    /// la edición, ese id ya identifica sin ambigüedad qué registro tocar). La comprobación de
+    /// duplicado "de verdad" (y la de que el proveedor exista) vive en el repositorio; el error
+    /// que devuelve (ya legible, ver PresupuestoErrors) se muestra tal cual en el Snackbar, sin
+    /// dejar que ninguna excepción se escape sin capturar.
     /// </summary>
     private async Task GuardarPresupuestoAsync()
     {
         _guardandoPresupuesto = true;
         try
         {
-            var existente = _presupuestos.FirstOrDefault(p => p.Mes == _mesSeleccionado && p.Anio == _anioSeleccionado);
-
-            var resultado = existente is not null
-                ? await PresupuestoService.ActualizarImporteAsync(existente.Id, _importeSeleccionado)
+            var resultado = _editandoPresupuestoId is int id
+                ? await PresupuestoService.ActualizarImporteAsync(id, _importeSeleccionado)
                 : await PresupuestoService.CreateAsync(new Presupuesto
                 {
                     ProveedorId = Id,
@@ -352,6 +372,7 @@ else
             {
                 Snackbar.Add("Presupuesto guardado", Severity.Success);
                 _presupuestos = await PresupuestoService.GetByProveedorAsync(Id);
+                ReiniciarFormularioPresupuesto();
             }
             else
             {
@@ -366,9 +387,52 @@ else
 
     private void CargarPresupuestoEnFormulario(Presupuesto presupuesto)
     {
+        _editandoPresupuestoId = presupuesto.Id;
         _mesSeleccionado = presupuesto.Mes;
         _anioSeleccionado = presupuesto.Anio;
         _importeSeleccionado = presupuesto.ImporteAsignado;
+    }
+
+    private void CancelarEdicionPresupuesto() => ReiniciarFormularioPresupuesto();
+
+    private void ReiniciarFormularioPresupuesto()
+    {
+        _editandoPresupuestoId = null;
+        _mesSeleccionado = DateTime.Now.Month;
+        _anioSeleccionado = DateTime.Now.Year;
+        _importeSeleccionado = 0;
+    }
+
+    /// <summary>
+    /// Única forma de corregir un Mes/Año equivocado, ya que ActualizarImporteAsync no puede
+    /// tocarlos: confirmación primero (ver mismo patrón en ListaCompra.ConfirmarRecepcionGrupoAsync),
+    /// borrar después.
+    /// </summary>
+    private async Task BorrarPresupuestoAsync(Presupuesto presupuesto)
+    {
+        var parameters = new DialogParameters<ConfirmDialog>
+        {
+            { x => x.ContentText, $"¿Seguro que quieres borrar el presupuesto de {NombresMeses[presupuesto.Mes - 1]} {presupuesto.Anio} ({presupuesto.ImporteAsignado.ToString("F2")} €)? No se puede deshacer." },
+            { x => x.ConfirmText, "Borrar" },
+            { x => x.CancelText, "Cancelar" }
+        };
+
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Borrar presupuesto", parameters);
+        var resultadoDialog = await dialog.Result;
+        if (resultadoDialog is null || resultadoDialog.Canceled) return;
+
+        var resultado = await PresupuestoService.DeleteAsync(presupuesto.Id);
+        if (resultado.IsSuccess)
+        {
+            Snackbar.Add("Presupuesto borrado", Severity.Success);
+            _presupuestos = await PresupuestoService.GetByProveedorAsync(Id);
+            if (_editandoPresupuestoId == presupuesto.Id)
+                ReiniciarFormularioPresupuesto();
+        }
+        else
+        {
+            Snackbar.Add(resultado.Error.Message, Severity.Error);
+        }
     }
 
     private bool TieneDatosDeContacto() =>

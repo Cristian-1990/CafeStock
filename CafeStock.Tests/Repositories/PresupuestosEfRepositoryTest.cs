@@ -155,4 +155,65 @@ public class PresupuestosEfRepositoryTest
         resultado.Should().ContainSingle();
         resultado.Single().ImporteAsignado.Should().Be(500m);
     }
+
+    [Test]
+    public async Task GetAllAsync_DevuelveLosDeTodosLosProveedores()
+    {
+        // Arrange
+        var proveedor1 = await _proveedorRepository.CreateAsync(new Proveedor { Nombre = "Alcampo" });
+        var proveedor2 = await _proveedorRepository.CreateAsync(new Proveedor { Nombre = "Puchero" });
+        await _repository.CreateAsync(new Presupuesto { ProveedorId = proveedor1.Value.Id, Mes = 6, Anio = 2025, ImporteAsignado = 500m });
+        await _repository.CreateAsync(new Presupuesto { ProveedorId = proveedor2.Value.Id, Mes = 7, Anio = 2025, ImporteAsignado = 300m });
+
+        // Act
+        var resultado = await _repository.GetAllAsync();
+
+        // Assert
+        resultado.Should().HaveCount(2);
+    }
+
+    [Test]
+    public async Task DeleteAsync_PresupuestoExiste_LoElimina()
+    {
+        // Arrange
+        var proveedor = await _proveedorRepository.CreateAsync(new Proveedor { Nombre = "Alcampo" });
+        var creado = await _repository.CreateAsync(
+            new Presupuesto { ProveedorId = proveedor.Value.Id, Mes = 6, Anio = 2025, ImporteAsignado = 500m });
+
+        // Act
+        var resultado = await _repository.DeleteAsync(creado.Value.Id);
+
+        // Assert
+        resultado.IsSuccess.Should().BeTrue();
+        (await _repository.GetByProveedorAsync(proveedor.Value.Id)).Should().BeEmpty();
+    }
+
+    [Test]
+    public async Task DeleteAsync_NoExiste_DevuelveFailure()
+    {
+        // Act
+        var resultado = await _repository.DeleteAsync(999);
+
+        // Assert
+        resultado.IsFailure.Should().BeTrue();
+    }
+
+    [Test]
+    public async Task DeleteAsync_PermiteCrearOtroConElMismoMesYAnioTrasBorrar()
+    {
+        // Arrange: la vía de corrección para un Mes/Año equivocado es borrar y crear de nuevo
+        // (Mes/Año no se pueden editar) — comprueba que el índice único no bloquea el segundo
+        // Create una vez borrado el primero.
+        var proveedor = await _proveedorRepository.CreateAsync(new Proveedor { Nombre = "Alcampo" });
+        var creado = await _repository.CreateAsync(
+            new Presupuesto { ProveedorId = proveedor.Value.Id, Mes = 6, Anio = 2025, ImporteAsignado = 500m });
+        await _repository.DeleteAsync(creado.Value.Id);
+
+        // Act
+        var resultado = await _repository.CreateAsync(
+            new Presupuesto { ProveedorId = proveedor.Value.Id, Mes = 6, Anio = 2025, ImporteAsignado = 700m });
+
+        // Assert
+        resultado.IsSuccess.Should().BeTrue();
+    }
 }
