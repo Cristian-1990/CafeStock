@@ -1,4 +1,6 @@
 @page "/informes"
+@using System.Globalization
+@using System.Text.Json
 @using ApexCharts
 @inject CafeStock.Back.Services.Facturas.IFacturaService FacturaService
 @inject IProductoService ProductoService
@@ -97,7 +99,7 @@ else
     else
     {
         <MudPaper Class="pa-4 mb-8" Elevation="2" Style="max-width:600px;">
-            <ApexChart TItem="PuntoDato" @ref="_chartEvolucionPrecio" Title="Evolución de precio">
+            <ApexChart TItem="PuntoDato" @ref="_chartEvolucionPrecio" Title="Evolución de precio" Options="_opcionesLineaEvolucionPrecio">
                 <ApexPointSeries TItem="PuntoDato"
                                  Items="_evolucionPrecioProducto"
                                  Name="Precio unitario"
@@ -137,7 +139,7 @@ else
     else
     {
         <MudPaper Class="pa-4 mb-8" Elevation="2" Style="max-width:600px;">
-            <ApexChart TItem="PuntoDato" Title="Gasto por método de pago">
+            <ApexChart TItem="PuntoDato" Title="Gasto por método de pago" Options="_opcionesDonutMetodoPago">
                 <ApexPointSeries TItem="PuntoDato"
                                  Items="_gastoPorMetodoPago"
                                  Name="Gasto"
@@ -164,6 +166,142 @@ else
                 </MudAlert>
             }
         </div>
+    }
+
+    @* 7. PPV (Purchase Price Variance) por producto *@
+    <MudText Typo="Typo.h5" Class="mb-2" Style="color:#3E2723;">Desviación de precio de compra (PPV)</MudText>
+    @if (!_ppvPorProducto.Any())
+    {
+        <MudAlert Severity="Severity.Info" Class="mb-8">No hay productos con precio de referencia y compras registradas para comparar.</MudAlert>
+    }
+    else
+    {
+        <MudPaper Class="pa-4 mb-4" Elevation="2" Style="max-width:600px;">
+            <ApexChart TItem="PuntoDatoPpv" Title="PPV por producto (€)" Options="_opcionesBarrasPpv">
+                <ApexPointSeries TItem="PuntoDatoPpv"
+                                 Items="_ppvPorProducto"
+                                 Name="PPV"
+                                 SeriesType="SeriesType.Bar"
+                                 XValue="e => e.Etiqueta"
+                                 YValue="e => (decimal?)e.Valor"
+                                 PointColor='e => e.Valor > 0 ? "#993C1D" : "#3B6D11"'/>
+            </ApexChart>
+        </MudPaper>
+        <MudTable Items="_ppvPorProducto" Hover="true" Dense="true" Striped="true" Elevation="2" Class="mb-8" Style="max-width:600px;">
+            <HeaderContent>
+                <MudTh>Producto</MudTh>
+                <MudTh>PPV</MudTh>
+                <MudTh>% Desviación</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Producto">@context.Etiqueta</MudTd>
+                <MudTd DataLabel="PPV">
+                    <MudText Style="@($"color:{(context.Valor > 0 ? "#993C1D" : "#3B6D11")}; font-weight:600;")">
+                        @context.Valor.ToString("F2") €
+                    </MudText>
+                </MudTd>
+                <MudTd DataLabel="% Desviación">@context.PorcentajeDesviacion.ToString("F1") %</MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+
+    @* 8. Gasto en supermercado genérico vs proveedores habituales *@
+    <MudText Typo="Typo.h5" Class="mb-2" Style="color:#3E2723;">Gasto: supermercado genérico vs proveedores habituales</MudText>
+    @if (!_gastoPorTipoProveedor.Any())
+    {
+        <MudAlert Severity="Severity.Info" Class="mb-8">No hay compras con proveedor asignado todavía.</MudAlert>
+    }
+    else
+    {
+        <MudPaper Class="pa-4 mb-8" Elevation="2" Style="max-width:600px;">
+            <ApexChart TItem="PuntoDato" Title="Gasto por tipo de proveedor" Options="_opcionesDonutTipoProveedor">
+                <ApexPointSeries TItem="PuntoDato"
+                                 Items="_gastoPorTipoProveedor"
+                                 Name="Gasto"
+                                 SeriesType="SeriesType.Donut"
+                                 XValue="e => e.Etiqueta"
+                                 YValue="e => (decimal?)e.Valor"/>
+            </ApexChart>
+        </MudPaper>
+    }
+
+    @* 9. Concentración de gasto por proveedor *@
+    <MudText Typo="Typo.h5" Class="mb-2" Style="color:#3E2723;">Concentración de gasto por proveedor (%)</MudText>
+    @if (!_concentracionGastoPorProveedor.Any())
+    {
+        <MudAlert Severity="Severity.Info" Class="mb-8">No hay compras registradas todavía.</MudAlert>
+    }
+    else
+    {
+        <MudPaper Class="pa-4 mb-8" Elevation="2" Style="max-width:600px;">
+            <ApexChart TItem="PuntoDato" Title="Concentración de gasto por proveedor" Options="_opcionesBarrasConcentracion">
+                <ApexPointSeries TItem="PuntoDato"
+                                 Items="_concentracionGastoPorProveedor"
+                                 Name="% del gasto total"
+                                 SeriesType="SeriesType.Bar"
+                                 XValue="e => e.Etiqueta"
+                                 YValue="e => (decimal?)e.Valor"/>
+            </ApexChart>
+        </MudPaper>
+    }
+
+    @* 10. Ticket medio de compra por proveedor *@
+    <MudText Typo="Typo.h5" Class="mb-2" Style="color:#3E2723;">Ticket medio de compra por proveedor</MudText>
+    @if (!_ticketMedioPorProveedor.Any())
+    {
+        <MudAlert Severity="Severity.Info" Class="mb-8">No hay compras registradas todavía.</MudAlert>
+    }
+    else
+    {
+        <MudPaper Class="pa-4 mb-8" Elevation="2" Style="max-width:600px;">
+            <ApexChart TItem="PuntoDato" Title="Ticket medio por proveedor (€)" Options="_opcionesBarrasTicketMedio">
+                <ApexPointSeries TItem="PuntoDato"
+                                 Items="_ticketMedioPorProveedor"
+                                 Name="Ticket medio"
+                                 SeriesType="SeriesType.Bar"
+                                 XValue="e => e.Etiqueta"
+                                 YValue="e => (decimal?)e.Valor"/>
+            </ApexChart>
+        </MudPaper>
+    }
+
+    @* 11. Frecuencia real de compra vs día de reparto esperado (tabla, no gráfica) *@
+    <MudText Typo="Typo.h5" Class="mb-2" Style="color:#3E2723;">Frecuencia de compra vs reparto esperado</MudText>
+    @if (!_frecuenciaRepartoVsEsperado.Any())
+    {
+        <MudAlert Severity="Severity.Info" Class="mb-8">Ningún proveedor tiene día de reparto definido.</MudAlert>
+    }
+    else
+    {
+        <MudTable Items="_frecuenciaRepartoVsEsperado" Hover="true" Dense="true" Striped="true" Elevation="2" Class="mb-8" Style="max-width:700px;">
+            <HeaderContent>
+                <MudTh>Proveedor</MudTh>
+                <MudTh>Reparto esperado</MudTh>
+                <MudTh>Compras (en día esperado / total)</MudTh>
+                <MudTh>% Cumplimiento</MudTh>
+                <MudTh>Indicador</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Proveedor">@context.Proveedor</MudTd>
+                <MudTd DataLabel="Reparto esperado">@context.DiaRepartoEsperado</MudTd>
+                <MudTd DataLabel="Compras">@context.ComprasEnDiaEsperado / @context.TotalCompras</MudTd>
+                <MudTd DataLabel="% Cumplimiento">@(context.TotalCompras > 0 ? $"{context.PorcentajeCumplimiento:F0} %" : "—")</MudTd>
+                <MudTd DataLabel="Indicador">
+                    @if (context.TotalCompras == 0)
+                    {
+                        <MudText Style="color:#9E9E9E;">Sin compras registradas</MudText>
+                    }
+                    else if (context.Desviacion)
+                    {
+                        <MudChip T="string" Color="MudBlazor.Color.Error" Size="MudBlazor.Size.Small" Icon="@Icons.Material.Filled.Warning">Desviación</MudChip>
+                    }
+                    else
+                    {
+                        <MudChip T="string" Color="MudBlazor.Color.Success" Size="MudBlazor.Size.Small" Icon="@Icons.Material.Filled.Check">Cumple</MudChip>
+                    }
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
     }
 }
 
@@ -200,6 +338,35 @@ else
     // 6. Proveedores sin compra reciente
     private List<ProveedorAlerta> _proveedoresSinCompraReciente = [];
 
+    // 7. PPV (Purchase Price Variance) por producto
+    private List<PuntoDatoPpv> _ppvPorProducto = [];
+
+    // 8. Gasto en supermercado genérico vs proveedores habituales
+    private List<PuntoDato> _gastoPorTipoProveedor = [];
+
+    // 9. Concentración de gasto por proveedor
+    private List<PuntoDato> _concentracionGastoPorProveedor = [];
+
+    // 10. Ticket medio de compra por proveedor
+    private List<PuntoDato> _ticketMedioPorProveedor = [];
+
+    // 11. Frecuencia real de compra vs día de reparto esperado
+    private const decimal UmbralPorcentajeCumplimientoReparto = 50m;
+    private List<InformeReparto> _frecuenciaRepartoVsEsperado = [];
+
+    // Formatters de ApexCharts (tooltip.y y yaxis.labels): ApexCharts los ejecuta en JS en el
+    // navegador, así que no pueden reutilizar el ToString("F2")/("F1") de C# directamente —
+    // se replica aquí la MISMA regla que ya usa la tabla de PPV (coma decimal, 2 decimales +
+    // "€" para importes, 1 decimal + "%" para porcentajes), y un único formatter de cada tipo
+    // compartido por todas las gráficas que lo necesitan, no uno distinto por gráfica.
+    // Sin formatter, ApexCharts muestra el número JS en crudo sin redondear (comprobado: así
+    // estaban las 4 gráficas de € ya existentes antes de este cambio, ninguna tenía formatter).
+    private const string FormatterEuros =
+        "function(val) { return (typeof val === 'number' ? val.toFixed(2).replace('.', ',') : val) + ' €'; }";
+
+    private const string FormatterPorcentaje =
+        "function(val) { return (typeof val === 'number' ? val.toFixed(1).replace('.', ',') : val) + ' %'; }";
+
     // Dos instancias separadas (no una compartida): dos ApexChart montados a la vez
     // reutilizando el mismo objeto Options daba un gráfico en blanco sin excepción alguna.
     private readonly ApexChartOptions<PuntoDato> _opcionesBarrasGastoProveedor = new()
@@ -207,7 +374,15 @@ else
         PlotOptions = new PlotOptions
         {
             Bar = new PlotOptionsBar { Horizontal = true }
-        }
+        },
+        Tooltip = new Tooltip { Y = new TooltipY { Formatter = FormatterEuros } },
+        Yaxis = [new YAxis { Labels = new YAxisLabels { Formatter = FormatterEuros } }]
+    };
+
+    private readonly ApexChartOptions<PuntoDato> _opcionesLineaEvolucionPrecio = new()
+    {
+        Tooltip = new Tooltip { Y = new TooltipY { Formatter = FormatterEuros } },
+        Yaxis = [new YAxis { Labels = new YAxisLabels { Formatter = FormatterEuros } }]
     };
 
     private readonly ApexChartOptions<PuntoDato> _opcionesBarrasProductosGasto = new()
@@ -215,7 +390,50 @@ else
         PlotOptions = new PlotOptions
         {
             Bar = new PlotOptionsBar { Horizontal = true }
-        }
+        },
+        Tooltip = new Tooltip { Y = new TooltipY { Formatter = FormatterEuros } },
+        Yaxis = [new YAxis { Labels = new YAxisLabels { Formatter = FormatterEuros } }]
+    };
+
+    private readonly ApexChartOptions<PuntoDato> _opcionesDonutMetodoPago = new()
+    {
+        Tooltip = new Tooltip { Y = new TooltipY { Formatter = FormatterEuros } }
+        // Los donut no tienen eje Y — no aplica Yaxis.Labels.Formatter aquí.
+    };
+
+    private readonly ApexChartOptions<PuntoDatoPpv> _opcionesBarrasPpv = new()
+    {
+        PlotOptions = new PlotOptions
+        {
+            Bar = new PlotOptionsBar { Horizontal = true }
+        },
+        Tooltip = new Tooltip { Y = new TooltipY { Formatter = FormatterEuros } },
+        Yaxis = [new YAxis { Labels = new YAxisLabels { Formatter = FormatterEuros } }]
+    };
+
+    private readonly ApexChartOptions<PuntoDato> _opcionesDonutTipoProveedor = new()
+    {
+        Tooltip = new Tooltip { Y = new TooltipY { Formatter = FormatterEuros } }
+    };
+
+    // El Tooltip.Y.Formatter de esta gráfica es un caso especial (problema 2): no es uno de
+    // los dos formatters genéricos de arriba porque necesita mostrar el € además del % —
+    // se construye en OnInitializedAsync (ConstruirFormatterConcentracion), una vez que se
+    // conoce _gastoPorProveedorEuros, y se asigna aquí abajo. El Yaxis sí usa el formatter de
+    // porcentaje genérico, porque el eje solo muestra el %.
+    private readonly ApexChartOptions<PuntoDato> _opcionesBarrasConcentracion = new()
+    {
+        PlotOptions = new PlotOptions
+        {
+            Bar = new PlotOptionsBar { Horizontal = true }
+        },
+        Yaxis = [new YAxis { Labels = new YAxisLabels { Formatter = FormatterPorcentaje } }]
+    };
+
+    private readonly ApexChartOptions<PuntoDato> _opcionesBarrasTicketMedio = new()
+    {
+        Tooltip = new Tooltip { Y = new TooltipY { Formatter = FormatterEuros } },
+        Yaxis = [new YAxis { Labels = new YAxisLabels { Formatter = FormatterEuros } }]
     };
 
     protected override async Task OnInitializedAsync()
@@ -234,6 +452,20 @@ else
         _productosPorGastoTotal = CalcularProductosPorGastoTotal();
         _gastoPorMetodoPago = CalcularGastoPorMetodoPago();
         _proveedoresSinCompraReciente = CalcularProveedoresSinCompraReciente();
+        _ppvPorProducto = CalcularPpvPorProducto();
+        _gastoPorTipoProveedor = CalcularGastoPorTipoProveedor();
+
+        // Gasto por proveedor sin filtro (RangoFechas.Todo), reutilizado para el % de
+        // concentración y para el € que muestra su tooltip (problema 2) — un único cálculo.
+        var gastoPorProveedorEuros = CalcularGastoPorProveedor(RangoFechas.Todo);
+        _concentracionGastoPorProveedor = CalcularConcentracionGastoPorProveedor(gastoPorProveedorEuros);
+        _opcionesBarrasConcentracion.Tooltip = new Tooltip
+        {
+            Y = new TooltipY { Formatter = ConstruirFormatterConcentracion(gastoPorProveedorEuros) }
+        };
+
+        _ticketMedioPorProveedor = CalcularTicketMedioPorProveedor();
+        _frecuenciaRepartoVsEsperado = CalcularFrecuenciaRepartoVsEsperado();
 
         _cargando = false;
     }
@@ -359,6 +591,158 @@ else
             .ToList();
     }
 
+    // ---- 7. PPV (Purchase Price Variance) por producto ----
+
+    /// <summary>
+    /// Para cada producto con al menos una LineaCompra histórica y precio de referencia
+    /// fijado (Producto.PrecioUnitario > 0 — sin referencia no hay desviación que calcular):
+    /// PPV = Σ (PrecioUnitario real de cada línea − PrecioUnitario de referencia) × Cantidad.
+    /// PPV > 0 significa que se pagó de más respecto al precio de referencia; PPV &lt; 0, de menos.
+    /// El % de desviación compara el precio real medio ponderado por cantidad (no la media
+    /// simple, que pesaría igual una línea de 1 unidad que una de 100) contra la referencia.
+    /// </summary>
+    private List<PuntoDatoPpv> CalcularPpvPorProducto()
+    {
+        var productosPorId = _productos.ToDictionary(p => p.Id);
+
+        return _compras
+            .SelectMany(c => c.Lineas)
+            .GroupBy(l => l.ProductoId)
+            .Where(g => productosPorId.TryGetValue(g.Key, out var producto) && producto.PrecioUnitario > 0)
+            .Select(g =>
+            {
+                var producto = productosPorId[g.Key];
+                var ppv = g.Sum(l => (l.PrecioUnitario - producto.PrecioUnitario) * l.Cantidad);
+                var cantidadTotal = g.Sum(l => l.Cantidad);
+                var precioMedioPonderado = cantidadTotal > 0 ? g.Sum(l => l.PrecioUnitario * l.Cantidad) / cantidadTotal : 0;
+                var porcentajeDesviacion = (precioMedioPonderado - producto.PrecioUnitario) / producto.PrecioUnitario * 100;
+                return new PuntoDatoPpv(producto.Nombre, ppv, porcentajeDesviacion);
+            })
+            .OrderByDescending(p => Math.Abs(p.Valor))
+            .ToList();
+    }
+
+    // ---- 8. Gasto en supermercado genérico vs proveedores habituales ----
+
+    /// <summary>
+    /// Compras sin proveedor asignado (ProveedorId null) quedan fuera: no se pueden
+    /// clasificar como genérico/habitual sin proveedor.
+    /// </summary>
+    private List<PuntoDato> CalcularGastoPorTipoProveedor()
+    {
+        var proveedoresPorId = _proveedores.ToDictionary(p => p.Id);
+
+        return _compras
+            .Where(c => c.ProveedorId is not null && proveedoresPorId.ContainsKey(c.ProveedorId.Value))
+            .GroupBy(c => proveedoresPorId[c.ProveedorId!.Value].EsSupermercadoGenerico)
+            .Select(g => new PuntoDato(
+                g.Key ? "Supermercado genérico" : "Proveedores habituales",
+                g.SelectMany(c => c.Lineas).Sum(l => l.Cantidad * l.PrecioUnitario)))
+            .OrderByDescending(p => p.Valor)
+            .ToList();
+    }
+
+    // ---- 9. Concentración de gasto por proveedor ----
+
+    /// <summary>
+    /// Reutiliza CalcularGastoPorProveedor (informe 2, con RangoFechas.Todo — la concentración
+    /// siempre es sobre el histórico completo, no está sujeta al filtro de fecha del informe 2)
+    /// en vez de repetir el mismo GroupBy+Sum. El € por proveedor que devuelve esa llamada es
+    /// justo lo que necesita también el tooltip combinado %+€ (problema 2, ver
+    /// ConstruirFormatterConcentracion) — un único cálculo, dos usos.
+    /// </summary>
+    private List<PuntoDato> CalcularConcentracionGastoPorProveedor(List<PuntoDato> gastoPorProveedorEuros)
+    {
+        var gastoTotal = gastoPorProveedorEuros.Sum(g => g.Valor);
+        if (gastoTotal <= 0) return [];
+
+        return gastoPorProveedorEuros
+            .Select(g => new PuntoDato(g.Etiqueta, g.Valor / gastoTotal * 100))
+            .OrderByDescending(p => p.Valor)
+            .ToList();
+    }
+
+    /// <summary>
+    /// Tooltip específico de esta gráfica (problema 2): además del %, muestra el € real entre
+    /// paréntesis, para no dejar ambigüedad sobre si un 63% son 100€ o 10.000€. Necesita un
+    /// formatter distinto de FormatterPorcentaje porque tiene que mirar el € correspondiente a
+    /// cada punto — se le pasa como un objeto JS embebido (proveedor → €), construido aquí a
+    /// partir de gastoPorProveedorEuros (la misma lista reutilizada arriba).
+    /// </summary>
+    private static string ConstruirFormatterConcentracion(List<PuntoDato> gastoPorProveedorEuros)
+    {
+        var mapaEuros = string.Join(",", gastoPorProveedorEuros.Select(g =>
+            $"{JsonSerializer.Serialize(g.Etiqueta)}:{g.Valor.ToString(CultureInfo.InvariantCulture)}"));
+
+        return $$"""
+            function(val, opts) {
+                var eurosPorProveedor = {{{mapaEuros}}};
+                var etiqueta = (opts && opts.w) ? opts.w.globals.labels[opts.dataPointIndex] : null;
+                var euros = etiqueta !== null ? eurosPorProveedor[etiqueta] : undefined;
+                var pctTexto = (typeof val === 'number' ? val.toFixed(1).replace('.', ',') : val) + ' %';
+                if (typeof euros !== 'number') return pctTexto;
+                return pctTexto + ' (' + euros.toFixed(2).replace('.', ',') + ' €)';
+            }
+            """;
+    }
+
+    // ---- 10. Ticket medio de compra por proveedor ----
+
+    private List<PuntoDato> CalcularTicketMedioPorProveedor() =>
+        _compras
+            .GroupBy(c => c.ProveedorNombre ?? "Sin proveedor asignado")
+            .Select(g => new PuntoDato(g.Key, g.Average(c => c.Lineas.Sum(l => l.Cantidad * l.PrecioUnitario))))
+            .OrderByDescending(p => p.Valor)
+            .ToList();
+
+    // ---- 11. Frecuencia real de compra vs día de reparto esperado ----
+
+    // Proveedor.DiaReparto es texto libre ("Miércoles 9:00", "Martes, Miércoles y Jueves"),
+    // no un día limpio — ver valores reales comprobados en la base de datos de desarrollo.
+    // Por eso la comparación es "¿el nombre del día real está contenido en el texto?" en vez
+    // de una igualdad estricta contra un único DayOfWeek.
+    private static readonly string[] NombresDiasSemana =
+        ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+
+    /// <summary>
+    /// StringComparison.OrdinalIgnoreCase ignora mayúsculas/minúsculas pero NO tildes: "MIERCOLES"
+    /// tecleado a mano (sin tilde) no haría match contra "Miércoles". CompareInfo con
+    /// IgnoreNonSpace sí ignora diacríticos además de mayúsculas, así que "MIERCOLES",
+    /// "miercoles" y "MIÉRCOLES" coinciden igual contra el texto libre de DiaReparto.
+    /// </summary>
+    private static bool DiaRepartoContiene(string diaReparto, string nombreDia) =>
+        CultureInfo.InvariantCulture.CompareInfo.IndexOf(
+            diaReparto, nombreDia, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace) >= 0;
+
+    /// <summary>
+    /// Por cada proveedor con DiaReparto definido: de sus compras históricas, cuántas cayeron
+    /// en un día que aparece mencionado en DiaReparto. Se marca Desviacion cuando hay compras
+    /// registradas pero menos de la mitad (UmbralPorcentajeCumplimientoReparto) cayeron en el
+    /// día esperado — mismo nivel de sencillez que el umbral fijo de "Proveedores sin compra
+    /// reciente" (informe 6).
+    /// </summary>
+    private List<InformeReparto> CalcularFrecuenciaRepartoVsEsperado()
+    {
+        return _proveedores
+            .Where(p => !string.IsNullOrWhiteSpace(p.DiaReparto))
+            .Select(p =>
+            {
+                var comprasProveedor = _compras.Where(c => c.ProveedorId == p.Id).ToList();
+                var total = comprasProveedor.Count;
+                var enDiaEsperado = comprasProveedor.Count(c =>
+                    DiaRepartoContiene(p.DiaReparto, NombresDiasSemana[(int)c.Fecha.DayOfWeek]));
+                var porcentaje = total > 0 ? (decimal)enDiaEsperado / total * 100 : 0;
+                var desviacion = total > 0 && porcentaje < UmbralPorcentajeCumplimientoReparto;
+
+                return new InformeReparto(p.Nombre, p.DiaReparto, total, enDiaEsperado, porcentaje, desviacion);
+            })
+            .OrderByDescending(r => r.Desviacion)
+            .ThenBy(r => r.Proveedor)
+            .ToList();
+    }
+
     private record PuntoDato(string Etiqueta, decimal Valor);
     private record ProveedorAlerta(string Nombre, int? DiasDesdeUltimaCompra);
+    private record PuntoDatoPpv(string Etiqueta, decimal Valor, decimal PorcentajeDesviacion);
+    private record InformeReparto(string Proveedor, string DiaRepartoEsperado, int TotalCompras, int ComprasEnDiaEsperado, decimal PorcentajeCumplimiento, bool Desviacion);
 }
