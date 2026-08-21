@@ -76,6 +76,16 @@ El mayor cuello de botella actual no es contar el stock, sino coordinar *cuándo
 
 ---
 
+## Pendiente — control de acceso (sin urgencia, revisar cuando haya empleados usando la app)
+
+Hoy la app la usan solo el dueño y el desarrollador, sin necesidad de restringir nada. Cuando haya trabajadores usándola de forma habitual, valorar:
+
+- Ocultar del menú, para el personal: Informes, Facturas, y la columna Precio en Stock/Producto.
+- Decidir entonces entre dos caminos: (A) solo ocultar en la interfaz (rápido, pero no impide entrar por URL directa), o (B) un PIN de administrador con verificación real en el servidor, que desbloquee una sesión temporal — más trabajo, pero protección de verdad, no solo apariencia.
+- Ninguna de las dos apps tiene sistema de login hoy — cualquier solución de este tipo sería la primera vez que se introduce ese concepto.
+
+---
+
 ## Autor
 
 Proyecto desarrollado por Cristian como parte de una solución a un problema real en el día a día de una cafetería 
