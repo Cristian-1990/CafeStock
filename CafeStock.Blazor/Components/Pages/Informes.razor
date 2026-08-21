@@ -3,6 +3,7 @@
 @inject CafeStock.Back.Services.Facturas.IFacturaService FacturaService
 @inject IProductoService ProductoService
 @inject IProveedorService ProveedorService
+@inject CafeStock.Back.Services.SnapshotsInventario.ISnapshotInventarioService SnapshotInventarioService
 
 <PageTitle>Informes</PageTitle>
 
@@ -219,6 +220,11 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        // No depende de JS ni del circuito interactivo (solo lee/escribe en la base de datos
+        // por debajo), así que va aquí y no en OnAfterRenderAsync — a diferencia de lo que
+        // aplica a diálogos u otra lógica que sí necesita el circuito ya montado.
+        await SnapshotInventarioService.AsegurarSnapshotDeHoyAsync();
+
         _compras = (await FacturaService.GetAllAsync()).ToList();
         _productos = (await ProductoService.GetAllAsync()).OrderBy(p => p.Nombre).ToList();
         _proveedores = (await ProveedorService.GetAllAsync()).ToList();
