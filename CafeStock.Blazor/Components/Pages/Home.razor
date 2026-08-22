@@ -1,4 +1,6 @@
 ﻿@page "/"
+@implements IDisposable
+@inject MascotSettingsService MascotSettings
 
 <PageTitle>CafeStock</PageTitle>
 
@@ -27,4 +29,37 @@
             Ver proveedores
         </MudButton>
     </div>
+
+    <MudButton Variant="Variant.Text"
+               Color="Color.Secondary"
+               StartIcon="@(MascotSettings.Enabled ? Icons.Material.Filled.ToggleOn : Icons.Material.Filled.ToggleOff)"
+               OnClick="ToggleMascotAsync"
+               Class="mt-6">
+        @(MascotSettings.Enabled ? "Desactivar mascota guía" : "Activar mascota guía")
+    </MudButton>
 </MudContainer>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Prerender sin circuito JS: la lectura de localStorage va aquí, no en OnInitializedAsync.
+            await MascotSettings.InitializeAsync();
+            MascotSettings.EnabledChanged += OnMascotEnabledChanged;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ToggleMascotAsync()
+    {
+        await MascotSettings.SetEnabledAsync(!MascotSettings.Enabled);
+    }
+
+    private void OnMascotEnabledChanged(bool enabled) => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        MascotSettings.EnabledChanged -= OnMascotEnabledChanged;
+    }
+}
