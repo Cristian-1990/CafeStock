@@ -74,6 +74,7 @@
    hijo), no lleva el atributo de scope de la CSS aislada de Home, así que
    hace falta ::deep para que el selector haga match. */
 .home-welcome-bubble ::deep .mud-typography-body2 {
-    font-size: 1.56rem;
+    /* -18% sobre 1.56rem a petición del usuario. */
+    font-size: 1.2792rem;
     line-height: 1.5;
 }

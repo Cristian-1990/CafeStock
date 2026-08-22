@@ -55,6 +55,7 @@
    así que no lleva el atributo de scope de la CSS aislada de AppMascot;
    sin ::deep este selector nunca haría match. */
 .app-mascot-bubble ::deep .mud-typography-body2 {
-    font-size: 1.56rem;
+    /* -18% sobre 1.56rem a petición del usuario. */
+    font-size: 1.2792rem;
     line-height: 1.5;
 }
