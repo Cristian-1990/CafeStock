@@ -44,6 +44,13 @@
                Class="mt-6">
         @(MascotSettings.Enabled ? "Desactivar mascota guía" : "Activar mascota guía")
     </MudButton>
+
+    @if (MascotSettings.Enabled)
+    {
+        <img src="images/mascot/mascot-saludo-home.png"
+             alt="Mascota CafeStock"
+             class="mascot-home-image"/>
+    }
 </MudContainer>
 
 @code {

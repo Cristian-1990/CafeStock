@@ -1,0 +1,10 @@
+/* León de cuerpo entero, puramente de presentación (sin bocadillo). Tamaño
+   de partida a ojo: 420px de alto, ancho automático según su aspect ratio
+   real (800x1320) para no deformarlo — punto de partida a reajustar tras
+   verlo en el navegador, no un número cerrado. */
+.mascot-home-image {
+    height: 420px;
+    width: auto;
+    object-fit: contain;
+    margin-top: 32px;
+}
