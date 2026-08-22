@@ -14,8 +14,12 @@
 }
 
 .app-mascot-avatar {
-    width: 72px;
-    height: 72px;
+    /* Recorte "cintura para arriba" (~450x500, no cuerpo entero): altura fija,
+       ancho automático según el aspect ratio real de cada PNG para que no se
+       deforme ni se recorte. */
+    height: 100px;
+    width: auto;
+    max-width: 110px;
     object-fit: contain;
     flex-shrink: 0;
     filter: drop-shadow(0 2px 6px rgba(62, 39, 35, 0.35));
