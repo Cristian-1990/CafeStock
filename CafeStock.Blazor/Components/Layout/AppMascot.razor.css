@@ -20,30 +20,35 @@
     /* Tamaño fijo, notablemente grande: altura fija (no depende del
        contenido de la página) y ancho automático según el aspect ratio
        real de cada PNG (recorte cintura-arriba, ~450x500) para que no se
-       deforme ni se recorte. max-width es solo un tope de seguridad. */
-    height: 240px;
+       deforme ni se recorte. max-width es solo un tope de seguridad.
+       +20% sobre la ronda anterior (240px -> 288px). */
+    height: 288px;
     width: auto;
-    max-width: 260px;
+    max-width: 312px;
     object-fit: contain;
     flex-shrink: 0;
     filter: drop-shadow(0 2px 6px rgba(62, 39, 35, 0.35));
 }
 
+/* Bocadillo escalado en la misma proporción respecto a la altura del
+   avatar que se usó en la ronda anterior (100px -> 240px), aplicada ahora
+   al nuevo incremento (240px -> 288px, x1.2): padding 20/24 -> 24/28.8,
+   borde 3 -> 3.6, radios 20/6 -> 24/7.2, font-size 1.3rem -> 1.56rem. */
 .app-mascot-bubble {
     background-color: #F5EFE6;
-    border: 3px solid #C17817;
-    border-radius: 20px 20px 6px 20px;
-    padding: 20px 24px;
+    border: 3.6px solid #C17817;
+    border-radius: 24px 24px 7.2px 24px;
+    padding: 24px 28.8px;
     color: #3E2723;
     box-shadow: 0 2px 8px rgba(62, 39, 35, 0.25);
 }
 
 /* El texto del bocadillo (MudText) usa su propio tamaño de MudBlazor por
-   defecto (~0.875rem) — demasiado pequeño al lado de un avatar de 240px.
+   defecto (~0.875rem) — demasiado pequeño al lado del avatar grande.
    ::deep es obligatorio: el <p> lo renderiza MudText (un componente hijo),
    así que no lleva el atributo de scope de la CSS aislada de AppMascot;
    sin ::deep este selector nunca haría match. */
 .app-mascot-bubble ::deep .mud-typography-body2 {
-    font-size: 1.3rem;
+    font-size: 1.56rem;
     line-height: 1.5;
 }
