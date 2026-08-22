@@ -1,0 +1,85 @@
+@implements IDisposable
+@inject NavigationManager NavigationManager
+@inject MascotSettingsService MascotSettings
+@inject IMascotMessageProvider MessageProvider
+
+@if (_visible)
+{
+    <div class="app-mascot" @onclick="Dismiss">
+        <div class="app-mascot-bubble">
+            <MudText Typo="Typo.body2">@_currentMessage!.Value.Mensaje</MudText>
+        </div>
+        <img class="app-mascot-avatar" src="@GetImagePath(_currentMessage!.Value.Pose)" alt="Mascota CafeStock"/>
+    </div>
+}
+
+@code {
+    private bool _dismissed;
+    private bool _settingsReady;
+    private (MascotPose Pose, string Mensaje)? _currentMessage;
+
+    private bool _visible => _settingsReady && MascotSettings.Enabled && !_dismissed && _currentMessage is not null;
+
+    protected override void OnInitialized()
+    {
+        NavigationManager.LocationChanged += OnLocationChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Prerender de Blazor Server no tiene circuito JS todavía: la lectura de
+            // localStorage y el primer mensaje se disparan aquí, nunca en OnInitializedAsync.
+            await MascotSettings.InitializeAsync();
+            MascotSettings.EnabledChanged += OnEnabledChanged;
+            _settingsReady = true;
+            ActualizarMensaje(NavigationManager.Uri);
+            StateHasChanged();
+        }
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        _dismissed = false;
+        ActualizarMensaje(e.Location);
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void OnEnabledChanged(bool enabled)
+    {
+        if (enabled)
+        {
+            _dismissed = false;
+            ActualizarMensaje(NavigationManager.Uri);
+        }
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void ActualizarMensaje(string uri)
+    {
+        var sinQueryNiFragmento = uri.Split('?')[0].Split('#')[0];
+        var relativePath = NavigationManager.ToBaseRelativePath(sinQueryNiFragmento).TrimEnd('/');
+        _currentMessage = MessageProvider.Get(relativePath);
+    }
+
+    private void Dismiss()
+    {
+        _dismissed = true;
+    }
+
+    private static string GetImagePath(MascotPose pose) => pose switch
+    {
+        MascotPose.Saludo => "images/mascot/mascot-saludo.png",
+        MascotPose.Celebracion => "images/mascot/mascot-celebracion.png",
+        MascotPose.Senalando => "images/mascot/mascot-senalando.png",
+        MascotPose.Pensativo => "images/mascot/mascot-pensativo.png",
+        _ => throw new ArgumentOutOfRangeException(nameof(pose), pose, null)
+    };
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
+        MascotSettings.EnabledChanged -= OnEnabledChanged;
+    }
+}
