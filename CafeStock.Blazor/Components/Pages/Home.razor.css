@@ -19,6 +19,12 @@
     height: 420px;
     width: auto;
     object-fit: contain;
+    /* Recorta un borde casi-transparente (no 100% alpha=0) que trae el PNG
+       de origen en su canvas — confirmado con getComputedStyle (sin border/
+       outline/box-shadow en ningún ancestro) y con una página HTML aislada
+       sin ningún CSS de la app: la línea persistía ahí también. No se toca
+       el archivo PNG, solo se recorta 2px de cada lado al renderizar. */
+    clip-path: inset(2px);
 }
 
 /* Bocadillo de bienvenida estático: mismo look visual que el bocadillo del

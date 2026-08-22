@@ -28,6 +28,12 @@
     object-fit: contain;
     flex-shrink: 0;
     filter: drop-shadow(0 2px 6px rgba(62, 39, 35, 0.35));
+    /* Recorta un borde casi-transparente (no 100% alpha=0) que traen los PNG
+       de origen en su canvas — confirmado con getComputedStyle (sin border/
+       outline/box-shadow en ningún ancestro) y con una página HTML aislada
+       sin ningún CSS de la app: la línea persistía ahí también. No se toca
+       el archivo PNG, solo se recorta 2px de cada lado al renderizar. */
+    clip-path: inset(2px);
 }
 
 /* Bocadillo escalado en la misma proporción respecto a la altura del
