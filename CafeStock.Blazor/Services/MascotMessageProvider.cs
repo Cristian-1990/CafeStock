@@ -12,9 +12,6 @@ public class MascotMessageProvider : IMascotMessageProvider
 {
     private static readonly Dictionary<string, (MascotPose Pose, string Mensaje)> Mensajes = new()
     {
-        [""] = (MascotPose.Saludo,
-            "¡Bienvenido a CafeStock! Desde aquí accedes a proveedores, productos, stock y ventas. Vamos paso a paso."),
-
         ["facturas"] = (MascotPose.Saludo,
             "Aquí está tu historial de facturas. Desde la ficha de cada proveedor también puedes filtrar directo con 'Ver facturas'."),
 
