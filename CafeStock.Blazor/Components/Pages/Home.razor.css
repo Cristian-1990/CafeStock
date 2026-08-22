@@ -1,10 +1,45 @@
-/* León de cuerpo entero, puramente de presentación (sin bocadillo). Tamaño
-   de partida a ojo: 420px de alto, ancho automático según su aspect ratio
-   real (800x1320) para no deformarlo — punto de partida a reajustar tras
-   verlo en el navegador, no un número cerrado. */
+/* Fila del león de presentación + bocadillo de bienvenida estático. Envuelve
+   en flex-wrap: se ponen lado a lado en desktop; en tablet estrecha, si no
+   caben, el bocadillo pasa a la línea de arriba en vez de desbordar o
+   solaparse con el león. */
+.home-presentation {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-top: 32px;
+}
+
+/* León de cuerpo entero, puramente de presentación (sin bocadillo propio
+   encima). Tamaño de partida a ojo: 420px de alto, ancho automático según
+   su aspect ratio real (800x1320) para no deformarlo — punto de partida a
+   reajustar tras verlo en el navegador, no un número cerrado. */
 .mascot-home-image {
     height: 420px;
     width: auto;
     object-fit: contain;
-    margin-top: 32px;
+}
+
+/* Bocadillo de bienvenida estático: mismo look visual que el bocadillo del
+   widget de esquina (AppMascot) — mismo fondo, borde y radius — para que se
+   sienta parte de la misma familia visual. A diferencia de aquel, este no
+   es descartable con click, es presentación fija de Home mientras
+   Enabled sea true. */
+.home-welcome-bubble {
+    background-color: #F5EFE6;
+    border: 3.6px solid #C17817;
+    border-radius: 24px 24px 7.2px 24px;
+    padding: 24px 28.8px;
+    color: #3E2723;
+    box-shadow: 0 2px 8px rgba(62, 39, 35, 0.25);
+    max-width: 360px;
+}
+
+/* Igual que en AppMascot.razor.css: el <p> lo renderiza MudText (componente
+   hijo), no lleva el atributo de scope de la CSS aislada de Home, así que
+   hace falta ::deep para que el selector haga match. */
+.home-welcome-bubble ::deep .mud-typography-body2 {
+    font-size: 1.56rem;
+    line-height: 1.5;
 }
