@@ -58,6 +58,10 @@
                  class="mascot-home-image"/>
         </div>
     }
+    @* El bocadillo va primero en el marcado a propósito: en desktop se saca del flujo con
+       position:absolute (no importa el orden), pero en el fallback de tablet estrecha
+       (position:static, ver media query) necesita aparecer ANTES que el león en el
+       documento para que la pila vertical normal lo muestre arriba, no debajo. *@
 </MudContainer>
 
 @code {

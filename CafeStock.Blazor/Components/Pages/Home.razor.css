@@ -1,13 +1,20 @@
-/* Fila del león de presentación + bocadillo de bienvenida estático. Envuelve
-   en flex-wrap: se ponen lado a lado en desktop; en tablet estrecha, si no
-   caben, el bocadillo pasa a la línea de arriba en vez de desbordar o
-   solaparse con el león. */
+/* León de presentación centrado él solo (único elemento en flujo normal);
+   el bocadillo se posiciona con position:absolute respecto a ESTE mismo
+   contenedor position:relative, sin afectar el centrado del león — mismo
+   patrón que el widget de esquina (avatar en flujo, bocadillo posicionado
+   respecto a un contenedor compartido). flex-direction:column + align-items
+   centra horizontalmente al único hijo en flujo (el león); en desktop el
+   bocadillo sale del flujo así que no cuenta para ese centrado. */
 .home-presentation {
+    position: relative;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 24px;
-    flex-wrap: wrap;
+    /* Sin width:100% a propósito: el contenedor se ajusta (shrink-to-fit) al
+       león en desktop, para que "right: calc(100% + 16px)" del bocadillo se
+       calcule respecto a la caja real del león y no a todo el ancho del área
+       de contenido — el centrado horizontal lo pone el align-items:center
+       del MudContainer padre, igual que con el resto de hijos de Inicio. */
     margin-top: 32px;
 }
 
@@ -19,6 +26,8 @@
     height: 420px;
     width: auto;
     object-fit: contain;
+    display: block;
+    margin: 0 auto;
     /* Recorta un borde casi-transparente (no 100% alpha=0) que trae el PNG
        de origen en su canvas — confirmado con getComputedStyle (sin border/
        outline/box-shadow en ningún ancestro) y con una página HTML aislada
@@ -31,8 +40,14 @@
    widget de esquina (AppMascot) — mismo fondo, borde y radius — para que se
    sienta parte de la misma familia visual. A diferencia de aquel, este no
    es descartable con click, es presentación fija de Home mientras
-   Enabled sea true. */
+   Enabled sea true.
+   Desktop: position:absolute respecto a .home-presentation, desplazado a
+   la izquierda y hacia arriba del león (altura de la cabeza/melena), sin
+   afectar el centrado del león porque queda fuera del flujo normal. */
 .home-welcome-bubble {
+    position: absolute;
+    right: calc(100% + 16px);
+    top: 60px;
     background-color: #F5EFE6;
     border: 3.6px solid #C17817;
     border-radius: 24px 24px 7.2px 24px;
@@ -40,6 +55,19 @@
     color: #3E2723;
     box-shadow: 0 2px 8px rgba(62, 39, 35, 0.25);
     max-width: 360px;
+}
+
+/* Tablet estrecha: a la izquierda del león ya no cabe sin desbordar la
+   pantalla (drawer + león + bocadillo no entran en el ancho disponible).
+   En vez de eso, el bocadillo vuelve al flujo normal (position:static) y
+   queda por delante del león en el marcado, así que cae arriba de él,
+   centrado igual que el león — nunca se corta ni se sale por la izquierda. */
+@media (max-width: 900px) {
+    .home-welcome-bubble {
+        position: static;
+        max-width: min(360px, 90vw);
+        margin-bottom: 24px;
+    }
 }
 
 /* Igual que en AppMascot.razor.css: el <p> lo renderiza MudText (componente
