@@ -1,4 +1,6 @@
 ﻿@page "/"
+@implements IDisposable
+@inject MascotSettingsService MascotSettings
 
 <PageTitle>CafeStock</PageTitle>
 
@@ -26,5 +28,63 @@
                    Href="/proveedores">
             Ver proveedores
         </MudButton>
+        <MudButton Variant="Variant.Outlined"
+                   Color="Color.Primary"
+                   Size="Size.Large"
+                   StartIcon="@Icons.Material.Filled.Checklist"
+                   Href="/stock/realizar">
+            Realizar stock
+        </MudButton>
     </div>
+
+    <MudButton Variant="Variant.Text"
+               Color="Color.Secondary"
+               StartIcon="@(MascotSettings.Enabled ? Icons.Material.Filled.ToggleOn : Icons.Material.Filled.ToggleOff)"
+               OnClick="ToggleMascotAsync"
+               Class="mt-6">
+        @(MascotSettings.Enabled ? "Desactivar mascota guía" : "Activar mascota guía")
+    </MudButton>
+
+    @if (MascotSettings.Enabled)
+    {
+        <div class="home-presentation">
+            <div class="home-welcome-bubble">
+                <MudText Typo="Typo.body2">
+                    ¡Bienvenido a CafeStock! Desde aquí accedes a proveedores, productos, stock y ventas. Vamos paso a paso.
+                </MudText>
+            </div>
+            <img src="images/mascot/mascot-saludo-home.png"
+                 alt="Mascota CafeStock"
+                 class="mascot-home-image"/>
+        </div>
+    }
+    @* El bocadillo va primero en el marcado a propósito: en desktop se saca del flujo con
+       position:absolute (no importa el orden), pero en el fallback de tablet estrecha
+       (position:static, ver media query) necesita aparecer ANTES que el león en el
+       documento para que la pila vertical normal lo muestre arriba, no debajo. *@
 </MudContainer>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Prerender sin circuito JS: la lectura de localStorage va aquí, no en OnInitializedAsync.
+            await MascotSettings.InitializeAsync();
+            MascotSettings.EnabledChanged += OnMascotEnabledChanged;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ToggleMascotAsync()
+    {
+        await MascotSettings.SetEnabledAsync(!MascotSettings.Enabled);
+    }
+
+    private void OnMascotEnabledChanged(bool enabled) => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        MascotSettings.EnabledChanged -= OnMascotEnabledChanged;
+    }
+}

@@ -1,0 +1,61 @@
+/* Avatar fijo en la esquina inferior derecha; el bocadillo se expande hacia
+   la izquierda desde ahí. z-index por encima del contenido pero por debajo
+   de diálogos/snackbars de MudBlazor (que usan valores más altos).
+   max-width del contenedor es solo un tope de seguridad para no salirse del
+   viewport en pantallas estrechas (tablet) — el tamaño del avatar en sí es
+   fijo, no depende de esto. */
+.app-mascot {
+    position: fixed;
+    right: 28px;
+    bottom: 28px;
+    z-index: 1200;
+    display: flex;
+    align-items: flex-end;
+    gap: 16px;
+    cursor: pointer;
+    max-width: min(560px, calc(100vw - 56px));
+}
+
+.app-mascot-avatar {
+    /* Tamaño fijo, notablemente grande: altura fija (no depende del
+       contenido de la página) y ancho automático según el aspect ratio
+       real de cada PNG (recorte cintura-arriba, ~450x500) para que no se
+       deforme ni se recorte. max-width es solo un tope de seguridad.
+       +20% sobre la ronda anterior (240px -> 288px). */
+    height: 288px;
+    width: auto;
+    max-width: 312px;
+    object-fit: contain;
+    flex-shrink: 0;
+    filter: drop-shadow(0 2px 6px rgba(62, 39, 35, 0.35));
+    /* Recorta un borde casi-transparente (no 100% alpha=0) que traen los PNG
+       de origen en su canvas — confirmado con getComputedStyle (sin border/
+       outline/box-shadow en ningún ancestro) y con una página HTML aislada
+       sin ningún CSS de la app: la línea persistía ahí también. No se toca
+       el archivo PNG, solo se recorta 2px de cada lado al renderizar. */
+    clip-path: inset(2px);
+}
+
+/* Bocadillo escalado en la misma proporción respecto a la altura del
+   avatar que se usó en la ronda anterior (100px -> 240px), aplicada ahora
+   al nuevo incremento (240px -> 288px, x1.2): padding 20/24 -> 24/28.8,
+   borde 3 -> 3.6, radios 20/6 -> 24/7.2, font-size 1.3rem -> 1.56rem. */
+.app-mascot-bubble {
+    background-color: #F5EFE6;
+    border: 3.6px solid #C17817;
+    border-radius: 24px 24px 7.2px 24px;
+    padding: 24px 28.8px;
+    color: #3E2723;
+    box-shadow: 0 2px 8px rgba(62, 39, 35, 0.25);
+}
+
+/* El texto del bocadillo (MudText) usa su propio tamaño de MudBlazor por
+   defecto (~0.875rem) — demasiado pequeño al lado del avatar grande.
+   ::deep es obligatorio: el <p> lo renderiza MudText (un componente hijo),
+   así que no lleva el atributo de scope de la CSS aislada de AppMascot;
+   sin ::deep este selector nunca haría match. */
+.app-mascot-bubble ::deep .mud-typography-body2 {
+    /* -18% sobre 1.56rem a petición del usuario. */
+    font-size: 1.2792rem;
+    line-height: 1.5;
+}
