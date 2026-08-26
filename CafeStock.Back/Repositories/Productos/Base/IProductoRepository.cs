@@ -19,4 +19,12 @@ public interface IProductoRepository
     /// modificar precio, proveedor, nombre, etc. aunque se llame por error con otros datos.
     /// </summary>
     Task<Result<Producto, DomainError>> ActualizarStockActualAsync(int id, int nuevaCantidad);
+
+    /// <summary>
+    /// Actualiza ÚNICAMENTE PrecioUnitario, sin tocar ningún otro campo. Pensado para la
+    /// sincronización automática de precio de referencia tras una recepción de compra
+    /// (CompraService.CreateAsync): a diferencia de UpdateAsync, no puede modificar stock,
+    /// proveedor, nombre, etc. aunque se llame por error con otros datos.
+    /// </summary>
+    Task<Result<Producto, DomainError>> ActualizarPrecioUnitarioAsync(int id, decimal nuevoPrecio);
 }

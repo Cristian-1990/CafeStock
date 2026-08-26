@@ -91,4 +91,17 @@ public class ProductoService : IProductoService
                 resultado.Value.Id, resultado.Value.Nombre, nuevaCantidad);
         return resultado;
     }
+
+    public async Task<Result<Producto, DomainError>> ActualizarPrecioUnitarioAsync(int id, decimal nuevoPrecio)
+    {
+        if (nuevoPrecio <= 0)
+            return Result.Failure<Producto, DomainError>(
+                ProductoErrors.Validation(["El precio unitario debe ser mayor que 0"]));
+
+        var resultado = await _repository.ActualizarPrecioUnitarioAsync(id, nuevoPrecio);
+        if (resultado.IsSuccess)
+            Log.Information("Precio unitario actualizado: Id={Id}, Nombre={Nombre}, NuevoPrecio={NuevoPrecio}",
+                resultado.Value.Id, resultado.Value.Nombre, nuevoPrecio);
+        return resultado;
+    }
 }

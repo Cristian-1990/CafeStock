@@ -149,6 +149,33 @@ public class ProductosEfRepositoryTest
     }
 
     [Test]
+    public async Task ActualizarPrecioUnitarioAsync_ModificaSoloElPrecio()
+    {
+        // Arrange
+        var creado = await _repository.CreateAsync(
+            new Producto { Nombre = "Café", StockActual = 2, StockMaximo = 5, PrecioUnitario = 4.0m });
+
+        // Act
+        var resultado = await _repository.ActualizarPrecioUnitarioAsync(creado.Value.Id, 4.5m);
+
+        // Assert: el precio cambia, el resto de campos queda intacto
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value.PrecioUnitario.Should().Be(4.5m);
+        resultado.Value.StockActual.Should().Be(2);
+        resultado.Value.Nombre.Should().Be("Café");
+    }
+
+    [Test]
+    public async Task ActualizarPrecioUnitarioAsync_ProductoNoExiste_DevuelveFailure()
+    {
+        // Act
+        var resultado = await _repository.ActualizarPrecioUnitarioAsync(999, 4.5m);
+
+        // Assert
+        resultado.IsFailure.Should().BeTrue();
+    }
+
+    [Test]
     public async Task ProductosUrgentes_DevuelveSoloBajoMinimo()
     {
         // Arrange

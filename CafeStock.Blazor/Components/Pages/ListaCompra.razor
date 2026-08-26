@@ -34,6 +34,7 @@ else
                 <HeaderContent>
                     <MudTh>Producto</MudTh>
                     <MudTh>Cantidad a recibir</MudTh>
+                    <MudTh>Precio unitario</MudTh>
                 </HeaderContent>
                 <RowTemplate>
                     <MudTd DataLabel="Producto">@context.Nombre</MudTd>
@@ -44,6 +45,17 @@ else
                                           Min="0"
                                           Variant="Variant.Outlined"
                                           Style="max-width:100px;"/>
+                    </MudTd>
+                    <MudTd DataLabel="Precio unitario">
+                        <MudNumericField T="decimal"
+                                          Value="_preciosRecibidos[context.Id]"
+                                          ValueChanged="@((decimal v) => _preciosRecibidos[context.Id] = v)"
+                                          Min="0"
+                                          Format="F2"
+                                          Adornment="Adornment.Start"
+                                          AdornmentText="€"
+                                          Variant="Variant.Outlined"
+                                          Style="max-width:120px;"/>
                     </MudTd>
                 </RowTemplate>
             </MudTable>
@@ -64,6 +76,7 @@ else
     private IEnumerable<Producto> _productos = [];
     private IEnumerable<Proveedor> _proveedores = [];
     private Dictionary<int, int> _cantidadesRecibidas = [];
+    private Dictionary<int, decimal> _preciosRecibidos = [];
     private HashSet<int?> _confirmandoGrupo = [];
     private bool _cargando = true;
 
@@ -80,6 +93,7 @@ else
     {
         _productos = await ProductoService.GetProductosBajoMinimoAsync();
         _cantidadesRecibidas = _productos.ToDictionary(p => p.Id, p => p.CantidadAComprar);
+        _preciosRecibidos = _productos.ToDictionary(p => p.Id, p => p.PrecioUnitario);
         _cargando = false;
     }
 
@@ -104,10 +118,12 @@ else
     }
 
     /// <summary>
-    /// Por cada producto con cantidad > 0 y precio unitario fijado (el que tiene el producto,
-    /// no editable aquí), actualiza su stock (ConfirmarRecepcionAsync, que ya soporta recepción
-    /// parcial) y añade una línea a la Compra que se registra al final. Los productos con
-    /// cantidad 0 o sin precio fijado se saltan sin bloquear el resto del grupo.
+    /// Por cada producto con cantidad > 0 y precio introducido en el formulario > 0 (el precio
+    /// de referencia previo del producto, si no tenía, ya no bloquea que aparezca aquí — solo
+    /// se exige que se haya introducido uno válido en esta recepción), actualiza su stock
+    /// (ConfirmarRecepcionAsync, que ya soporta recepción parcial) y añade una línea a la
+    /// Compra que se registra al final. Los productos con cantidad 0 o sin precio introducido
+    /// se saltan sin bloquear el resto del grupo.
     /// </summary>
     private async Task ProcesarRecepcionGrupoAsync(int? proveedorId, List<Producto> productosGrupo)
     {
@@ -118,14 +134,15 @@ else
             foreach (var producto in productosGrupo)
             {
                 var cantidad = _cantidadesRecibidas[producto.Id];
+                var precio = _preciosRecibidos[producto.Id];
 
-                if (cantidad <= 0 || producto.PrecioUnitario <= 0)
+                if (cantidad <= 0 || precio <= 0)
                     continue;
 
                 var resultado = await ProductoService.ConfirmarRecepcionAsync(producto.Id, cantidad);
                 if (resultado.IsSuccess)
                 {
-                    lineas.Add(new LineaCompra { ProductoId = producto.Id, Cantidad = cantidad, PrecioUnitario = producto.PrecioUnitario });
+                    lineas.Add(new LineaCompra { ProductoId = producto.Id, Cantidad = cantidad, PrecioUnitario = precio });
                 }
                 else
                 {

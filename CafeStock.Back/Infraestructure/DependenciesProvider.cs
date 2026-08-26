@@ -68,6 +68,8 @@ public static class DependenciesProvider
     {
         services.AddScoped<IProductoService, ProductoService>();
         services.AddScoped<IProveedorService, ProveedorService>();
+        // CompraService depende de IProductoService (sincroniza Producto.PrecioUnitario tras
+        // registrar una compra) — debe registrarse después.
         services.AddScoped<ICompraService, CompraService>();
         services.AddScoped<IFacturaService, FacturaService>();
         services.AddScoped<IRegistroCafeService, RegistroCafeService>();

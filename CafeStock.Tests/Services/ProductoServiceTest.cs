@@ -126,6 +126,45 @@ public class ProductoServiceTest
     }
 
     [Test]
+    public async Task ActualizarPrecioUnitarioAsync_PrecioValido_LlamaAlRepositorio()
+    {
+        // Arrange
+        var producto = new Producto { Id = 1, Nombre = "Café", StockActual = 4, StockMaximo = 5, PrecioUnitario = 4.5m };
+        _repositoryMock
+            .Setup(r => r.ActualizarPrecioUnitarioAsync(1, 4.5m))
+            .ReturnsAsync(Result.Success<Producto, DomainError>(producto));
+
+        // Act
+        var resultado = await _service.ActualizarPrecioUnitarioAsync(1, 4.5m);
+
+        // Assert
+        resultado.IsSuccess.Should().BeTrue();
+        _repositoryMock.Verify(r => r.ActualizarPrecioUnitarioAsync(1, 4.5m), Times.Once);
+    }
+
+    [Test]
+    public async Task ActualizarPrecioUnitarioAsync_PrecioCero_NoLlamaAlRepositorio()
+    {
+        // Act
+        var resultado = await _service.ActualizarPrecioUnitarioAsync(1, 0m);
+
+        // Assert
+        resultado.IsFailure.Should().BeTrue();
+        _repositoryMock.Verify(r => r.ActualizarPrecioUnitarioAsync(It.IsAny<int>(), It.IsAny<decimal>()), Times.Never);
+    }
+
+    [Test]
+    public async Task ActualizarPrecioUnitarioAsync_PrecioNegativo_NoLlamaAlRepositorio()
+    {
+        // Act
+        var resultado = await _service.ActualizarPrecioUnitarioAsync(1, -1m);
+
+        // Assert
+        resultado.IsFailure.Should().BeTrue();
+        _repositoryMock.Verify(r => r.ActualizarPrecioUnitarioAsync(It.IsAny<int>(), It.IsAny<decimal>()), Times.Never);
+    }
+
+    [Test]
     public async Task GetAllAsync_DevuelveTodosLosProductos()
     {
         // Arrange

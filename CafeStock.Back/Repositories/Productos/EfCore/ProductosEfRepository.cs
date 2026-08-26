@@ -175,4 +175,24 @@ public class ProductosEfRepository : IProductoRepository
             return Result.Failure<Producto, DomainError>(ProductoErrors.DatabaseError(ex.Message));
         }
     }
+
+    public async Task<Result<Producto, DomainError>> ActualizarPrecioUnitarioAsync(int id, decimal nuevoPrecio)
+    {
+        await InitializeAsync();
+        using var context = CreateContext();
+        var entity = await context.Productos.FindAsync(id);
+        if (entity is null)
+            return Result.Failure<Producto, DomainError>(ProductoErrors.NotFound(id));
+        try
+        {
+            entity.PrecioUnitario = nuevoPrecio;
+            await context.SaveChangesAsync();
+            return Result.Success<Producto, DomainError>(entity.ToProducto());
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error al actualizar el precio unitario del producto {Id}", id);
+            return Result.Failure<Producto, DomainError>(ProductoErrors.DatabaseError(ex.Message));
+        }
+    }
 }
