@@ -84,7 +84,29 @@ else
         <RowTemplate>
             <MudTd DataLabel="Producto">@(context.ProductoNombre ?? $"Producto #{context.ProductoId}")</MudTd>
             <MudTd DataLabel="Cantidad">@context.Cantidad</MudTd>
-            <MudTd DataLabel="Precio unitario">@context.PrecioUnitario.ToString("F2") €</MudTd>
+            <MudTd DataLabel="Precio unitario">
+                @if (_editandoLineaId == context.Id)
+                {
+                    <div class="d-flex align-center" style="gap:4px;">
+                        <MudNumericField T="decimal" @bind-Value="_precioEnEdicion"
+                                          Min="0" Format="F2" Variant="Variant.Outlined"
+                                          Style="max-width:110px;"/>
+                        <MudIconButton Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small"
+                                       OnClick="@(() => GuardarPrecioLineaAsync(context))"/>
+                        <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small"
+                                       OnClick="@(() => _editandoLineaId = null)"/>
+                    </div>
+                }
+                else
+                {
+                    <div class="d-flex align-center" style="gap:4px;">
+                        <span>@context.PrecioUnitario.ToString("F2") €</span>
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
+                                       title="Editar precio"
+                                       OnClick="@(() => EmpezarEdicionPrecio(context))"/>
+                    </div>
+                }
+            </MudTd>
             <MudTd DataLabel="Subtotal">@((context.Cantidad * context.PrecioUnitario).ToString("F2")) €</MudTd>
         </RowTemplate>
         <FooterContent>
@@ -122,6 +144,11 @@ else
     // string? porque el TextField puede dejarlo a null; se normaliza a "" al guardar.
     private string? _notas = string.Empty;
 
+    // Id de la LineaCompra en edición inline (null = ninguna fila en modo edición) y buffer
+    // del precio mientras se edita, igual de patrón que ListaCompra.razor con las cantidades.
+    private int? _editandoLineaId;
+    private decimal _precioEnEdicion;
+
     private decimal _total => _factura?.Lineas.Sum(l => l.Cantidad * l.PrecioUnitario) ?? 0;
 
     protected override async Task OnInitializedAsync()
@@ -153,6 +180,43 @@ else
         {
             _factura = _factura with { Notas = notas };
             Snackbar.Add("Notas guardadas", Severity.Success);
+        }
+        else
+        {
+            Snackbar.Add(resultado.Error.Message, Severity.Error);
+        }
+    }
+
+    private void EmpezarEdicionPrecio(LineaCompra linea)
+    {
+        _editandoLineaId = linea.Id;
+        _precioEnEdicion = linea.PrecioUnitario;
+    }
+
+    /// <summary>
+    /// Corrige el precio real de una línea ya guardada. El servicio ya decide si además hay
+    /// que sincronizar Producto.PrecioUnitario (solo si esta es la compra más reciente con
+    /// ese producto) — aquí solo se refleja el nuevo precio de la línea en la vista.
+    /// </summary>
+    private async Task GuardarPrecioLineaAsync(LineaCompra linea)
+    {
+        if (_factura is null) return;
+
+        if (_precioEnEdicion <= 0)
+        {
+            Snackbar.Add("El precio unitario debe ser mayor que 0", Severity.Warning);
+            return;
+        }
+
+        var resultado = await CompraService.ActualizarPrecioLineaAsync(linea.Id, _precioEnEdicion);
+        if (resultado.IsSuccess)
+        {
+            var lineasActualizadas = _factura.Lineas
+                .Select(l => l.Id == linea.Id ? l with { PrecioUnitario = _precioEnEdicion } : l)
+                .ToList();
+            _factura = _factura with { Lineas = lineasActualizadas };
+            _editandoLineaId = null;
+            Snackbar.Add("Precio corregido", Severity.Success);
         }
         else
         {

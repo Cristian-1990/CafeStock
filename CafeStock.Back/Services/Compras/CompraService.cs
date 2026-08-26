@@ -107,4 +107,53 @@ public class CompraService : ICompraService
             Log.Information("Notas actualizadas: Id={Id}", id);
         return resultado;
     }
+
+    /// <summary>
+    /// Corrige el precio de una línea ya registrada. La recencia (qué Compra es la más
+    /// reciente entre las que incluyen ese producto) se calcula en memoria sobre
+    /// GetAllAsync(), igual que ya hacen los informes — el volumen de datos de una cafetería
+    /// es pequeño y así la lógica de negocio queda en el servicio, no repartida en SQL.
+    /// </summary>
+    public async Task<Result<LineaCompra, DomainError>> ActualizarPrecioLineaAsync(int lineaCompraId, decimal nuevoPrecio)
+    {
+        if (nuevoPrecio <= 0)
+            return Result.Failure<LineaCompra, DomainError>(
+                CompraErrors.Validation(["El precio unitario debe ser mayor que 0"]));
+
+        var todasLasCompras = await _repository.GetAllAsync();
+        var compraDeLaLinea = todasLasCompras.FirstOrDefault(c => c.Lineas.Any(l => l.Id == lineaCompraId));
+        if (compraDeLaLinea is null)
+            return Result.Failure<LineaCompra, DomainError>(CompraErrors.LineaNotFound(lineaCompraId));
+
+        var linea = compraDeLaLinea.Lineas.First(l => l.Id == lineaCompraId);
+        var precioAnterior = linea.PrecioUnitario;
+
+        var resultado = await _repository.ActualizarPrecioLineaAsync(lineaCompraId, nuevoPrecio);
+        if (resultado.IsFailure)
+            return resultado;
+
+        var compraMasRecienteDelProducto = todasLasCompras
+            .Where(c => c.Lineas.Any(l => l.ProductoId == linea.ProductoId))
+            .OrderByDescending(c => c.Fecha)
+            .ThenByDescending(c => c.Id)
+            .First();
+        var esLaMasReciente = compraMasRecienteDelProducto.Id == compraDeLaLinea.Id;
+
+        var referenciaActualizada = false;
+        if (esLaMasReciente)
+        {
+            var actualizacionProducto = await _productoService.ActualizarPrecioUnitarioAsync(linea.ProductoId, nuevoPrecio);
+            referenciaActualizada = actualizacionProducto.IsSuccess;
+            if (!actualizacionProducto.IsSuccess)
+                Log.Error(
+                    "No se pudo sincronizar la referencia de precio del producto {ProductoId} tras corregir la línea {LineaCompraId}: {Error}",
+                    linea.ProductoId, lineaCompraId, actualizacionProducto.Error.Message);
+        }
+
+        Log.Information(
+            "Precio de línea de compra corregido: LineaCompraId={LineaCompraId}, ProductoId={ProductoId}, PrecioAnterior={PrecioAnterior}, PrecioNuevo={PrecioNuevo}, ReferenciaActualizada={ReferenciaActualizada}",
+            lineaCompraId, linea.ProductoId, precioAnterior, nuevoPrecio, referenciaActualizada);
+
+        return resultado;
+    }
 }

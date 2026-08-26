@@ -112,4 +112,24 @@ public class ComprasEfRepository : ICompraRepository
             return Result.Failure<Compra, DomainError>(CompraErrors.DatabaseError(ex.Message));
         }
     }
+
+    public async Task<Result<LineaCompra, DomainError>> ActualizarPrecioLineaAsync(int lineaCompraId, decimal nuevoPrecio)
+    {
+        await InitializeAsync();
+        using var context = CreateContext();
+        var entity = await context.LineasCompra.FindAsync(lineaCompraId);
+        if (entity is null)
+            return Result.Failure<LineaCompra, DomainError>(CompraErrors.LineaNotFound(lineaCompraId));
+        try
+        {
+            entity.PrecioUnitario = nuevoPrecio;
+            await context.SaveChangesAsync();
+            return Result.Success<LineaCompra, DomainError>(entity.ToLineaCompra());
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error al actualizar el precio de la línea de compra {Id}", lineaCompraId);
+            return Result.Failure<LineaCompra, DomainError>(CompraErrors.DatabaseError(ex.Message));
+        }
+    }
 }

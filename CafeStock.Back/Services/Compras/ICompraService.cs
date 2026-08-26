@@ -21,4 +21,12 @@ public interface ICompraService
     /// Actualiza únicamente las notas de una Compra ya registrada.
     /// </summary>
     Task<Result<Compra, DomainError>> ActualizarNotasAsync(int id, string notas);
+
+    /// <summary>
+    /// Corrige el precio de una LineaCompra ya registrada (factura ya creada). Si la Compra
+    /// dueña de esa línea es la más reciente (Fecha desc, Id desc como desempate) entre todas
+    /// las que incluyen ese mismo producto, sincroniza también Producto.PrecioUnitario al
+    /// nuevo valor; si hay una compra posterior con ese producto, no toca la referencia.
+    /// </summary>
+    Task<Result<LineaCompra, DomainError>> ActualizarPrecioLineaAsync(int lineaCompraId, decimal nuevoPrecio);
 }
