@@ -14,6 +14,7 @@ using CafeStock.Back.Services.RegistrosCafe;
 using CafeStock.Back.Services.SnapshotsInventario;
 using ApexCharts;
 using CafeStock.Blazor.Components;
+using Microsoft.Extensions.FileProviders;
 using MudBlazor.Services;
 using Serilog;
 
@@ -95,6 +96,17 @@ try
     app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
     app.UseHttpsRedirection();
     app.UseAntiforgery();
+
+    // Complementa a MapStaticAssets: ese middleware solo conoce el manifiesto
+    // generado en el último dotnet publish, así que imágenes de proveedores/
+    // productos añadidas a mano después (ej. scp a producción) darían 404
+    // hasta el siguiente publish. Este middleware sirve wwwroot/images/
+    // directamente desde disco en cada petición, sin depender del manifiesto.
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(Path.Combine(app.Environment.WebRootPath, "images")),
+        RequestPath = "/images"
+    });
     app.MapStaticAssets();
     app.MapRazorComponents<App>()
         .AddInteractiveServerRenderMode();
