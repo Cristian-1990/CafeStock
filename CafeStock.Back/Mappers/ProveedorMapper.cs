@@ -19,6 +19,7 @@ public static class ProveedorMapper
             Direccion = proveedor.Direccion,
             NifCif = proveedor.NifCif,
             EsSupermercadoGenerico = proveedor.EsSupermercadoGenerico,
+            AgruparPorTipoUnidad = proveedor.AgruparPorTipoUnidad,
         };
     }
 
@@ -36,7 +37,8 @@ public static class ProveedorMapper
             Notas = entity.Notas,
             Direccion = entity.Direccion,
             NifCif = entity.NifCif,
-            EsSupermercadoGenerico = entity.EsSupermercadoGenerico
+            EsSupermercadoGenerico = entity.EsSupermercadoGenerico,
+            AgruparPorTipoUnidad = entity.AgruparPorTipoUnidad
         };
     }
 }

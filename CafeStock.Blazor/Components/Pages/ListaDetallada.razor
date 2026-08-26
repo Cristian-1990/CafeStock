@@ -70,12 +70,12 @@ else
     {
         @if (_productosFiltrados.Any(p => p.Unidad.Grupo() == GrupoUnidadMedida.Peso))
         {
-            <MudText Typo="Typo.h6" Class="mb-2" Style="color:#3E2723;">Por peso</MudText>
+            <MudText Typo="Typo.h6" Class="mb-2" Style="color:#3E2723;">@SeccionesUnidadLabels.UsoCafeteria</MudText>
             @TarjetasProductos(_productosFiltrados.Where(p => p.Unidad.Grupo() == GrupoUnidadMedida.Peso))
         }
         @if (_productosFiltrados.Any(p => p.Unidad.Grupo() == GrupoUnidadMedida.Unidad))
         {
-            <MudText Typo="Typo.h6" Class="mb-2 mt-6" Style="color:#3E2723;">Por unidad</MudText>
+            <MudText Typo="Typo.h6" Class="mb-2 mt-6" Style="color:#3E2723;">@SeccionesUnidadLabels.VentaAlPublico</MudText>
             @TarjetasProductos(_productosFiltrados.Where(p => p.Unidad.Grupo() == GrupoUnidadMedida.Unidad))
         }
         @if (_productosFiltrados.Any(p => p.Unidad.Grupo() == GrupoUnidadMedida.SinClasificar))
@@ -101,18 +101,15 @@ else
 
     // División puramente visual de las tarjetas por tipo de unidad de medida
     // (ver CafeStock.Blazor.Services.UnidadMedidaExtensions), solo cuando el
-    // filtro activo es un proveedor concreto. No tiene ningún efecto sobre
+    // filtro activo es un proveedor concreto CON Proveedor.AgruparPorTipoUnidad
+    // activo (hoy, solo Puchero). No basta con que el proveedor tenga productos
+    // en más de un GrupoUnidadMedida: sin el flag explícito, cualquier proveedor
+    // con productos mixtos (p.ej. Alcampo) se vería agrupado igual, que es
+    // justamente el bug que este flag corrige. No tiene ningún efecto sobre
     // Compra/Factura.
-    //
-    // Se decide sobre todos los productos del proveedor (no sobre los
-    // filtrados por el buscador de texto) para que las secciones no
-    // aparezcan/desaparezcan mientras se escribe en el buscador.
     private bool _mostrarSeccionesUnidad =>
         _proveedorSeleccionado is not null &&
-        _productos.Where(p => p.ProveedorId == _proveedorSeleccionado)
-                  .Select(p => p.Unidad.Grupo())
-                  .Distinct()
-                  .Count() > 1;
+        _proveedores.FirstOrDefault(p => p.Id == _proveedorSeleccionado)?.AgruparPorTipoUnidad == true;
 
     private RenderFragment<IEnumerable<Producto>> TarjetasProductos => productos =>
         @<MudGrid>

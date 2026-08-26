@@ -24,3 +24,15 @@ public static class UnidadMedidaExtensions
         _ => GrupoUnidadMedida.SinClasificar
     };
 }
+
+/// <summary>
+/// Etiquetas de las secciones "Por peso"/"Por unidad" para el proveedor que distingue uso
+/// interno de cafetería vs. venta al público (hoy, solo Puchero — ver
+/// Proveedor.AgruparPorTipoUnidad). Compartidas entre ListaDetallada.razor y
+/// ProveedorDetalle.razor para no duplicar el texto literal en dos sitios.
+/// </summary>
+public static class SeccionesUnidadLabels
+{
+    public const string UsoCafeteria = "Uso cafetería";
+    public const string VentaAlPublico = "Venta al público";
+}

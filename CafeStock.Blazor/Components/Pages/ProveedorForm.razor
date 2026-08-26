@@ -75,6 +75,11 @@
                  Color="Color.Primary"
                  Class="mb-4"/>
 
+    <MudCheckBox @bind-Value="_agruparPorTipoUnidad"
+                 Label="Agrupar por tipo de unidad (peso/unidad) en el catálogo"
+                 Color="Color.Primary"
+                 Class="mb-4"/>
+
     <div class="d-flex gap-2">
         <MudButton Variant="Variant.Filled"
                    Color="Color.Primary"
@@ -112,6 +117,7 @@
     private string _direccion = string.Empty;
     private string _notas = string.Empty;
     private bool _esSupermercadoGenerico;
+    private bool _agruparPorTipoUnidad;
     private string? _error;
     private bool _esNuevo => Id is null;
 
@@ -132,6 +138,7 @@
                 _direccion = resultado.Value.Direccion;
                 _notas = resultado.Value.Notas;
                 _esSupermercadoGenerico = resultado.Value.EsSupermercadoGenerico;
+                _agruparPorTipoUnidad = resultado.Value.AgruparPorTipoUnidad;
             }
             else
             {
@@ -154,7 +161,8 @@
             DiaReparto = _diaReparto,
             Direccion = _direccion,
             Notas = _notas,
-            EsSupermercadoGenerico = _esSupermercadoGenerico
+            EsSupermercadoGenerico = _esSupermercadoGenerico,
+            AgruparPorTipoUnidad = _agruparPorTipoUnidad
         };
 
         var resultado = _esNuevo

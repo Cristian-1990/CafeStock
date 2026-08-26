@@ -109,6 +109,14 @@ public class AppDbContext : DbContext
         AsegurarColumnaAsync("Proveedores", "EsSupermercadoGenerico", "INTEGER NOT NULL DEFAULT 0");
 
     /// <summary>
+    /// Igual que AsegurarColumnaEsSupermercadoGenericoAsync pero para AgruparPorTipoUnidad
+    /// (división visual "Por peso"/"Por unidad" en /lista-detallada), añadido después de que
+    /// ya hubiera proveedores en producción.
+    /// </summary>
+    public Task AsegurarColumnaAgruparPorTipoUnidadAsync() =>
+        AsegurarColumnaAsync("Proveedores", "AgruparPorTipoUnidad", "INTEGER NOT NULL DEFAULT 0");
+
+    /// <summary>
     /// Igual que AsegurarColumnaEsSupermercadoGenericoAsync pero para el precio unitario
     /// de Producto, añadido después de que ya hubiera productos en producción.
     /// </summary>
@@ -356,6 +364,24 @@ public class AppDbContext : DbContext
             }
         }
 
+        await SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Migración de datos, idempotente y de un solo uso: activa AgruparPorTipoUnidad en el
+    /// proveedor Puchero (el único con productos en más de un GrupoUnidadMedida que deben
+    /// verse en secciones separadas — sus dos cafés, Grano 1kg y Cuarto 250g). Solo actúa
+    /// mientras siga en false: una vez activado, no vuelve a hacer nada en arranques
+    /// posteriores, así que un usuario puede desactivarlo a mano sin que esta migración se lo
+    /// reactive. Requiere que la columna AgruparPorTipoUnidad ya exista (llamar después de
+    /// AsegurarColumnaAgruparPorTipoUnidadAsync).
+    /// </summary>
+    public async Task AsegurarAgrupacionPorUnidadPucheroAsync()
+    {
+        var puchero = await Proveedores.FirstOrDefaultAsync(p => p.Nombre == "Puchero");
+        if (puchero is null || puchero.AgruparPorTipoUnidad) return;
+
+        puchero.AgruparPorTipoUnidad = true;
         await SaveChangesAsync();
     }
 }

@@ -48,6 +48,51 @@ public class ProveedoresEfRepositoryTest
     }
 
     [Test]
+    public async Task UpdateAsync_ModificaAgruparPorTipoUnidad()
+    {
+        // Arrange
+        var creado = await _repository.CreateAsync(new Proveedor { Nombre = "Alcampo", AgruparPorTipoUnidad = false });
+        var modificado = creado.Value with { AgruparPorTipoUnidad = true };
+
+        // Act
+        var resultado = await _repository.UpdateAsync(creado.Value.Id, modificado);
+
+        // Assert
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value.AgruparPorTipoUnidad.Should().BeTrue();
+    }
+
+    [Test]
+    public async Task Initialize_ProveedorPuchero_ActivaAgruparPorTipoUnidad()
+    {
+        // Arrange: Puchero se crea como cualquier otro proveedor, sin el flag
+        var pucheroSeed = new ProveedoresEfRepository(_connectionString);
+        await pucheroSeed.CreateAsync(new Proveedor { Nombre = "Puchero" });
+
+        // Act: _repository (fresca, _initialized aún en false) dispara la migración en su
+        // primera llamada — como al arrancar la app de verdad.
+        var proveedores = (await _repository.GetAllAsync()).ToList();
+
+        // Assert
+        var puchero = proveedores.Single(p => p.Nombre == "Puchero");
+        puchero.AgruparPorTipoUnidad.Should().BeTrue();
+    }
+
+    [Test]
+    public async Task Initialize_ProveedorSinNombrePuchero_NoActivaAgruparPorTipoUnidad()
+    {
+        // Arrange: un proveedor cualquiera, distinto de Puchero
+        var alcampoSeed = new ProveedoresEfRepository(_connectionString);
+        await alcampoSeed.CreateAsync(new Proveedor { Nombre = "Alcampo" });
+
+        // Act
+        var proveedores = (await _repository.GetAllAsync()).ToList();
+
+        // Assert
+        proveedores.Single().AgruparPorTipoUnidad.Should().BeFalse();
+    }
+
+    [Test]
     public async Task DeleteAsync_ProveedorConProductoAsignado_ProductoQuedaSinProveedor()
     {
         // Arrange: producto con proveedor asignado

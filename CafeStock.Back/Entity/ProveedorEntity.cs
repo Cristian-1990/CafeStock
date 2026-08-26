@@ -13,4 +13,5 @@ public class ProveedorEntity
     public string Direccion { get; set; } = string.Empty;
     public string NifCif { get; set; } = string.Empty;
     public bool EsSupermercadoGenerico { get; set; } = false;
+    public bool AgruparPorTipoUnidad { get; set; } = false;
 }

@@ -30,6 +30,8 @@ public class ProveedoresEfRepository : IProveedorRepository
         await context.AsegurarColumnaEsSupermercadoGenericoAsync();
         await context.AsegurarColumnaDireccionAsync();
         await context.AsegurarColumnaNifCifAsync();
+        await context.AsegurarColumnaAgruparPorTipoUnidadAsync();
+        await context.AsegurarAgrupacionPorUnidadPucheroAsync();
         _initialized = true;
     }
 
@@ -89,6 +91,7 @@ public class ProveedoresEfRepository : IProveedorRepository
             entity.Direccion = proveedor.Direccion;
             entity.NifCif = proveedor.NifCif;
             entity.EsSupermercadoGenerico = proveedor.EsSupermercadoGenerico;
+            entity.AgruparPorTipoUnidad = proveedor.AgruparPorTipoUnidad;
             await context.SaveChangesAsync();
             return Result.Success<Proveedor, DomainError>(entity.ToProveedor());
         }
