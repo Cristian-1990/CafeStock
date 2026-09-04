@@ -41,25 +41,63 @@ else
         }
     </MudPaper>
 
-    @* 2. Gasto por proveedor *@
-    <MudText Typo="Typo.h5" Class="mb-2" Style="color:#3E2723;">Gasto por proveedor</MudText>
+    @* 2. Gasto por proveedor y 10. Ticket medio por proveedor — filtro único compartido *@
+    <MudText Typo="Typo.h6" Class="mb-2" Style="color:#3E2723;">Filtro: gasto y ticket medio por proveedor</MudText>
     <div class="d-flex gap-2 mb-3">
-        <MudChip T="string" Color="@(_rangoGastoProveedor == RangoFechas.EsteMes ? MudBlazor.Color.Primary : MudBlazor.Color.Default)"
-                 Variant="@(_rangoGastoProveedor == RangoFechas.EsteMes ? Variant.Filled : Variant.Outlined)"
-                 OnClick="@(() => CambiarRangoGastoProveedorAsync(RangoFechas.EsteMes))">
-            Este mes
+        <MudChip T="string" Color="@(EsRangoActivoFiltroProveedores(RangoFechas.UltimaSemana) ? MudBlazor.Color.Primary : MudBlazor.Color.Default)"
+                 Variant="@(EsRangoActivoFiltroProveedores(RangoFechas.UltimaSemana) ? Variant.Filled : Variant.Outlined)"
+                 OnClick="@(() => CambiarRangoFiltroProveedoresAsync(RangoFechas.UltimaSemana))">
+            Última semana
         </MudChip>
-        <MudChip T="string" Color="@(_rangoGastoProveedor == RangoFechas.Ultimos3Meses ? MudBlazor.Color.Primary : MudBlazor.Color.Default)"
-                 Variant="@(_rangoGastoProveedor == RangoFechas.Ultimos3Meses ? Variant.Filled : Variant.Outlined)"
-                 OnClick="@(() => CambiarRangoGastoProveedorAsync(RangoFechas.Ultimos3Meses))">
-            Últimos 3 meses
+        <MudChip T="string" Color="@(EsRangoActivoFiltroProveedores(RangoFechas.UltimoMes) ? MudBlazor.Color.Primary : MudBlazor.Color.Default)"
+                 Variant="@(EsRangoActivoFiltroProveedores(RangoFechas.UltimoMes) ? Variant.Filled : Variant.Outlined)"
+                 OnClick="@(() => CambiarRangoFiltroProveedoresAsync(RangoFechas.UltimoMes))">
+            Último mes
         </MudChip>
-        <MudChip T="string" Color="@(_rangoGastoProveedor == RangoFechas.Todo ? MudBlazor.Color.Primary : MudBlazor.Color.Default)"
-                 Variant="@(_rangoGastoProveedor == RangoFechas.Todo ? Variant.Filled : Variant.Outlined)"
-                 OnClick="@(() => CambiarRangoGastoProveedorAsync(RangoFechas.Todo))">
+        <MudChip T="string" Color="@(EsRangoActivoFiltroProveedores(RangoFechas.UltimoAno) ? MudBlazor.Color.Primary : MudBlazor.Color.Default)"
+                 Variant="@(EsRangoActivoFiltroProveedores(RangoFechas.UltimoAno) ? Variant.Filled : Variant.Outlined)"
+                 OnClick="@(() => CambiarRangoFiltroProveedoresAsync(RangoFechas.UltimoAno))">
+            Último año
+        </MudChip>
+        <MudChip T="string" Color="@(EsRangoActivoFiltroProveedores(RangoFechas.Todo) ? MudBlazor.Color.Primary : MudBlazor.Color.Default)"
+                 Variant="@(EsRangoActivoFiltroProveedores(RangoFechas.Todo) ? Variant.Filled : Variant.Outlined)"
+                 OnClick="@(() => CambiarRangoFiltroProveedoresAsync(RangoFechas.Todo))">
             Todo
         </MudChip>
     </div>
+    <div class="d-flex gap-4 flex-wrap align-end mb-4">
+        @* PickerVariant.Dialog (no el Inline por defecto): el inline abre un desplegable de
+           ~400px anclado justo bajo el campo, sin fondo oscurecido — con el filtro pegado
+           encima de "Gasto por proveedor" ese desplegable caía literalmente sobre la gráfica
+           de debajo. No es un problema de z-index/overflow (comprobado: el popover ya vive en
+           el portal .mud-popover-provider, position:fixed, z-index:1201, sin ningún ancestro
+           con overflow:hidden) — es que el Inline no lleva backdrop. Dialog sí: modal centrado
+           con fondo atenuado, no puede solaparse visualmente con nada de la página.
+
+           El max-width va en un <div> envolvente, NO en Style="" del propio MudDatePicker: se
+           comprobó que MudPicker reutiliza su Style tanto para el campo de texto como para la
+           propia MudPaper del calendario (misma clase raíz "mud-picker" en ambos) — puesto en
+           el componente, el calendario emergente heredaba max-width:180px y encogía la
+           cuadrícula de días a 4 columnas con scroll horizontal en vez de mostrar lun-dom. *@
+        <div style="max-width:180px;">
+            <MudDatePicker Label="Desde" @bind-Date="_fechaDesdeFiltroProveedores" @bind-Date:after="OnFiltroLibreProveedoresAsync"
+                           PickerVariant="PickerVariant.Dialog" Editable="true" Clearable="true"/>
+        </div>
+        <div style="max-width:180px;">
+            <MudDatePicker Label="Hasta" @bind-Date="_fechaHastaFiltroProveedores" @bind-Date:after="OnFiltroLibreProveedoresAsync"
+                           PickerVariant="PickerVariant.Dialog" Editable="true" Clearable="true"/>
+        </div>
+        <MudSelect T="int?" @bind-Value="_proveedorIdFiltroProveedores" @bind-Value:after="OnFiltroLibreProveedoresAsync"
+                   Label="Proveedor" Style="min-width:220px;">
+            <MudSelectItem T="int?" Value="@((int?)null)">Todos</MudSelectItem>
+            @foreach (var proveedor in _proveedores)
+            {
+                <MudSelectItem T="int?" Value="@((int?)proveedor.Id)">@proveedor.Nombre</MudSelectItem>
+            }
+        </MudSelect>
+    </div>
+
+    <MudText Typo="Typo.h5" Class="mb-2" Style="color:#3E2723;">Gasto por proveedor</MudText>
     @if (!_gastoPorProveedor.Any())
     {
         <MudAlert Severity="Severity.Info" Class="mb-8">No hay compras registradas en este rango.</MudAlert>
@@ -71,6 +109,26 @@ else
                 <ApexPointSeries TItem="PuntoDato"
                                  Items="_gastoPorProveedor"
                                  Name="Gasto"
+                                 SeriesType="SeriesType.Bar"
+                                 XValue="e => e.Etiqueta"
+                                 YValue="e => (decimal?)e.Valor"/>
+            </ApexChart>
+        </MudPaper>
+    }
+
+    @* 10. Ticket medio de compra por proveedor — mismo filtro de arriba (sección 2) *@
+    <MudText Typo="Typo.h5" Class="mb-2" Style="color:#3E2723;">Ticket medio de compra por proveedor</MudText>
+    @if (!_ticketMedioPorProveedor.Any())
+    {
+        <MudAlert Severity="Severity.Info" Class="mb-8">No hay compras registradas en este rango.</MudAlert>
+    }
+    else
+    {
+        <MudPaper Class="pa-4 mb-8" Elevation="2" Style="max-width:600px;">
+            <ApexChart TItem="PuntoDato" @ref="_chartTicketMedioProveedor" Title="Ticket medio por proveedor (€)" Options="_opcionesBarrasTicketMedio">
+                <ApexPointSeries TItem="PuntoDato"
+                                 Items="_ticketMedioPorProveedor"
+                                 Name="Ticket medio"
                                  SeriesType="SeriesType.Bar"
                                  XValue="e => e.Etiqueta"
                                  YValue="e => (decimal?)e.Valor"/>
@@ -246,26 +304,6 @@ else
         </MudPaper>
     }
 
-    @* 10. Ticket medio de compra por proveedor *@
-    <MudText Typo="Typo.h5" Class="mb-2" Style="color:#3E2723;">Ticket medio de compra por proveedor</MudText>
-    @if (!_ticketMedioPorProveedor.Any())
-    {
-        <MudAlert Severity="Severity.Info" Class="mb-8">No hay compras registradas todavía.</MudAlert>
-    }
-    else
-    {
-        <MudPaper Class="pa-4 mb-8" Elevation="2" Style="max-width:600px;">
-            <ApexChart TItem="PuntoDato" Title="Ticket medio por proveedor (€)" Options="_opcionesBarrasTicketMedio">
-                <ApexPointSeries TItem="PuntoDato"
-                                 Items="_ticketMedioPorProveedor"
-                                 Name="Ticket medio"
-                                 SeriesType="SeriesType.Bar"
-                                 XValue="e => e.Etiqueta"
-                                 YValue="e => (decimal?)e.Valor"/>
-            </ApexChart>
-        </MudPaper>
-    }
-
     @* 11. Frecuencia real de compra vs día de reparto esperado (tabla, no gráfica) *@
     <MudText Typo="Typo.h5" Class="mb-2" Style="color:#3E2723;">Frecuencia de compra vs reparto esperado</MudText>
     @if (!_frecuenciaRepartoVsEsperado.Any())
@@ -413,7 +451,7 @@ else
 @code {
     private const int UmbralDiasSinCompra = 14;
 
-    private enum RangoFechas { EsteMes, Ultimos3Meses, Todo }
+    private enum RangoFechas { UltimaSemana, UltimoMes, UltimoAno, Todo }
 
     private bool _cargando = true;
     private List<Compra> _compras = [];
@@ -425,8 +463,13 @@ else
     private decimal _gastoMesActual;
     private decimal? _variacionPct;
 
-    // 2. Gasto por proveedor
-    private RangoFechas _rangoGastoProveedor = RangoFechas.Todo;
+    // 2. Gasto por proveedor / Ticket medio por proveedor (10) — filtro único compartido:
+    // rango de fechas (chips o libre) + proveedor, un solo estado que alimenta a los dos
+    // informes a la vez, para que ambos muestren siempre el mismo periodo/proveedor.
+    private RangoFechas _rangoFiltroProveedores = RangoFechas.UltimoMes;
+    private DateTime? _fechaDesdeFiltroProveedores;
+    private DateTime? _fechaHastaFiltroProveedores;
+    private int? _proveedorIdFiltroProveedores;
     private List<PuntoDato> _gastoPorProveedor = [];
     private ApexChart<PuntoDato>? _chartGastoProveedor;
 
@@ -453,8 +496,9 @@ else
     // 9. Concentración de gasto por proveedor
     private List<PuntoDato> _concentracionGastoPorProveedor = [];
 
-    // 10. Ticket medio de compra por proveedor
+    // 10. Ticket medio de compra por proveedor — comparte filtro con el informe 2 (ver arriba).
     private List<PuntoDato> _ticketMedioPorProveedor = [];
+    private ApexChart<PuntoDato>? _chartTicketMedioProveedor;
 
     // 11. Frecuencia real de compra vs día de reparto esperado
     private const decimal UmbralPorcentajeCumplimientoReparto = 50m;
@@ -589,23 +633,29 @@ else
         _snapshotsInventario = (await SnapshotInventarioService.GetAllAsync()).OrderBy(s => s.Fecha).ToList();
 
         CalcularGastoMesActual();
-        _gastoPorProveedor = CalcularGastoPorProveedor(_rangoGastoProveedor);
+        // Un único filtrado (rango + proveedor), reutilizado para los dos informes que
+        // comparten el filtro (2 y 10) — _compras no cambia entre estas dos líneas.
+        var comprasFiltradasProveedores = FiltrarCompras(
+            _compras, _rangoFiltroProveedores, _fechaDesdeFiltroProveedores, _fechaHastaFiltroProveedores, _proveedorIdFiltroProveedores);
+        _gastoPorProveedor = CalcularGastoPorProveedor(comprasFiltradasProveedores);
         _productosPorGastoTotal = CalcularProductosPorGastoTotal();
         _gastoPorMetodoPago = CalcularGastoPorMetodoPago();
         _proveedoresSinCompraReciente = CalcularProveedoresSinCompraReciente();
         _ppvPorProducto = CalcularPpvPorProducto();
         _gastoPorTipoProveedor = CalcularGastoPorTipoProveedor();
 
-        // Gasto por proveedor sin filtro (RangoFechas.Todo), reutilizado para el % de
+        // Gasto por proveedor sin ningún filtro (histórico completo), reutilizado para el % de
         // concentración y para el € que muestra su tooltip (problema 2) — un único cálculo.
-        var gastoPorProveedorEuros = CalcularGastoPorProveedor(RangoFechas.Todo);
+        // Independiente de los filtros de fecha/proveedor de "Gasto por proveedor" (informe 2):
+        // la concentración siempre es sobre el total histórico.
+        var gastoPorProveedorEuros = CalcularGastoPorProveedor(_compras);
         _concentracionGastoPorProveedor = CalcularConcentracionGastoPorProveedor(gastoPorProveedorEuros);
         _opcionesBarrasConcentracion.Tooltip = new Tooltip
         {
             Y = new TooltipY { Formatter = ConstruirFormatterConcentracion(gastoPorProveedorEuros) }
         };
 
-        _ticketMedioPorProveedor = CalcularTicketMedioPorProveedor();
+        _ticketMedioPorProveedor = CalcularTicketMedioPorProveedor(comprasFiltradasProveedores);
         _frecuenciaRepartoVsEsperado = CalcularFrecuenciaRepartoVsEsperado();
         RecalcularPresupuestoVsReal();
         _evolucionValorInventario = _snapshotsInventario.Select(s => new PuntoDato(s.Fecha.ToString("dd/MM/yy"), s.ValorTotal)).ToList();
@@ -638,18 +688,58 @@ else
 
     // ---- 2. Gasto por proveedor ----
 
-    private async Task CambiarRangoGastoProveedorAsync(RangoFechas rango)
+    /// <summary>
+    /// Cambia el rango a un chip preestablecido — descarta el rango libre que hubiera activo,
+    /// son mutuamente excluyentes (ver EsRangoActivoFiltroProveedores, que solo marca un chip
+    /// como seleccionado cuando no hay rango libre completo). Filtro compartido: recalcula los
+    /// dos informes (2 y 10) a la vez.
+    /// </summary>
+    private async Task CambiarRangoFiltroProveedoresAsync(RangoFechas rango)
     {
-        _rangoGastoProveedor = rango;
-        _gastoPorProveedor = CalcularGastoPorProveedor(rango);
+        _rangoFiltroProveedores = rango;
+        _fechaDesdeFiltroProveedores = null;
+        _fechaHastaFiltroProveedores = null;
+        await RecalcularInformesProveedorAsync();
+    }
+
+    private async Task OnFiltroLibreProveedoresAsync() => await RecalcularInformesProveedorAsync();
+
+    private bool EsRangoActivoFiltroProveedores(RangoFechas rango) =>
+        _rangoFiltroProveedores == rango && !HayRangoLibre(_fechaDesdeFiltroProveedores, _fechaHastaFiltroProveedores);
+
+    /// <summary>
+    /// Recalcula "Gasto por proveedor" (2) y "Ticket medio por proveedor" (10) juntos a partir
+    /// del mismo filtrado — un solo estado de rango+proveedor alimenta a los dos informes, así
+    /// que siempre reflejan el mismo periodo/proveedor.
+    /// </summary>
+    private async Task RecalcularInformesProveedorAsync()
+    {
+        var comprasFiltradas = FiltrarCompras(
+            _compras, _rangoFiltroProveedores, _fechaDesdeFiltroProveedores, _fechaHastaFiltroProveedores, _proveedorIdFiltroProveedores);
+
+        _gastoPorProveedor = CalcularGastoPorProveedor(comprasFiltradas);
+        _ticketMedioPorProveedor = CalcularTicketMedioPorProveedor(comprasFiltradas);
+
+        // StateHasChanged() ANTES de los dos UpdateSeriesAsync — no es cosmético, es necesario.
+        // Sin esto, el segundo UpdateSeriesAsync (Ticket medio) pedía sus datos actuales antes
+        // de que Blazor hubiera propagado el nuevo _ticketMedioPorProveedor al <ApexPointSeries>
+        // hijo, así que la gráfica de Ticket medio se quedaba mostrando el resultado del filtro
+        // ANTERIOR (un cambio de filtro por detrás de Gasto por proveedor) — comprobado con
+        // Playwright: Gasto reflejaba el filtro nuevo al instante, Ticket medio no, hasta el
+        // siguiente cambio de filtro. Forzar el render aquí, antes de llamar a JS, asegura que
+        // los dos gráficos lean el mismo _compras filtradas ya propagado.
+        StateHasChanged();
+
         // Guarda defensiva: si ya no queda ningún dato el gráfico se desmonta (rama else de
         // arriba), así que no llamamos a UpdateSeriesAsync sobre una instancia que va a morir.
         if (_gastoPorProveedor.Any() && _chartGastoProveedor is not null)
             await _chartGastoProveedor.UpdateSeriesAsync();
+        if (_ticketMedioPorProveedor.Any() && _chartTicketMedioProveedor is not null)
+            await _chartTicketMedioProveedor.UpdateSeriesAsync();
     }
 
-    private List<PuntoDato> CalcularGastoPorProveedor(RangoFechas rango) =>
-        AgruparGastoPorProveedorConId(FiltrarPorRango(_compras, rango))
+    private List<PuntoDato> CalcularGastoPorProveedor(IEnumerable<Compra> compras) =>
+        AgruparGastoPorProveedorConId(compras)
             .Select(g => new PuntoDato(g.Nombre, g.Gasto))
             .ToList();
 
@@ -660,25 +750,68 @@ else
     /// Id para cruzar con Presupuesto.ProveedorId, no solo el nombre.
     /// </summary>
     private static List<(int? ProveedorId, string Nombre, decimal Gasto)> AgruparGastoPorProveedorConId(IEnumerable<Compra> compras) =>
-        compras
-            .GroupBy(c => c.ProveedorId)
+        AgruparComprasPorProveedor(compras)
             .Select(g => (
                 ProveedorId: g.Key,
-                Nombre: g.First().ProveedorNombre ?? "Sin proveedor asignado",
+                Nombre: ResolverNombreProveedorDeGrupo(g),
                 Gasto: g.SelectMany(c => c.Lineas).Sum(l => l.Cantidad * l.PrecioUnitario)))
             .OrderByDescending(t => t.Gasto)
             .ToList();
 
-    private static IEnumerable<Compra> FiltrarPorRango(IEnumerable<Compra> compras, RangoFechas rango)
+    /// <summary>
+    /// Agrupar compras por proveedor (Id) es el primer paso común a "Gasto por proveedor" (2,
+    /// vía AgruparGastoPorProveedorConId) y "Ticket medio por proveedor" (10,
+    /// CalcularTicketMedioPorProveedor) — solo cambia si sobre cada grupo se hace Sum o
+    /// Average. Antes de este cambio el informe 10 agrupaba por el string ProveedorNombre en
+    /// vez de por Id, con la misma resolución "Sin proveedor asignado" repetida a mano; ahora
+    /// comparten Id + resolución de nombre.
+    /// </summary>
+    private static IEnumerable<IGrouping<int?, Compra>> AgruparComprasPorProveedor(IEnumerable<Compra> compras) =>
+        compras.GroupBy(c => c.ProveedorId);
+
+    private static string ResolverNombreProveedorDeGrupo(IGrouping<int?, Compra> grupo) =>
+        grupo.First().ProveedorNombre ?? "Sin proveedor asignado";
+
+    /// <summary>
+    /// Filtro combinado de rango de fechas + proveedor concreto, compartido por "Gasto por
+    /// proveedor" (2) y "Ticket medio por proveedor" (10) — los dos únicos informes con
+    /// selector de rango libre y de proveedor.
+    /// </summary>
+    private static IEnumerable<Compra> FiltrarCompras(
+        IEnumerable<Compra> compras, RangoFechas rango, DateTime? fechaDesde, DateTime? fechaHasta, int? proveedorId)
     {
-        var ahora = DateTime.Now;
+        var resultado = FiltrarPorRango(compras, rango, fechaDesde, fechaHasta);
+        return proveedorId is int id ? resultado.Where(c => c.ProveedorId == id) : resultado;
+    }
+
+    /// <summary>
+    /// El rango libre (fechaDesde + fechaHasta, ambas puestas) tiene prioridad sobre el chip
+    /// preestablecido — mismo criterio en HayRangoLibre/EsRangoActivo*, que decide qué chip se
+    /// pinta como seleccionado. Con una sola fecha puesta (el usuario todavía eligiendo) se
+    /// sigue aplicando el chip, para no filtrar con un rango a medias.
+    /// </summary>
+    private static IEnumerable<Compra> FiltrarPorRango(IEnumerable<Compra> compras, RangoFechas rango, DateTime? fechaDesde, DateTime? fechaHasta)
+    {
+        if (HayRangoLibre(fechaDesde, fechaHasta))
+            return compras.Where(c => c.Fecha.Date >= fechaDesde!.Value.Date && c.Fecha.Date <= fechaHasta!.Value.Date);
+
+        var hoy = DateTime.Now.Date;
         return rango switch
         {
-            RangoFechas.EsteMes => compras.Where(c => c.Fecha.Year == ahora.Year && c.Fecha.Month == ahora.Month),
-            RangoFechas.Ultimos3Meses => compras.Where(c => c.Fecha >= ahora.AddMonths(-3)),
+            // Calendario real (nunca ventana móvil tipo "últimos N días/meses" — eso es
+            // justo lo que tenía "Últimos 3 meses" antes y por lo que se eliminó): cada
+            // chip arranca en una fecha de calendario fija y llega hasta hoy.
+            RangoFechas.UltimaSemana => compras.Where(c => c.Fecha.Date >= LunesDeLaSemana(hoy) && c.Fecha.Date <= hoy),
+            RangoFechas.UltimoMes => compras.Where(c => c.Fecha.Date >= new DateTime(hoy.Year, hoy.Month, 1) && c.Fecha.Date <= hoy),
+            RangoFechas.UltimoAno => compras.Where(c => c.Fecha.Date >= new DateTime(hoy.Year, 1, 1) && c.Fecha.Date <= hoy),
             _ => compras
         };
     }
+
+    /// <summary>Lunes de la semana ISO a la que pertenece <paramref name="fecha"/> (DayOfWeek.Sunday=0 en .NET, por eso el +6 % 7 en vez de restar DayOfWeek directamente).</summary>
+    private static DateTime LunesDeLaSemana(DateTime fecha) => fecha.Date.AddDays(-(((int)fecha.DayOfWeek + 6) % 7));
+
+    private static bool HayRangoLibre(DateTime? fechaDesde, DateTime? fechaHasta) => fechaDesde is not null && fechaHasta is not null;
 
     // ---- 3. Evolución de precio por producto ----
 
@@ -844,11 +977,12 @@ else
     }
 
     // ---- 10. Ticket medio de compra por proveedor ----
+    // Sin controles propios: comparte el filtro (rango + proveedor) y el recálculo con el
+    // informe 2 — ver RecalcularInformesProveedorAsync, más abajo en la sección 2.
 
-    private List<PuntoDato> CalcularTicketMedioPorProveedor() =>
-        _compras
-            .GroupBy(c => c.ProveedorNombre ?? "Sin proveedor asignado")
-            .Select(g => new PuntoDato(g.Key, g.Average(c => c.Lineas.Sum(l => l.Cantidad * l.PrecioUnitario))))
+    private static List<PuntoDato> CalcularTicketMedioPorProveedor(IEnumerable<Compra> compras) =>
+        AgruparComprasPorProveedor(compras)
+            .Select(g => new PuntoDato(ResolverNombreProveedorDeGrupo(g), g.Average(c => c.Lineas.Sum(l => l.Cantidad * l.PrecioUnitario))))
             .OrderByDescending(p => p.Valor)
             .ToList();
 
