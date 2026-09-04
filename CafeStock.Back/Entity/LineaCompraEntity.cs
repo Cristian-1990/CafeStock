@@ -9,4 +9,8 @@ public class LineaCompraEntity
     public ProductoEntity? Producto { get; set; }
     public int Cantidad { get; set; }
     public decimal PrecioUnitario { get; set; }
+
+    /// <summary>Ver comentario del mismo campo en el modelo LineaCompra.</summary>
+    public decimal? StockResultanteTrasRecepcion { get; set; }
+    public decimal? StockMaximoEnMomento { get; set; }
 }

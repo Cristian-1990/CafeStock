@@ -162,6 +162,21 @@ public class AppDbContext : DbContext
     public Task AsegurarColumnaSeguimientoIndividualAsync() =>
         AsegurarColumnaAsync("Productos", "SeguimientoIndividual", "INTEGER NOT NULL DEFAULT 0");
 
+    /// <summary>
+    /// Igual que las anteriores, para los dos campos de captura silenciosa del excedente de
+    /// stock al recepcionar (LineaCompra.StockResultanteTrasRecepcion/StockMaximoEnMomento),
+    /// añadidos después de que la tabla LineasCompra ya existiera en producción. Sin NOT NULL
+    /// ni DEFAULT a propósito: las filas históricas ya guardadas no tienen este dato (no se
+    /// recalcula retroactivamente) y deben quedar en NULL, no fingir un 0 que parecería un
+    /// valor real — SQLite rellena de NULL las filas existentes al añadir una columna sin
+    /// DEFAULT.
+    /// </summary>
+    public Task AsegurarColumnaStockResultanteTrasRecepcionAsync() =>
+        AsegurarColumnaAsync("LineasCompra", "StockResultanteTrasRecepcion", "TEXT NULL");
+
+    public Task AsegurarColumnaStockMaximoEnMomentoAsync() =>
+        AsegurarColumnaAsync("LineasCompra", "StockMaximoEnMomento", "TEXT NULL");
+
     private async Task AsegurarColumnaAsync(string tabla, string columna, string definicionColumna)
     {
         var conexion = Database.GetDbConnection();

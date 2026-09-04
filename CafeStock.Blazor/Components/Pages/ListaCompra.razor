@@ -142,7 +142,20 @@ else
                 var resultado = await ProductoService.ConfirmarRecepcionAsync(producto.Id, cantidad);
                 if (resultado.IsSuccess)
                 {
-                    lineas.Add(new LineaCompra { ProductoId = producto.Id, Cantidad = cantidad, PrecioUnitario = precio });
+                    // Captura silenciosa del excedente sobre StockMaximo (si lo hay): los dos
+                    // valores en crudo, tal como quedan justo después de esta recepción — sin
+                    // bloquear ni avisar nada aquí, solo quedan guardados en la línea para poder
+                    // consultarlos más adelante (excedente = StockResultanteTrasRecepcion -
+                    // StockMaximoEnMomento). Ambos vienen del Producto ya actualizado que
+                    // devuelve ConfirmarRecepcionAsync, no de una consulta aparte.
+                    lineas.Add(new LineaCompra
+                    {
+                        ProductoId = producto.Id,
+                        Cantidad = cantidad,
+                        PrecioUnitario = precio,
+                        StockResultanteTrasRecepcion = resultado.Value.StockActual,
+                        StockMaximoEnMomento = resultado.Value.StockMaximo
+                    });
                 }
                 else
                 {

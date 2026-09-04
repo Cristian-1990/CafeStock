@@ -32,6 +32,8 @@ public class ComprasEfRepository : ICompraRepository
         await context.AsegurarColumnaNumeroFacturaProveedorAsync();
         await context.AsegurarColumnaFacturaAdjuntaUrlAsync();
         await context.AsegurarColumnaNotasCompraAsync();
+        await context.AsegurarColumnaStockResultanteTrasRecepcionAsync();
+        await context.AsegurarColumnaStockMaximoEnMomentoAsync();
         _initialized = true;
     }
 

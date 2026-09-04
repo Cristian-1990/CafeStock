@@ -43,7 +43,9 @@ public static class CompraMapper
             CompraId = linea.CompraId,
             ProductoId = linea.ProductoId,
             Cantidad = linea.Cantidad,
-            PrecioUnitario = linea.PrecioUnitario
+            PrecioUnitario = linea.PrecioUnitario,
+            StockResultanteTrasRecepcion = linea.StockResultanteTrasRecepcion,
+            StockMaximoEnMomento = linea.StockMaximoEnMomento
         };
     }
 
@@ -55,7 +57,9 @@ public static class CompraMapper
             CompraId = entity.CompraId,
             ProductoId = entity.ProductoId,
             Cantidad = entity.Cantidad,
-            PrecioUnitario = entity.PrecioUnitario
+            PrecioUnitario = entity.PrecioUnitario,
+            StockResultanteTrasRecepcion = entity.StockResultanteTrasRecepcion,
+            StockMaximoEnMomento = entity.StockMaximoEnMomento
         };
     }
 }
