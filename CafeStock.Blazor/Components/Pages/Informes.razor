@@ -136,6 +136,44 @@ else
         </MudPaper>
     }
 
+    @* 10c. Recepciones que superaron el stock máximo — mismo filtro de arriba (sección 2) *@
+    <MudText Typo="Typo.h5" Class="mb-2" Style="color:#3E2723;">Recepciones que superaron el stock máximo</MudText>
+    @if (!_recepcionesConExcedente.Any())
+    {
+        <MudAlert Severity="Severity.Info" Class="mb-8">No hay recepciones que hayan superado el máximo configurado en este rango.</MudAlert>
+    }
+    else
+    {
+        @* Sin paginación existente que replicar en el proyecto (ninguna otra MudTable la usa,
+           incluida la de Facturas) — configuración estándar de MudBlazor, 10 filas de partida,
+           mismo idioma español que el resto de la UI (no hay localización de MudBlazor
+           configurada en Program.cs, así que el texto del pager hay que darlo a mano).
+           MudTable no tiene un parámetro "Pageable" (comprobado por reflexión sobre el
+           ensamblado 9.7.0 — no existe en MudTableBase ni en MudTable<T>, y el analizador de
+           MudBlazor ya lo marcaba como atributo inválido): la paginación se activa solo con
+           <PagerContent>, RowsPerPage fija el tamaño inicial de página. *@
+        <MudTable Items="_recepcionesConExcedente" Hover="true" Dense="true" Striped="true" Elevation="2" Class="mb-8" Style="max-width:700px;"
+                  RowsPerPage="10">
+            <HeaderContent>
+                <MudTh>Fecha</MudTh>
+                <MudTh>Producto</MudTh>
+                <MudTh>Proveedor</MudTh>
+                <MudTh>Cantidad recibida</MudTh>
+                <MudTh>Excedente</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Fecha">@context.Fecha.ToString("dd/MM/yyyy")</MudTd>
+                <MudTd DataLabel="Producto">@context.Producto</MudTd>
+                <MudTd DataLabel="Proveedor">@context.Proveedor</MudTd>
+                <MudTd DataLabel="Cantidad recibida">@context.Cantidad</MudTd>
+                <MudTd DataLabel="Excedente">@context.Excedente.ToString("F2")</MudTd>
+            </RowTemplate>
+            <PagerContent>
+                <MudTablePager PageSizeOptions="new[] { 10 }" RowsPerPageString="Filas por página" InfoFormat="{first_item}-{last_item} de {all_items}"/>
+            </PagerContent>
+        </MudTable>
+    }
+
     @* 3. Evolución de precio por producto *@
     <MudText Typo="Typo.h5" Class="mb-2" Style="color:#3E2723;">Evolución de precio por producto</MudText>
     <MudAutocomplete T="Producto" @bind-Value="_productoSeleccionado" @bind-Value:after="OnCambioProductoSeleccionadoAsync"
@@ -500,6 +538,9 @@ else
     private List<PuntoDato> _ticketMedioPorProveedor = [];
     private ApexChart<PuntoDato>? _chartTicketMedioProveedor;
 
+    // 10b. Recepciones que superaron el stock máximo — mismo filtro compartido que 2/10.
+    private List<LineaExcedenteStock> _recepcionesConExcedente = [];
+
     // 11. Frecuencia real de compra vs día de reparto esperado
     private const decimal UmbralPorcentajeCumplimientoReparto = 50m;
     private List<InformeReparto> _frecuenciaRepartoVsEsperado = [];
@@ -656,6 +697,7 @@ else
         };
 
         _ticketMedioPorProveedor = CalcularTicketMedioPorProveedor(comprasFiltradasProveedores);
+        _recepcionesConExcedente = CalcularRecepcionesConExcedente(comprasFiltradasProveedores);
         _frecuenciaRepartoVsEsperado = CalcularFrecuenciaRepartoVsEsperado();
         RecalcularPresupuestoVsReal();
         _evolucionValorInventario = _snapshotsInventario.Select(s => new PuntoDato(s.Fecha.ToString("dd/MM/yy"), s.ValorTotal)).ToList();
@@ -719,6 +761,7 @@ else
 
         _gastoPorProveedor = CalcularGastoPorProveedor(comprasFiltradas);
         _ticketMedioPorProveedor = CalcularTicketMedioPorProveedor(comprasFiltradas);
+        _recepcionesConExcedente = CalcularRecepcionesConExcedente(comprasFiltradas);
 
         // StateHasChanged() ANTES de los dos UpdateSeriesAsync — no es cosmético, es necesario.
         // Sin esto, el segundo UpdateSeriesAsync (Ticket medio) pedía sus datos actuales antes
@@ -986,6 +1029,31 @@ else
             .OrderByDescending(p => p.Valor)
             .ToList();
 
+    // ---- 10b. Recepciones que superaron el stock máximo ----
+    // Sin controles propios: comparte el filtro (rango + proveedor) con los informes 2/10.
+
+    /// <summary>
+    /// StockResultanteTrasRecepcion/StockMaximoEnMomento son nullable (ver LineaCompra): las
+    /// líneas creadas antes de este campo no tienen este dato. Se excluyen sin más — is not
+    /// null en los dos antes de restar, nunca .Value a ciegas — y solo cuenta como excedente
+    /// real cuando la resta da estrictamente positivo (== 0 significa que llegó justo al
+    /// máximo, no que lo superó).
+    /// </summary>
+    private static List<LineaExcedenteStock> CalcularRecepcionesConExcedente(IEnumerable<Compra> compras) =>
+        compras
+            .SelectMany(c => c.Lineas.Select(l => (Compra: c, Linea: l)))
+            .Where(x => x.Linea.StockResultanteTrasRecepcion is not null
+                     && x.Linea.StockMaximoEnMomento is not null
+                     && x.Linea.StockResultanteTrasRecepcion.Value - x.Linea.StockMaximoEnMomento.Value > 0)
+            .Select(x => new LineaExcedenteStock(
+                x.Compra.Fecha,
+                x.Linea.ProductoNombre ?? $"Producto #{x.Linea.ProductoId}",
+                x.Compra.ProveedorNombre ?? "Sin proveedor asignado",
+                x.Linea.Cantidad,
+                x.Linea.StockResultanteTrasRecepcion!.Value - x.Linea.StockMaximoEnMomento!.Value))
+            .OrderByDescending(l => l.Fecha)
+            .ToList();
+
     // ---- 11. Frecuencia real de compra vs día de reparto esperado ----
 
     // Proveedor.DiaReparto es texto libre ("Miércoles 9:00", "Martes, Miércoles y Jueves"),
@@ -1083,4 +1151,5 @@ else
     private record PuntoDatoPpv(string Etiqueta, decimal Valor, decimal PorcentajeDesviacion);
     private record InformeReparto(string Proveedor, string DiaRepartoEsperado, int TotalCompras, int ComprasEnDiaEsperado, decimal PorcentajeCumplimiento, bool Desviacion);
     private record PresupuestoVsRealFila(string Proveedor, decimal? Presupuesto, decimal Real, decimal? PorcentajeDesviacion, bool SinPresupuesto);
+    private record LineaExcedenteStock(DateTime Fecha, string Producto, string Proveedor, int Cantidad, decimal Excedente);
 }
