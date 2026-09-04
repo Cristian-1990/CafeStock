@@ -29,6 +29,15 @@ public class ProductosEfRepository : IProductoRepository
         await context.EnsureCreatedAsync();
         await context.AsegurarColumnaPrecioUnitarioAsync();
         await context.AsegurarColumnaSeguimientoIndividualAsync();
+        // El ADD COLUMN va ANTES de AsegurarSeguimientoIndividualCafePucheroAsync a propósito:
+        // ese método hace una consulta EF sobre context.Productos, y como ProductoEntity ya
+        // tiene la propiedad AplicaConciliacionTpv, EF genera un SELECT que incluye esa
+        // columna — si la tabla real todavía no la tiene (falta ejecutar el ALTER TABLE),
+        // esa consulta revienta con "no such column" (comprobado: HTTP 500 real al arrancar
+        // con el orden invertido). Cualquier Asegurar...Async que solo haga ALTER
+        // TABLE/CREATE TABLE puede ir en cualquier orden entre sí, pero uno que además
+        // consulte la tabla vía EF (como este) necesita que el esquema ya esté al día antes.
+        await context.AsegurarColumnaAplicaConciliacionTpvAsync();
         await context.AsegurarSeguimientoIndividualCafePucheroAsync();
         _initialized = true;
     }
@@ -94,6 +103,7 @@ public class ProductosEfRepository : IProductoRepository
             entity.ImagenUrl = producto.ImagenUrl;
             entity.ProveedorId = producto.ProveedorId;
             entity.PrecioUnitario = producto.PrecioUnitario;
+            entity.AplicaConciliacionTpv = producto.AplicaConciliacionTpv;
             await context.SaveChangesAsync();
             return Result.Success<Producto, DomainError>(entity.ToProducto());
         }

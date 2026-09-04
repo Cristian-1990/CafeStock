@@ -67,6 +67,11 @@
                   Variant="Variant.Outlined"
                   Class="mb-4"/>
 
+    <MudCheckBox @bind-Value="_aplicaConciliacionTpv"
+                 Label="Se vende íntegro (aplica a conciliación con TPV)"
+                 Color="Color.Primary"
+                 Class="mb-4"/>
+
     @if (_cargandoProveedores)
     {
         <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Small" Class="mb-4"/>
@@ -125,6 +130,7 @@
     private UnidadMedida _unidad = UnidadMedida.SinEspecificar;
     private string _descripcion = string.Empty;
     private string _imagenUrl = string.Empty;
+    private bool _aplicaConciliacionTpv;
     private int? _proveedorId;
     private IEnumerable<Proveedor> _proveedores = [];
     private bool _cargandoProveedores = true;
@@ -151,6 +157,7 @@
                 _unidad = resultado.Value.Unidad;
                 _descripcion = resultado.Value.Descripcion;
                 _imagenUrl = resultado.Value.ImagenUrl;
+                _aplicaConciliacionTpv = resultado.Value.AplicaConciliacionTpv;
                 _proveedorId = resultado.Value.ProveedorId;
             }
             else
@@ -172,6 +179,7 @@
             Unidad = _unidad,
             Descripcion = _descripcion,
             ImagenUrl = _imagenUrl,
+            AplicaConciliacionTpv = _aplicaConciliacionTpv,
             ProveedorId = _proveedorId
         };
 

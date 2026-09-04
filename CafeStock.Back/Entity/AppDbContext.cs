@@ -163,6 +163,15 @@ public class AppDbContext : DbContext
         AsegurarColumnaAsync("Productos", "SeguimientoIndividual", "INTEGER NOT NULL DEFAULT 0");
 
     /// <summary>
+    /// Igual que AsegurarColumnaSeguimientoIndividualAsync pero para AplicaConciliacionTpv de
+    /// Producto, añadido después de que ya hubiera productos en producción. Aquí false SÍ es
+    /// un dato real para todo el historial (a diferencia de LineaCompra.StockMaximoEnMomento,
+    /// que es nullable porque ahí un 0 fingiría un dato que no existía).
+    /// </summary>
+    public Task AsegurarColumnaAplicaConciliacionTpvAsync() =>
+        AsegurarColumnaAsync("Productos", "AplicaConciliacionTpv", "INTEGER NOT NULL DEFAULT 0");
+
+    /// <summary>
     /// Igual que las anteriores, para los dos campos de captura silenciosa del excedente de
     /// stock al recepcionar (LineaCompra.StockResultanteTrasRecepcion/StockMaximoEnMomento),
     /// añadidos después de que la tabla LineasCompra ya existiera en producción. Sin NOT NULL
