@@ -1,61 +1,67 @@
-/* Avatar fijo en la esquina inferior derecha; el bocadillo se expande hacia
-   la izquierda desde ahí. z-index por encima del contenido pero por debajo
-   de diálogos/snackbars de MudBlazor (que usan valores más altos).
-   max-width del contenedor es solo un tope de seguridad para no salirse del
-   viewport en pantallas estrechas (tablet) — el tamaño del avatar en sí es
-   fijo, no depende de esto. */
+/* Vive DENTRO de MudDrawer (ver MainLayout.razor), en flujo normal — ya no
+   position:fixed sobre el viewport (eso hacía que invadiera la zona de
+   contenido en vez de quedarse en la columna de navegación). El drawer mide
+   320px (MainLayout.razor) y su .mud-drawer-content ya es flex column a
+   toda la altura del drawer, así que basta con margin-top:auto aquí para
+   anclarse abajo, empujado por el MudNavMenu que va encima. Layout en
+   columna (bocadillo arriba, león debajo) en vez de fila: a 320px de ancho
+   no cabe la disposición horizontal anterior (avatar 262px + bocadillo al
+   lado ya sumaban 560px). padding propio a los lados para no pegarse al
+   borde del drawer, mismo criterio horizontal que .mud-nav-link (8px 16px). */
 .app-mascot {
-    position: fixed;
-    right: 28px;
-    bottom: 28px;
-    z-index: 1200;
     display: flex;
-    align-items: flex-end;
-    gap: 16px;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
     cursor: pointer;
-    max-width: min(560px, calc(100vw - 56px));
+    margin-top: auto;
+    padding: 16px;
+    box-sizing: border-box;
+    width: 100%;
 }
 
 .app-mascot-avatar {
-    /* Tamaño fijo, notablemente grande: altura fija (no depende del
-       contenido de la página) y ancho automático según el aspect ratio
-       real de cada PNG (recorte cintura-arriba, ~450x500) para que no se
-       deforme ni se recorte. max-width es solo un tope de seguridad.
-       +20% sobre la ronda anterior (240px -> 288px). */
-    height: 288px;
+    /* Tamaño fijo por altura, ancho automático según el aspect ratio real de
+       cada PNG (recorte cintura-arriba, ~450x500) para no deformarlo — solo
+       height fijo, width:auto, igual que antes. 262px = 228px x1.15 (a
+       petición explícita, tras 190px x1.2 en la ronda anterior); a esta
+       altura la pose más ancha (Saludo) da ~238px de ancho, sigue cabiendo
+       en los 320px del drawer. */
+    height: 262px;
     width: auto;
-    max-width: 312px;
+    max-width: 100%;
     object-fit: contain;
     flex-shrink: 0;
     filter: drop-shadow(0 2px 6px rgba(62, 39, 35, 0.35));
-    /* Recorta un borde casi-transparente (no 100% alpha=0) que traen los PNG
-       de origen en su canvas — confirmado con getComputedStyle (sin border/
-       outline/box-shadow en ningún ancestro) y con una página HTML aislada
-       sin ningún CSS de la app: la línea persistía ahí también. No se toca
-       el archivo PNG, solo se recorta 2px de cada lado al renderizar. */
+    /* Recorta un borde casi-transparente que traen los PNG de origen —
+       comprobado en la ronda anterior (AppMascot de esquina), mismo recorte. */
     clip-path: inset(2px);
 }
 
-/* Bocadillo escalado en la misma proporción respecto a la altura del
-   avatar que se usó en la ronda anterior (100px -> 240px), aplicada ahora
-   al nuevo incremento (240px -> 288px, x1.2): padding 20/24 -> 24/28.8,
-   borde 3 -> 3.6, radios 20/6 -> 24/7.2, font-size 1.3rem -> 1.56rem. */
+/* Bocadillo por ENCIMA del león ahora (antes a su izquierda) — la cola del
+   borde (esquina inferior derecha sin redondear) sigue apuntando hacia el
+   león, que ahora queda debajo en vez de a la derecha. Ocupa el ancho
+   disponible de la columna en vez de un max-width pensado para ir al lado
+   de un avatar de 288px — el texto envuelve en varias líneas si hace
+   falta, nunca se encoge la tipografía a algo ilegible. */
 .app-mascot-bubble {
     background-color: #F5EFE6;
-    border: 3.6px solid #C17817;
-    border-radius: 24px 24px 7.2px 24px;
-    padding: 24px 28.8px;
+    border: 2px solid #C17817;
+    border-radius: 14px 14px 4px 14px;
+    padding: 12px 14px;
     color: #3E2723;
     box-shadow: 0 2px 8px rgba(62, 39, 35, 0.25);
+    width: 100%;
+    box-sizing: border-box;
 }
 
-/* El texto del bocadillo (MudText) usa su propio tamaño de MudBlazor por
-   defecto (~0.875rem) — demasiado pequeño al lado del avatar grande.
-   ::deep es obligatorio: el <p> lo renderiza MudText (un componente hijo),
-   así que no lleva el atributo de scope de la CSS aislada de AppMascot;
-   sin ::deep este selector nunca haría match. */
+/* ::deep obligatorio: el <p> lo renderiza MudText (componente hijo), sin el
+   atributo de scope de esta CSS aislada. Tamaño pensado para el ancho de
+   columna (~288px útiles), no el 1.2792rem del widget de esquina anterior
+   (pensado para ir al lado de un avatar de 288px de alto) — a ese tamaño
+   aquí el bocadillo saldría desproporcionadamente alto. 0.8rem sigue siendo
+   perfectamente legible y dos-cuatro líneas de mensaje caben sin problema. */
 .app-mascot-bubble ::deep .mud-typography-body2 {
-    /* -18% sobre 1.56rem a petición del usuario. */
-    font-size: 1.2792rem;
-    line-height: 1.5;
+    font-size: 0.8rem;
+    line-height: 1.4;
 }

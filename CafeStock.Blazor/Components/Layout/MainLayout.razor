@@ -11,7 +11,9 @@
         <MudText Typo="Typo.h5" Style="color:#FFFFFF;">CafeStock</MudText>
     </MudAppBar>
 
-    <MudDrawer Open="true" Elevation="2" Variant="@DrawerVariant.Persistent">
+    @* Width 320px (por defecto 240px): sitio para que AppMascot quepa dentro de la columna
+       de navegación sin invadir la zona de contenido — ver AppMascot.razor.css. *@
+    <MudDrawer Open="true" Elevation="2" Variant="@DrawerVariant.Persistent" Width="320px">
         <MudNavMenu>
             <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Inicio</MudNavLink>
             <MudNavLink Href="proveedores" Icon="@Icons.Material.Filled.LocalShipping">Proveedores</MudNavLink>
@@ -22,6 +24,9 @@
             <MudNavLink Href="facturas" Icon="@Icons.Material.Filled.Receipt">Facturas</MudNavLink>
             <MudNavLink Href="informes" Icon="@Icons.Material.Filled.Insights">Informes</MudNavLink>
         </MudNavMenu>
+        @* .mud-drawer-content ya es flex column a toda la altura del drawer — AppMascot se
+           ancla abajo con margin-top:auto en su propio contenedor, sin envoltorio extra. *@
+        <AppMascot/>
     </MudDrawer>
 
     <MudMainContent>
@@ -29,8 +34,6 @@
             @Body
         </MudContainer>
     </MudMainContent>
-
-    <AppMascot/>
 </MudLayout>
 
 <div id="blazor-error-ui" data-nosnippet>
