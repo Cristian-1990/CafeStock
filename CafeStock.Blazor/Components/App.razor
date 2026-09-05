@@ -13,6 +13,8 @@
     <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet"/>
     <ImportMap/>
     <link rel="icon" type="image/png" href="favicon.png"/>
+    <link rel="manifest" href="/manifest.json"/>
+    <meta name="theme-color" content="#6F4E37"/>
     <HeadOutlet/>
 </head>
 
@@ -21,6 +23,15 @@
 <ReconnectModal/>
 <script src="@Assets["_framework/blazor.web.js"]"></script>
 <script src="_content/MudBlazor/MudBlazor.min.js"></script>
+<script>
+    // Registra el service worker mínimo (ver wwwroot/service-worker.js) que
+    // permite instalar CafeStock como PWA con ventana propia.
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/service-worker.js');
+        });
+    }
+</script>
 <script>
     window.descargarArchivo = (nombreArchivo, base64) => {
         const enlace = document.createElement('a');
