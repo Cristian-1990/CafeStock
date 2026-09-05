@@ -23,4 +23,12 @@ public record Producto
     /// </summary>
     public bool SeguimientoIndividual { get; set; }
 
+    /// <summary>
+    /// Marca productos que se venden íntegros (p.ej. una lata de Coca-Cola: se compra una
+    /// unidad y se vende esa misma unidad, sin transformación) — de cara a una futura
+    /// conciliación con el TPV. Default false es un dato real para todo el historial (a
+    /// diferencia del excedente de stock, aquí no hay nada que "fingir": ausencia de este
+    /// campo antes de existir significa, correctamente, que no aplicaba).
+    /// </summary>
+    public bool AplicaConciliacionTpv { get; set; }
 };
