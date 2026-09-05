@@ -172,6 +172,15 @@ public class AppDbContext : DbContext
         AsegurarColumnaAsync("Productos", "AplicaConciliacionTpv", "INTEGER NOT NULL DEFAULT 0");
 
     /// <summary>
+    /// Igual que las anteriores, para UnidadesPorPack de Producto. Sin DEFAULT numérico (NULL)
+    /// a propósito: null significa "sin conversión" (comportamiento actual), no "0 unidades
+    /// por pack" — un DEFAULT 0 o 1 fingiría un dato de conversión que no existe para el
+    /// historial de productos ya creados.
+    /// </summary>
+    public Task AsegurarColumnaUnidadesPorPackAsync() =>
+        AsegurarColumnaAsync("Productos", "UnidadesPorPack", "INTEGER NULL");
+
+    /// <summary>
     /// Igual que las anteriores, para los dos campos de captura silenciosa del excedente de
     /// stock al recepcionar (LineaCompra.StockResultanteTrasRecepcion/StockMaximoEnMomento),
     /// añadidos después de que la tabla LineasCompra ya existiera en producción. Sin NOT NULL

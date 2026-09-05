@@ -31,4 +31,11 @@ public record Producto
     /// campo antes de existir significa, correctamente, que no aplicaba).
     /// </summary>
     public bool AplicaConciliacionTpv { get; set; }
+
+    /// <summary>
+    /// Nº de unidades que trae cada pack/caja de este producto tal como lo entrega el
+    /// proveedor (p.ej. 30 latas por caja). Null o 1 significa "sin conversión": la pantalla
+    /// de Recepcionar no ofrece el toggle de packs y todo funciona exactamente como antes.
+    /// </summary>
+    public int? UnidadesPorPack { get; set; }
 };

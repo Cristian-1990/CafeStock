@@ -37,26 +37,63 @@ else
                     <MudTh>Precio unitario</MudTh>
                 </HeaderContent>
                 <RowTemplate>
-                    <MudTd DataLabel="Producto">@context.Nombre</MudTd>
-                    <MudTd DataLabel="Cantidad a recibir">
-                        <MudNumericField T="int"
-                                          Value="_cantidadesRecibidas[context.Id]"
-                                          ValueChanged="@((int v) => _cantidadesRecibidas[context.Id] = v)"
-                                          Min="0"
-                                          Variant="Variant.Outlined"
-                                          Style="max-width:100px;"/>
+                    <MudTd DataLabel="Producto">
+                        @context.Nombre
+                        @if (context.UnidadesPorPack is > 1)
+                        {
+                            <MudSwitch T="bool"
+                                       Value="_recibidoEnPacks[context.Id]"
+                                       ValueChanged="@((bool v) => _recibidoEnPacks[context.Id] = v)"
+                                       Color="Color.Primary"
+                                       Label="Recibido en packs"/>
+                        }
                     </MudTd>
-                    <MudTd DataLabel="Precio unitario">
-                        <MudNumericField T="decimal"
-                                          Value="_preciosRecibidos[context.Id]"
-                                          ValueChanged="@((decimal v) => _preciosRecibidos[context.Id] = v)"
-                                          Min="0"
-                                          Format="F2"
-                                          Adornment="Adornment.Start"
-                                          AdornmentText="€"
-                                          Variant="Variant.Outlined"
-                                          Style="max-width:120px;"/>
-                    </MudTd>
+                    @if (_recibidoEnPacks[context.Id])
+                    {
+                        <MudTd DataLabel="Nº de packs">
+                            <MudNumericField T="int"
+                                              Label="Nº de packs"
+                                              Value="_numPacksRecibidos[context.Id]"
+                                              ValueChanged="@((int v) => _numPacksRecibidos[context.Id] = v)"
+                                              Min="0"
+                                              Variant="Variant.Outlined"
+                                              Style="max-width:100px;"/>
+                        </MudTd>
+                        <MudTd DataLabel="Precio del pack">
+                            <MudNumericField T="decimal"
+                                              Label="Precio del pack"
+                                              Value="_precioPackRecibido[context.Id]"
+                                              ValueChanged="@((decimal v) => _precioPackRecibido[context.Id] = v)"
+                                              Min="0"
+                                              Format="F2"
+                                              Adornment="Adornment.Start"
+                                              AdornmentText="€"
+                                              Variant="Variant.Outlined"
+                                              Style="max-width:120px;"/>
+                        </MudTd>
+                    }
+                    else
+                    {
+                        <MudTd DataLabel="Cantidad a recibir">
+                            <MudNumericField T="int"
+                                              Value="_cantidadesRecibidas[context.Id]"
+                                              ValueChanged="@((int v) => _cantidadesRecibidas[context.Id] = v)"
+                                              Min="0"
+                                              Variant="Variant.Outlined"
+                                              Style="max-width:100px;"/>
+                        </MudTd>
+                        <MudTd DataLabel="Precio unitario">
+                            <MudNumericField T="decimal"
+                                              Value="_preciosRecibidos[context.Id]"
+                                              ValueChanged="@((decimal v) => _preciosRecibidos[context.Id] = v)"
+                                              Min="0"
+                                              Format="F2"
+                                              Adornment="Adornment.Start"
+                                              AdornmentText="€"
+                                              Variant="Variant.Outlined"
+                                              Style="max-width:120px;"/>
+                        </MudTd>
+                    }
                 </RowTemplate>
             </MudTable>
 
@@ -77,6 +114,15 @@ else
     private IEnumerable<Proveedor> _proveedores = [];
     private Dictionary<int, int> _cantidadesRecibidas = [];
     private Dictionary<int, decimal> _preciosRecibidos = [];
+
+    /// <summary>
+    /// Toggle "Recibido en packs" por producto — solo se muestra (y solo importa) para
+    /// productos con UnidadesPorPack > 1; desactivado por defecto para no cambiar el
+    /// comportamiento actual sin que el usuario lo active explícitamente.
+    /// </summary>
+    private Dictionary<int, bool> _recibidoEnPacks = [];
+    private Dictionary<int, int> _numPacksRecibidos = [];
+    private Dictionary<int, decimal> _precioPackRecibido = [];
     private HashSet<int?> _confirmandoGrupo = [];
     private bool _cargando = true;
 
@@ -94,6 +140,9 @@ else
         _productos = await ProductoService.GetProductosBajoMinimoAsync();
         _cantidadesRecibidas = _productos.ToDictionary(p => p.Id, p => p.CantidadAComprar);
         _preciosRecibidos = _productos.ToDictionary(p => p.Id, p => p.PrecioUnitario);
+        _recibidoEnPacks = _productos.ToDictionary(p => p.Id, _ => false);
+        _numPacksRecibidos = _productos.ToDictionary(p => p.Id, _ => 0);
+        _precioPackRecibido = _productos.ToDictionary(p => p.Id, _ => 0m);
         _cargando = false;
     }
 
@@ -133,8 +182,25 @@ else
             var lineas = new List<LineaCompra>();
             foreach (var producto in productosGrupo)
             {
-                var cantidad = _cantidadesRecibidas[producto.Id];
-                var precio = _preciosRecibidos[producto.Id];
+                int cantidad;
+                decimal precio;
+
+                // Si "Recibido en packs" está activo para este producto, la Cantidad y el
+                // PrecioUnitario finales se calculan aquí a partir de Nº de packs/Precio del
+                // pack — a partir de este punto el flujo sigue exactamente igual que siempre
+                // (ConfirmarRecepcionAsync, captura del excedente, LineaCompra), sin saber que
+                // el origen fue un pack en vez de unidades sueltas.
+                if (_recibidoEnPacks[producto.Id] && producto.UnidadesPorPack is > 1)
+                {
+                    var unidadesPorPack = producto.UnidadesPorPack.Value;
+                    cantidad = _numPacksRecibidos[producto.Id] * unidadesPorPack;
+                    precio = Math.Round(_precioPackRecibido[producto.Id] / unidadesPorPack, 2);
+                }
+                else
+                {
+                    cantidad = _cantidadesRecibidas[producto.Id];
+                    precio = _preciosRecibidos[producto.Id];
+                }
 
                 if (cantidad <= 0 || precio <= 0)
                     continue;

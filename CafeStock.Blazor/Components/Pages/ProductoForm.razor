@@ -72,6 +72,13 @@
                  Color="Color.Primary"
                  Class="mb-4"/>
 
+    <MudNumericField T="int?" @bind-Value="_unidadesPorPack"
+                     Label="Unidades por pack (si se recibe en cajas/packs)"
+                     Variant="Variant.Outlined"
+                     Min="1"
+                     Clearable="true"
+                     Class="mb-4"/>
+
     @if (_cargandoProveedores)
     {
         <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Small" Class="mb-4"/>
@@ -131,6 +138,7 @@
     private string _descripcion = string.Empty;
     private string _imagenUrl = string.Empty;
     private bool _aplicaConciliacionTpv;
+    private int? _unidadesPorPack;
     private int? _proveedorId;
     private IEnumerable<Proveedor> _proveedores = [];
     private bool _cargandoProveedores = true;
@@ -158,6 +166,7 @@
                 _descripcion = resultado.Value.Descripcion;
                 _imagenUrl = resultado.Value.ImagenUrl;
                 _aplicaConciliacionTpv = resultado.Value.AplicaConciliacionTpv;
+                _unidadesPorPack = resultado.Value.UnidadesPorPack;
                 _proveedorId = resultado.Value.ProveedorId;
             }
             else
@@ -180,6 +189,7 @@
             Descripcion = _descripcion,
             ImagenUrl = _imagenUrl,
             AplicaConciliacionTpv = _aplicaConciliacionTpv,
+            UnidadesPorPack = _unidadesPorPack,
             ProveedorId = _proveedorId
         };
 

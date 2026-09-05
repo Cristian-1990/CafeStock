@@ -16,4 +16,5 @@ public class ProductoEntity
     public decimal PrecioUnitario { get; set; }
     public bool SeguimientoIndividual { get; set; }
     public bool AplicaConciliacionTpv { get; set; }
+    public int? UnidadesPorPack { get; set; }
 }

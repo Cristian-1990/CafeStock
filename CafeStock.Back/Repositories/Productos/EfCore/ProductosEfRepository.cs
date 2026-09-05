@@ -38,6 +38,10 @@ public class ProductosEfRepository : IProductoRepository
         // TABLE/CREATE TABLE puede ir en cualquier orden entre sí, pero uno que además
         // consulte la tabla vía EF (como este) necesita que el esquema ya esté al día antes.
         await context.AsegurarColumnaAplicaConciliacionTpvAsync();
+        // Mismo motivo que AsegurarColumnaAplicaConciliacionTpvAsync: va antes de
+        // AsegurarSeguimientoIndividualCafePucheroAsync (que consulta Productos vía EF)
+        // porque ProductoEntity ya tiene la propiedad UnidadesPorPack.
+        await context.AsegurarColumnaUnidadesPorPackAsync();
         await context.AsegurarSeguimientoIndividualCafePucheroAsync();
         _initialized = true;
     }
@@ -104,6 +108,7 @@ public class ProductosEfRepository : IProductoRepository
             entity.ProveedorId = producto.ProveedorId;
             entity.PrecioUnitario = producto.PrecioUnitario;
             entity.AplicaConciliacionTpv = producto.AplicaConciliacionTpv;
+            entity.UnidadesPorPack = producto.UnidadesPorPack;
             await context.SaveChangesAsync();
             return Result.Success<Producto, DomainError>(entity.ToProducto());
         }
