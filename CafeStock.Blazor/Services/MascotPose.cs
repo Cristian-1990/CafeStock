@@ -10,5 +10,11 @@ public enum MascotPose
     Saludo,
     Celebracion,
     Senalando,
-    Pensativo
+    Pensativo,
+    Albaranes,
+    Caja,
+    Telefono,
+    Producto,
+    Recepcion,
+    Tablet
 }

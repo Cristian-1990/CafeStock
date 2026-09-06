@@ -22,12 +22,11 @@
 
 .app-mascot-avatar {
     /* Tamaño fijo por altura, ancho automático según el aspect ratio real de
-       cada PNG (recorte cintura-arriba, ~450x500) para no deformarlo — solo
-       height fijo, width:auto, igual que antes. 262px = 228px x1.15 (a
-       petición explícita, tras 190px x1.2 en la ronda anterior); a esta
-       altura la pose más ancha (Saludo) da ~238px de ancho, sigue cabiendo
-       en los 320px del drawer. */
-    height: 262px;
+       cada PNG (cuerpo entero, 480x792, ratio 0.606) para no deformarlo —
+       solo height fijo, width:auto. 400px de alto da ~243px de ancho
+       (400 x 0.606), sigue cabiendo en los 320px del drawer — punto de
+       partida a reajustar tras verlo en el navegador, no un número cerrado. */
+    height: 400px;
     width: auto;
     max-width: 100%;
     object-fit: contain;

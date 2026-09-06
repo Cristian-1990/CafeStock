@@ -19,9 +19,14 @@
 }
 
 /* León de cuerpo entero, puramente de presentación (sin bocadillo propio
-   encima). Tamaño de partida a ojo: 420px de alto, ancho automático según
-   su aspect ratio real (800x1320) para no deformarlo — punto de partida a
-   reajustar tras verlo en el navegador, no un número cerrado. */
+   encima) — reutiliza el mismo archivo que la pose Saludo del avatar de
+   esquina (mascot-saludo.png, 480x792; antes era un archivo aparte de mayor
+   resolución con el mismo aspect ratio 0.606, ya no hace falta esa
+   duplicación). Tamaño de partida a ojo: 420px de alto, ancho automático
+   según su aspect ratio real para no deformarlo — sigue siendo menor que la
+   altura nativa del PNG (792px), así que es downscale, no upscale: no hay
+   pérdida de nitidez. Punto de partida a reajustar tras verlo en el
+   navegador, no un número cerrado. */
 .mascot-home-image {
     height: 420px;
     width: auto;

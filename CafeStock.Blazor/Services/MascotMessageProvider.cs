@@ -12,28 +12,28 @@ public class MascotMessageProvider : IMascotMessageProvider
 {
     private static readonly Dictionary<string, (MascotPose Pose, string Mensaje)> Mensajes = new()
     {
-        ["facturas"] = (MascotPose.Saludo,
-            "Aquí está tu historial de facturas. Desde la ficha de cada proveedor también puedes filtrar directo con 'Ver facturas'."),
+        ["facturas"] = (MascotPose.Albaranes,
+            "Aquí consultas el historial de compras con su factura o albarán adjunto. Si buscas las de un proveedor concreto, entra en su ficha y toca 'Ver facturas'."),
 
         ["vender"] = (MascotPose.Celebracion,
-            "¡Un café más! Elige el producto y anota quién lo preparó — así llevamos el control de los dos cafés con seguimiento individual."),
+            "¡Un café más! Elige el producto y quién lo preparó — así sabemos cuánto se ha consumido de cada uno."),
 
-        ["lista-compra"] = (MascotPose.Celebracion,
-            "¡Pedido en casa! Marca lo recibido y el stock se actualiza solo. Si llega incompleto, no pasa nada — lo que falte se queda pendiente."),
+        ["lista-compra"] = (MascotPose.Recepcion,
+            "Aquí confirmas lo que ha llegado del pedido. Marca las cantidades recibidas y el stock se actualiza solo. Si algo no llega completo, no pasa nada: queda pendiente para la próxima entrega."),
 
         // Ruta real de la etiqueta de menú "Stock".
-        ["productos"] = (MascotPose.Senalando,
-            "Mira la columna 'Necesario': ahí ves justo lo que falta reponer. Con 'Generar pedido' te armo el PDF por proveedor."),
+        ["productos"] = (MascotPose.Caja,
+            "Esta es tu lista de reposición: la columna 'Necesario' te dice qué falta comprar según el máximo de cada producto. Pulsa 'Generar pedido' para el PDF por proveedor."),
 
         // Ruta real de la etiqueta de menú "Productos".
-        ["lista-detallada"] = (MascotPose.Senalando,
-            "Aquí tienes cada producto con su foto y stock actual. Toca uno para ver o editar sus datos."),
+        ["lista-detallada"] = (MascotPose.Producto,
+            "Este es tu catálogo: cada producto con su foto, proveedor y precio de referencia. Toca uno para ver o editar sus datos."),
 
-        ["proveedores"] = (MascotPose.Pensativo,
-            "Revisa aquí cada proveedor: contacto, día de reparto, notas y su historial de compras."),
+        ["proveedores"] = (MascotPose.Telefono,
+            "Aquí tienes el contacto de cada proveedor: teléfono, día de reparto y notas. También puedes ver su historial de compras desde su ficha."),
 
-        ["informes"] = (MascotPose.Pensativo,
-            "Gasto por proveedor, evolución de precios, comparativas mes a mes — todo el análisis está aquí."),
+        ["informes"] = (MascotPose.Tablet,
+            "Aquí analizas cómo va el negocio: gasto por proveedor, evolución de precios y comparativas mes a mes."),
     };
 
     public (MascotPose Pose, string Mensaje)? Get(string relativePath) =>
