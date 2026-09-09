@@ -70,7 +70,12 @@ else
         Volver
     </MudButton>
 
-    <MudText Typo="Typo.h5" Class="mb-4" Style="color:#3E2723;">@_nombreGrupoSeleccionado</MudText>
+    <div class="mb-4"
+         style="position:sticky; top:8px; z-index:4; display:flex; align-items:center;
+                background-color:#F5EFE6; padding:12px 16px; border-radius:12px;
+                box-shadow:0 2px 8px rgba(62,39,35,0.15);">
+        <MudText Typo="Typo.h5" Style="color:#3E2723; margin:0;">@_nombreGrupoSeleccionado</MudText>
+    </div>
 
     @if (!_productosDelGrupo.Any())
     {
@@ -78,7 +83,7 @@ else
     }
     else
     {
-        <MudTable Items="_productosDelGrupo" Hover="true" Striped="true" Elevation="2">
+        <MudTable Items="_productosDelGrupo" Hover="true" Elevation="2" RowStyleFunc="FilaEstilo">
             <HeaderContent>
                 <MudTh>Nombre</MudTh>
                 <MudTh>Cantidad actual</MudTh>
@@ -87,26 +92,74 @@ else
             <RowTemplate>
                 <MudTd DataLabel="Nombre">@context.Nombre</MudTd>
                 <MudTd DataLabel="Cantidad actual">
-                    <MudNumericField T="int" @bind-Value="context.StockActual" Min="0" Variant="Variant.Outlined" Style="max-width:120px;"/>
+                    <MudNumericField T="int"
+                                     Value="context.StockActual"
+                                     ValueChanged="@(v => OnCantidadCambiada(context, v))"
+                                     Min="0"
+                                     Variant="Variant.Outlined"
+                                     Style="max-width:120px;"/>
                 </MudTd>
                 <MudTd>
-                    <MudButton Variant="Variant.Filled"
-                               Color="Color.Primary"
-                               Size="Size.Small"
-                               StartIcon="@Icons.Material.Filled.Save"
-                               OnClick="@(() => GuardarAsync(context))">
-                        Guardar
-                    </MudButton>
+                    @{
+                        var estado = EstadoDe(context);
+                    }
+                    @if (estado == EstadoFila.Guardado)
+                    {
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Success"
+                                   Size="Size.Small"
+                                   StartIcon="@Icons.Material.Filled.CheckCircle"
+                                   Disabled="true">
+                            Guardado
+                        </MudButton>
+                    }
+                    else
+                    {
+                        <MudButton Variant="@(estado == EstadoFila.Pendiente ? Variant.Filled : Variant.Outlined)"
+                                   Size="Size.Small"
+                                   StartIcon="@Icons.Material.Filled.Save"
+                                   Style="@(estado == EstadoFila.Pendiente
+                                            ? "background-color:#C17817; color:#fff;"
+                                            : "color:#6D4C41; border-color:#6D4C41;")"
+                                   Disabled="@(estado == EstadoFila.SinCambios || _guardandoTodo)"
+                                   OnClick="@(() => GuardarAsync(context))">
+                            Actualizar
+                        </MudButton>
+                    }
                 </MudTd>
             </RowTemplate>
         </MudTable>
+
+        @* Hueco para que la última fila no quede tapada por el botón fijo. *@
+        <div style="height:96px;"></div>
+
+        @* Barra fija: el botón "Actualizar todo" acompaña siempre al scroll. *@
+        <div style="position:fixed; left:0; right:0; bottom:0; z-index:1000;
+                    display:flex; justify-content:center; padding:16px;
+                    pointer-events:none;">
+            <MudButton Variant="Variant.Filled"
+                       Size="Size.Large"
+                       StartIcon="@Icons.Material.Filled.DoneAll"
+                       Style="@($"pointer-events:auto; box-shadow:0 6px 20px rgba(62,39,35,0.35); {(_pendientesEnGrupo > 0 ? "background-color:#6D4C41; color:#fff;" : "background-color:#EDE4D6; color:#8D7B6E;")}")"
+                       Disabled="@(_pendientesEnGrupo == 0 || _guardandoTodo)"
+                       OnClick="GuardarTodoAsync">
+                @(_pendientesEnGrupo > 0 ? $"Actualizar todo ({_pendientesEnGrupo})" : "Todo actualizado")
+            </MudButton>
+        </div>
     }
 }
 
 @code {
+    private enum EstadoFila { SinCambios, Pendiente, Guardado }
+
     private List<Producto> _productos = [];
     private IEnumerable<Proveedor> _proveedores = [];
     private bool _cargando = true;
+    private bool _guardandoTodo;
+
+    // Última cantidad persistida en BD por producto (para detectar cambios sin tocar el modelo).
+    private readonly Dictionary<int, int> _valorGuardado = new();
+    private readonly Dictionary<int, EstadoFila> _estadoFila = new();
 
     // Ninguno de los dos marcado = paso 1 (elegir grupo).
     private Proveedor? _grupoSeleccionado;
@@ -130,6 +183,8 @@ else
         }
     }
 
+    private int _pendientesEnGrupo => _productosDelGrupo.Count(p => EstadoDe(p) == EstadoFila.Pendiente);
+
     protected override async Task OnInitializedAsync()
     {
         _proveedores = await ProveedorService.GetAllAsync();
@@ -137,8 +192,30 @@ else
         // se cuentan aquí: su stock se controla desde "Venta", el recuento manual semanal
         // no tiene sentido para ellos.
         _productos = (await ProductoService.GetAllAsync()).Where(p => !p.SeguimientoIndividual).ToList();
+        foreach (var p in _productos)
+        {
+            _valorGuardado[p.Id] = p.StockActual;
+            _estadoFila[p.Id] = EstadoFila.SinCambios;
+        }
         _cargando = false;
     }
+
+    private EstadoFila EstadoDe(Producto p) =>
+        _estadoFila.TryGetValue(p.Id, out var e) ? e : EstadoFila.SinCambios;
+
+    private void OnCantidadCambiada(Producto p, int nuevoValor)
+    {
+        p.StockActual = nuevoValor;
+        var guardado = _valorGuardado.TryGetValue(p.Id, out var v) ? v : nuevoValor;
+        _estadoFila[p.Id] = nuevoValor == guardado ? EstadoFila.SinCambios : EstadoFila.Pendiente;
+    }
+
+    private string FilaEstilo(Producto p, int index) => EstadoDe(p) switch
+    {
+        EstadoFila.Pendiente => "background-color:rgba(193,120,23,0.12);",
+        EstadoFila.Guardado  => "background-color:rgba(102,187,106,0.16);",
+        _                    => string.Empty
+    };
 
     private void SeleccionarProveedor(Proveedor proveedor)
     {
@@ -162,8 +239,46 @@ else
     {
         var resultado = await ProductoService.ActualizarStockActualAsync(producto.Id, producto.StockActual);
         if (resultado.IsSuccess)
-            Snackbar.Add("Stock actualizado", Severity.Success);
+        {
+            _valorGuardado[producto.Id] = producto.StockActual;
+            _estadoFila[producto.Id] = EstadoFila.Guardado;
+        }
         else
+        {
             Snackbar.Add(resultado.Error.Message, Severity.Error);
+        }
+    }
+
+    private async Task GuardarTodoAsync()
+    {
+        var pendientes = _productosDelGrupo.Where(p => EstadoDe(p) == EstadoFila.Pendiente).ToList();
+        if (pendientes.Count == 0)
+            return;
+
+        _guardandoTodo = true;
+        var ok = 0;
+        var errores = new List<string>();
+
+        foreach (var producto in pendientes)
+        {
+            var resultado = await ProductoService.ActualizarStockActualAsync(producto.Id, producto.StockActual);
+            if (resultado.IsSuccess)
+            {
+                _valorGuardado[producto.Id] = producto.StockActual;
+                _estadoFila[producto.Id] = EstadoFila.Guardado;
+                ok++;
+            }
+            else
+            {
+                errores.Add($"{producto.Nombre}: {resultado.Error.Message}");
+            }
+        }
+
+        _guardandoTodo = false;
+
+        if (ok > 0)
+            Snackbar.Add($"{ok} producto{(ok == 1 ? "" : "s")} actualizado{(ok == 1 ? "" : "s")}", Severity.Success);
+        foreach (var error in errores)
+            Snackbar.Add(error, Severity.Error);
     }
 }
