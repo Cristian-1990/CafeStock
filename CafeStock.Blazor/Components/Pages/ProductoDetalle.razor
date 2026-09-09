@@ -14,7 +14,7 @@ else if (_producto is null)
     <MudButton Variant="Variant.Filled"
                Color="Color.Primary"
                StartIcon="@Icons.Material.Filled.ArrowBack"
-               Href="/lista-detallada">
+               Href="@_urlVolver">
         Volver al listado
     </MudButton>
 }
@@ -23,7 +23,7 @@ else
     <MudButton Variant="Variant.Text"
                Color="Color.Primary"
                StartIcon="@Icons.Material.Filled.ArrowBack"
-               Href="/lista-detallada"
+               Href="@_urlVolver"
                Class="mb-4">
         Volver al listado
     </MudButton>
@@ -88,6 +88,11 @@ else
 
 @code {
     [Parameter] public int Id { get; set; }
+
+    // URL del listado con su filtro, pasada al abrir la ficha; si se entra por
+    // enlace directo, se vuelve al listado sin filtro.
+    [Parameter, SupplyParameterFromQuery(Name = "volver")] public string? Volver { get; set; }
+    private string _urlVolver => string.IsNullOrWhiteSpace(Volver) ? "/lista-detallada" : Volver;
 
     private Producto? _producto;
     private string? _nombreProveedor;

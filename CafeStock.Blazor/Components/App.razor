@@ -33,6 +33,24 @@
     }
 </script>
 <script>
+    // Recuerda qué tarjeta de producto se abrió desde el listado para poder
+    // volver a su misma posición al pulsar "atrás" (ver ListaDetallada.razor).
+    window.cafeStock = {
+        recordarProducto: (id) => {
+            try { sessionStorage.setItem('lista-detallada:ultimo', String(id)); } catch (e) { }
+        },
+        irAlProducto: () => {
+            try {
+                const id = sessionStorage.getItem('lista-detallada:ultimo');
+                if (!id) return;
+                sessionStorage.removeItem('lista-detallada:ultimo');
+                const el = document.getElementById('prod-' + id);
+                if (el) el.scrollIntoView({ block: 'center' });
+            } catch (e) { }
+        }
+    };
+</script>
+<script>
     window.descargarArchivo = (nombreArchivo, base64) => {
         const enlace = document.createElement('a');
         enlace.href = "data:application/pdf;base64," + base64;

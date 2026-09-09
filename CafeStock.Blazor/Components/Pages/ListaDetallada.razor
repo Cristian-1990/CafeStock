@@ -2,6 +2,7 @@
 @inject IProductoService ProductoService
 @inject IProveedorService ProveedorService
 @inject NavigationManager Navigation
+@inject IJSRuntime JS
 
 <PageTitle>Productos</PageTitle>
 
@@ -23,6 +24,7 @@
     <MudPaper Elevation="3" Style="border-radius:9999px; max-width:400px; width:100%; padding:2px 20px;">
         <MudTextField T="string"
                       @bind-Value="_busqueda"
+                      @bind-Value:after="ActualizarUrl"
                       Immediate="true"
                       Placeholder="Buscar producto..."
                       Variant="Variant.Text"
@@ -45,14 +47,14 @@ else
     <div class="d-flex flex-wrap gap-2 mb-4">
         <MudChip T="string" Color="@(_proveedorSeleccionado is null ? Color.Primary : Color.Default)"
                  Variant="@(_proveedorSeleccionado is null ? Variant.Filled : Variant.Outlined)"
-                 OnClick="@(() => _proveedorSeleccionado = null)">
+                 OnClick="@(() => FiltrarPorProveedor(null))">
             Todos
         </MudChip>
         @foreach (var proveedor in _proveedores)
         {
             <MudChip T="string" Color="@(_proveedorSeleccionado == proveedor.Id ? Color.Primary : Color.Default)"
                      Variant="@(_proveedorSeleccionado == proveedor.Id ? Variant.Filled : Variant.Outlined)"
-                     OnClick="@(() => _proveedorSeleccionado = proveedor.Id)">
+                     OnClick="@(() => FiltrarPorProveedor(proveedor.Id))">
                 @proveedor.Nombre
             </MudChip>
         }
@@ -87,12 +89,18 @@ else
 }
 
 @code {
+    // El filtro (proveedor + búsqueda) vive en la query string para que al pulsar
+    // "atrás" desde la ficha de un producto se recupere tal cual estaba.
+    [Parameter, SupplyParameterFromQuery(Name = "proveedor")] public int? ProveedorQuery { get; set; }
+    [Parameter, SupplyParameterFromQuery(Name = "q")] public string? BusquedaQuery { get; set; }
+
     private IEnumerable<Producto> _productos = [];
     private IEnumerable<Proveedor> _proveedores = [];
     private Dictionary<int, string> _proveedoresPorId = [];
     private int? _proveedorSeleccionado;
     private bool _cargando = true;
     private string _busqueda = string.Empty;
+    private bool _restaurarPosicion;
 
     private IEnumerable<Producto> _productosFiltrados =>
         _productos
@@ -115,10 +123,10 @@ else
         @<MudGrid>
             @foreach (var producto in productos)
             {
-                <MudItem xs="12" sm="6" md="4">
+                <MudItem xs="12" sm="6" md="4" id="@($"prod-{producto.Id}")">
                     <MudCard Elevation="2"
                              Style="height:100%; display:flex; flex-direction:column; cursor:pointer;"
-                             @onclick="@(() => Navigation.NavigateTo($"/productos/{producto.Id}"))">
+                             @onclick="@(() => AbrirProducto(producto.Id))">
                         @if (!string.IsNullOrWhiteSpace(producto.ImagenUrl))
                         {
                             <div style="height:160px; overflow:hidden;">
@@ -159,6 +167,47 @@ else
         _proveedores = await ProveedorService.GetAllAsync();
         _proveedoresPorId = _proveedores.ToDictionary(p => p.Id, p => p.Nombre);
         _productos = await ProductoService.GetAllAsync();
+
+        // Estado inicial del filtro tomado de la URL (incluye la vuelta con "atrás").
+        _proveedorSeleccionado = ProveedorQuery;
+        _busqueda = BusquedaQuery ?? string.Empty;
+        _restaurarPosicion = true;
+
         _cargando = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // Necesita el circuito interactivo y que las tarjetas ya estén pintadas,
+        // por eso se espera a !_cargando en vez de a firstRender. Si no venimos
+        // de una ficha, irAlProducto no hace nada.
+        if (_restaurarPosicion && !_cargando)
+        {
+            _restaurarPosicion = false;
+            await JS.InvokeVoidAsync("cafeStock.irAlProducto");
+        }
+    }
+
+    private void FiltrarPorProveedor(int? proveedorId)
+    {
+        _proveedorSeleccionado = proveedorId;
+        ActualizarUrl();
+    }
+
+    private void ActualizarUrl()
+    {
+        var parametros = new Dictionary<string, object?>
+        {
+            ["proveedor"] = _proveedorSeleccionado,
+            ["q"] = string.IsNullOrWhiteSpace(_busqueda) ? null : _busqueda,
+        };
+        Navigation.NavigateTo(Navigation.GetUriWithQueryParameters(parametros), forceLoad: false, replace: true);
+    }
+
+    private async Task AbrirProducto(int productoId)
+    {
+        await JS.InvokeVoidAsync("cafeStock.recordarProducto", productoId);
+        var volver = Uri.EscapeDataString(new Uri(Navigation.Uri).PathAndQuery);
+        Navigation.NavigateTo($"/productos/{productoId}?volver={volver}");
     }
 }
