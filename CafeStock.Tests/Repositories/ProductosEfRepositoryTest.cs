@@ -176,6 +176,63 @@ public class ProductosEfRepositoryTest
     }
 
     [Test]
+    public async Task AjustarStockActualAsync_DeltaPositivo_SumaAlStockExistente()
+    {
+        // Arrange
+        var creado = await _repository.CreateAsync(
+            new Producto { Nombre = "Café", StockActual = 5, StockMaximo = 10 });
+
+        // Act
+        var resultado = await _repository.AjustarStockActualAsync(creado.Value.Id, 3);
+
+        // Assert: el resto de campos queda intacto
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value.StockActual.Should().Be(8);
+        resultado.Value.Nombre.Should().Be("Café");
+    }
+
+    [Test]
+    public async Task AjustarStockActualAsync_DeltaNegativo_RestaDelStockExistente()
+    {
+        // Arrange
+        var creado = await _repository.CreateAsync(
+            new Producto { Nombre = "Café", StockActual = 5, StockMaximo = 10 });
+
+        // Act
+        var resultado = await _repository.AjustarStockActualAsync(creado.Value.Id, -2);
+
+        // Assert
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value.StockActual.Should().Be(3);
+    }
+
+    [Test]
+    public async Task AjustarStockActualAsync_DeltaDejaElStockNegativo_DevuelveFailureYNoModifica()
+    {
+        // Arrange
+        var creado = await _repository.CreateAsync(
+            new Producto { Nombre = "Café", StockActual = 2, StockMaximo = 10 });
+
+        // Act
+        var resultado = await _repository.AjustarStockActualAsync(creado.Value.Id, -5);
+
+        // Assert
+        resultado.IsFailure.Should().BeTrue();
+        var recargado = await _repository.GetByIdAsync(creado.Value.Id);
+        recargado.Value.StockActual.Should().Be(2);
+    }
+
+    [Test]
+    public async Task AjustarStockActualAsync_ProductoNoExiste_DevuelveFailure()
+    {
+        // Act
+        var resultado = await _repository.AjustarStockActualAsync(999, 1);
+
+        // Assert
+        resultado.IsFailure.Should().BeTrue();
+    }
+
+    [Test]
     public async Task ProductosUrgentes_DevuelveSoloBajoMinimo()
     {
         // Arrange

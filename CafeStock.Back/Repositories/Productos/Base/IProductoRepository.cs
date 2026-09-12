@@ -27,4 +27,13 @@ public interface IProductoRepository
     /// proveedor, nombre, etc. aunque se llame por error con otros datos.
     /// </summary>
     Task<Result<Producto, DomainError>> ActualizarPrecioUnitarioAsync(int id, decimal nuevoPrecio);
+
+    /// <summary>
+    /// Suma (o resta, si delta es negativo) delta a StockActual, sin tocar ningún otro campo.
+    /// Pensado para corregir el stock cuando se corrige a posteriori la Cantidad de una
+    /// LineaCompra ya registrada (FacturaDetalle.razor): a diferencia de
+    /// ActualizarStockActualAsync, no fija un valor absoluto sino que aplica la diferencia
+    /// respecto a la cantidad anterior. Falla si el resultado quedaría por debajo de 0.
+    /// </summary>
+    Task<Result<Producto, DomainError>> AjustarStockActualAsync(int id, int delta);
 }

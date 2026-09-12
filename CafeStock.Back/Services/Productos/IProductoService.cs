@@ -28,4 +28,12 @@ public interface IProductoService
     /// de referencia tras una recepción de compra.
     /// </summary>
     Task<Result<Producto, DomainError>> ActualizarPrecioUnitarioAsync(int id, decimal nuevoPrecio);
+
+    /// <summary>
+    /// Suma (o resta, si delta es negativo) delta a StockActual. Pensado para corregir el
+    /// stock cuando se corrige a posteriori la Cantidad de una LineaCompra ya registrada;
+    /// a diferencia de ActualizarStockActualAsync no fija un valor absoluto. No pasa por el
+    /// validador completo de Producto ni puede tocar ningún otro campo.
+    /// </summary>
+    Task<Result<Producto, DomainError>> AjustarStockAsync(int id, int delta);
 }

@@ -233,4 +233,115 @@ public class CompraServiceTest
         _repositoryMock.Verify(r => r.ActualizarPrecioLineaAsync(It.IsAny<int>(), It.IsAny<decimal>()), Times.Never);
         _productoServiceMock.Verify(s => s.ActualizarPrecioUnitarioAsync(It.IsAny<int>(), It.IsAny<decimal>()), Times.Never);
     }
+
+    // ---- ActualizarCantidadLineaAsync ----
+
+    [Test]
+    public async Task ActualizarCantidadLineaAsync_CantidadMayor_SumaLaDiferenciaAlStock()
+    {
+        // Arrange: la línea tenía Cantidad=2 (ver CrearCompra), se corrige a 5 → delta +3
+        var compra = CrearCompra(id: 1, fecha: DateTime.Now, lineaId: 10, productoId: 1, precioUnitario: 4.0m);
+        _repositoryMock.Setup(r => r.GetAllAsync()).ReturnsAsync([compra]);
+        _repositoryMock
+            .Setup(r => r.ActualizarCantidadLineaAsync(10, 5))
+            .ReturnsAsync(Result.Success<LineaCompra, DomainError>(compra.Lineas[0] with { Cantidad = 5 }));
+        _productoServiceMock
+            .Setup(s => s.AjustarStockAsync(1, 3))
+            .ReturnsAsync(Result.Success<Producto, DomainError>(new Producto { Id = 1, StockActual = 8 }));
+
+        // Act
+        var resultado = await _service.ActualizarCantidadLineaAsync(10, 5);
+
+        // Assert
+        resultado.IsSuccess.Should().BeTrue();
+        _productoServiceMock.Verify(s => s.AjustarStockAsync(1, 3), Times.Once);
+    }
+
+    [Test]
+    public async Task ActualizarCantidadLineaAsync_CantidadMenor_RestaLaDiferenciaAlStock()
+    {
+        // Arrange: la línea tenía Cantidad=2, se corrige a 1 → delta -1
+        var compra = CrearCompra(id: 1, fecha: DateTime.Now, lineaId: 10, productoId: 1, precioUnitario: 4.0m);
+        _repositoryMock.Setup(r => r.GetAllAsync()).ReturnsAsync([compra]);
+        _repositoryMock
+            .Setup(r => r.ActualizarCantidadLineaAsync(10, 1))
+            .ReturnsAsync(Result.Success<LineaCompra, DomainError>(compra.Lineas[0] with { Cantidad = 1 }));
+        _productoServiceMock
+            .Setup(s => s.AjustarStockAsync(1, -1))
+            .ReturnsAsync(Result.Success<Producto, DomainError>(new Producto { Id = 1, StockActual = 4 }));
+
+        // Act
+        var resultado = await _service.ActualizarCantidadLineaAsync(10, 1);
+
+        // Assert
+        resultado.IsSuccess.Should().BeTrue();
+        _productoServiceMock.Verify(s => s.AjustarStockAsync(1, -1), Times.Once);
+    }
+
+    [Test]
+    public async Task ActualizarCantidadLineaAsync_MismaCantidad_NoTocaElStock()
+    {
+        // Arrange: se "corrige" al mismo valor que ya tenía (delta 0)
+        var compra = CrearCompra(id: 1, fecha: DateTime.Now, lineaId: 10, productoId: 1, precioUnitario: 4.0m);
+        _repositoryMock.Setup(r => r.GetAllAsync()).ReturnsAsync([compra]);
+        _repositoryMock
+            .Setup(r => r.ActualizarCantidadLineaAsync(10, 2))
+            .ReturnsAsync(Result.Success<LineaCompra, DomainError>(compra.Lineas[0]));
+
+        // Act
+        var resultado = await _service.ActualizarCantidadLineaAsync(10, 2);
+
+        // Assert
+        resultado.IsSuccess.Should().BeTrue();
+        _productoServiceMock.Verify(s => s.AjustarStockAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+    }
+
+    [Test]
+    public async Task ActualizarCantidadLineaAsync_CantidadCero_NoLlamaAlRepositorio()
+    {
+        // Act
+        var resultado = await _service.ActualizarCantidadLineaAsync(10, 0);
+
+        // Assert
+        resultado.IsFailure.Should().BeTrue();
+        _repositoryMock.Verify(r => r.GetAllAsync(), Times.Never);
+        _repositoryMock.Verify(r => r.ActualizarCantidadLineaAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+    }
+
+    [Test]
+    public async Task ActualizarCantidadLineaAsync_LineaNoExiste_DevuelveFailureYNoLlamaANada()
+    {
+        // Arrange: ninguna compra tiene una línea con Id 999
+        var compra = CrearCompra(id: 1, fecha: DateTime.Now, lineaId: 10, productoId: 1, precioUnitario: 4.0m);
+        _repositoryMock.Setup(r => r.GetAllAsync()).ReturnsAsync([compra]);
+
+        // Act
+        var resultado = await _service.ActualizarCantidadLineaAsync(999, 5);
+
+        // Assert
+        resultado.IsFailure.Should().BeTrue();
+        _repositoryMock.Verify(r => r.ActualizarCantidadLineaAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+        _productoServiceMock.Verify(s => s.AjustarStockAsync(It.IsAny<int>(), It.IsAny<int>()), Times.Never);
+    }
+
+    [Test]
+    public async Task ActualizarCantidadLineaAsync_FallaElAjusteDeStock_LaCorreccionDeCantidadSigueSiendoExito()
+    {
+        // Arrange: el ajuste de stock es best-effort — si falla, no debe tumbar la corrección
+        // de la línea, que ya quedó guardada en el repositorio.
+        var compra = CrearCompra(id: 1, fecha: DateTime.Now, lineaId: 10, productoId: 1, precioUnitario: 4.0m);
+        _repositoryMock.Setup(r => r.GetAllAsync()).ReturnsAsync([compra]);
+        _repositoryMock
+            .Setup(r => r.ActualizarCantidadLineaAsync(10, 5))
+            .ReturnsAsync(Result.Success<LineaCompra, DomainError>(compra.Lineas[0] with { Cantidad = 5 }));
+        _productoServiceMock
+            .Setup(s => s.AjustarStockAsync(1, 3))
+            .ReturnsAsync(Result.Failure<Producto, DomainError>(ProductoErrors.NotFound(1)));
+
+        // Act
+        var resultado = await _service.ActualizarCantidadLineaAsync(10, 5);
+
+        // Assert
+        resultado.IsSuccess.Should().BeTrue();
+    }
 }

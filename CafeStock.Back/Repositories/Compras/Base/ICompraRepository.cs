@@ -26,4 +26,12 @@ public interface ICompraRepository
     /// a posteriori el precio real de una factura ya guardada (FacturaDetalle.razor).
     /// </summary>
     Task<Result<LineaCompra, DomainError>> ActualizarPrecioLineaAsync(int lineaCompraId, decimal nuevoPrecio);
+
+    /// <summary>
+    /// Actualiza ÚNICAMENTE Cantidad de una LineaCompra ya registrada, sin tocar
+    /// PrecioUnitario, ProductoId ni ninguna otra línea de la misma Compra. Pensado para
+    /// corregir a posteriori la cantidad realmente recibida de una factura ya guardada
+    /// (FacturaDetalle.razor).
+    /// </summary>
+    Task<Result<LineaCompra, DomainError>> ActualizarCantidadLineaAsync(int lineaCompraId, int nuevaCantidad);
 }

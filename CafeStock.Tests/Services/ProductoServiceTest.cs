@@ -165,6 +165,40 @@ public class ProductoServiceTest
     }
 
     [Test]
+    public async Task AjustarStockAsync_DeltaPositivo_LlamaAlRepositorioConElDelta()
+    {
+        // Arrange
+        _repositoryMock
+            .Setup(r => r.AjustarStockActualAsync(1, 3))
+            .ReturnsAsync(Result.Success<Producto, DomainError>(new Producto { Id = 1, StockActual = 8 }));
+
+        // Act
+        var resultado = await _service.AjustarStockAsync(1, 3);
+
+        // Assert
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value.StockActual.Should().Be(8);
+        _repositoryMock.Verify(r => r.AjustarStockActualAsync(1, 3), Times.Once);
+    }
+
+    [Test]
+    public async Task AjustarStockAsync_DeltaNegativo_LlamaAlRepositorioConElDelta()
+    {
+        // Arrange: corrección a la baja (se recibió menos de lo que se había registrado)
+        _repositoryMock
+            .Setup(r => r.AjustarStockActualAsync(1, -2))
+            .ReturnsAsync(Result.Success<Producto, DomainError>(new Producto { Id = 1, StockActual = 3 }));
+
+        // Act
+        var resultado = await _service.AjustarStockAsync(1, -2);
+
+        // Assert
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value.StockActual.Should().Be(3);
+        _repositoryMock.Verify(r => r.AjustarStockActualAsync(1, -2), Times.Once);
+    }
+
+    [Test]
     public async Task GetAllAsync_DevuelveTodosLosProductos()
     {
         // Arrange

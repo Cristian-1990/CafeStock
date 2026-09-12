@@ -29,4 +29,13 @@ public interface ICompraService
     /// nuevo valor; si hay una compra posterior con ese producto, no toca la referencia.
     /// </summary>
     Task<Result<LineaCompra, DomainError>> ActualizarPrecioLineaAsync(int lineaCompraId, decimal nuevoPrecio);
+
+    /// <summary>
+    /// Corrige la cantidad de una LineaCompra ya registrada (factura ya creada). A diferencia
+    /// del precio, el ajuste de stock se aplica SIEMPRE (no solo si es la compra más reciente
+    /// del producto): StockActual es un acumulado, así que sumar la diferencia entre la nueva
+    /// y la antigua cantidad corrige el stock sin importar qué otras compras haya habido
+    /// después.
+    /// </summary>
+    Task<Result<LineaCompra, DomainError>> ActualizarCantidadLineaAsync(int lineaCompraId, int nuevaCantidad);
 }

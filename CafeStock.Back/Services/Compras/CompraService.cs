@@ -156,4 +156,47 @@ public class CompraService : ICompraService
 
         return resultado;
     }
+
+    /// <summary>
+    /// Corrige la cantidad de una línea ya registrada y traslada la diferencia a
+    /// Producto.StockActual. A diferencia de ActualizarPrecioLineaAsync no hay que mirar
+    /// recencia: el stock es un acumulado, así que sumar (nuevaCantidad - cantidadAnterior)
+    /// lo corrige sin importar qué otras compras o recuentos haya habido después. El ajuste
+    /// de stock es best-effort — si falla, se loguea pero no se deshace la corrección de la
+    /// línea, ya guardada en este punto.
+    /// </summary>
+    public async Task<Result<LineaCompra, DomainError>> ActualizarCantidadLineaAsync(int lineaCompraId, int nuevaCantidad)
+    {
+        if (nuevaCantidad <= 0)
+            return Result.Failure<LineaCompra, DomainError>(
+                CompraErrors.Validation(["La cantidad recibida debe ser mayor que 0"]));
+
+        var todasLasCompras = await _repository.GetAllAsync();
+        var compraDeLaLinea = todasLasCompras.FirstOrDefault(c => c.Lineas.Any(l => l.Id == lineaCompraId));
+        if (compraDeLaLinea is null)
+            return Result.Failure<LineaCompra, DomainError>(CompraErrors.LineaNotFound(lineaCompraId));
+
+        var linea = compraDeLaLinea.Lineas.First(l => l.Id == lineaCompraId);
+        var cantidadAnterior = linea.Cantidad;
+
+        var resultado = await _repository.ActualizarCantidadLineaAsync(lineaCompraId, nuevaCantidad);
+        if (resultado.IsFailure)
+            return resultado;
+
+        var delta = nuevaCantidad - cantidadAnterior;
+        if (delta != 0)
+        {
+            var ajusteStock = await _productoService.AjustarStockAsync(linea.ProductoId, delta);
+            if (!ajusteStock.IsSuccess)
+                Log.Error(
+                    "No se pudo ajustar el stock del producto {ProductoId} tras corregir la cantidad de la línea {LineaCompraId}: {Error}",
+                    linea.ProductoId, lineaCompraId, ajusteStock.Error.Message);
+        }
+
+        Log.Information(
+            "Cantidad de línea de compra corregida: LineaCompraId={LineaCompraId}, ProductoId={ProductoId}, CantidadAnterior={CantidadAnterior}, CantidadNueva={CantidadNueva}",
+            lineaCompraId, linea.ProductoId, cantidadAnterior, nuevaCantidad);
+
+        return resultado;
+    }
 }

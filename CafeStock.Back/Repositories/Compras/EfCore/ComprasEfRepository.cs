@@ -134,4 +134,24 @@ public class ComprasEfRepository : ICompraRepository
             return Result.Failure<LineaCompra, DomainError>(CompraErrors.DatabaseError(ex.Message));
         }
     }
+
+    public async Task<Result<LineaCompra, DomainError>> ActualizarCantidadLineaAsync(int lineaCompraId, int nuevaCantidad)
+    {
+        await InitializeAsync();
+        using var context = CreateContext();
+        var entity = await context.LineasCompra.FindAsync(lineaCompraId);
+        if (entity is null)
+            return Result.Failure<LineaCompra, DomainError>(CompraErrors.LineaNotFound(lineaCompraId));
+        try
+        {
+            entity.Cantidad = nuevaCantidad;
+            await context.SaveChangesAsync();
+            return Result.Success<LineaCompra, DomainError>(entity.ToLineaCompra());
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error al actualizar la cantidad de la línea de compra {Id}", lineaCompraId);
+            return Result.Failure<LineaCompra, DomainError>(CompraErrors.DatabaseError(ex.Message));
+        }
+    }
 }

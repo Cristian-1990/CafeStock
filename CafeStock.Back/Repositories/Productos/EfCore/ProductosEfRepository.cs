@@ -161,6 +161,31 @@ public class ProductosEfRepository : IProductoRepository
         }
     }
 
+    public async Task<Result<Producto, DomainError>> AjustarStockActualAsync(int id, int delta)
+    {
+        await InitializeAsync();
+        using var context = CreateContext();
+        var entity = await context.Productos.FindAsync(id);
+        if (entity is null)
+            return Result.Failure<Producto, DomainError>(ProductoErrors.NotFound(id));
+        try
+        {
+            var nuevoStock = entity.StockActual + delta;
+            if (nuevoStock < 0)
+                return Result.Failure<Producto, DomainError>(
+                    ProductoErrors.Validation(["El stock no puede quedar por debajo de 0"]));
+
+            entity.StockActual = nuevoStock;
+            await context.SaveChangesAsync();
+            return Result.Success<Producto, DomainError>(entity.ToProducto());
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error al ajustar el stock actual del producto {Id}", id);
+            return Result.Failure<Producto, DomainError>(ProductoErrors.DatabaseError(ex.Message));
+        }
+    }
+
     public async Task<IEnumerable<Producto>> ProductosUrgentes()
     {
         await InitializeAsync();

@@ -126,6 +126,47 @@ public class ComprasEfRepositoryTest
     }
 
     [Test]
+    public async Task ActualizarCantidadLineaAsync_ModificaSoloEsaLinea()
+    {
+        // Arrange: dos líneas en la misma compra, para comprobar que solo se toca una
+        var producto1 = await _productoRepository.CreateAsync(new Producto { Nombre = "Café", StockActual = 2, StockMaximo = 5 });
+        var producto2 = await _productoRepository.CreateAsync(new Producto { Nombre = "Azúcar", StockActual = 2, StockMaximo = 5 });
+        var creada = await _repository.CreateAsync(new Compra
+        {
+            Fecha = DateTime.Now,
+            Lineas =
+            [
+                new LineaCompra { ProductoId = producto1.Value.Id, Cantidad = 3, PrecioUnitario = 4.5m },
+                new LineaCompra { ProductoId = producto2.Value.Id, Cantidad = 1, PrecioUnitario = 1.2m }
+            ]
+        });
+        var lineaAEditar = creada.Value.Lineas.First(l => l.ProductoId == producto1.Value.Id);
+
+        // Act
+        var resultado = await _repository.ActualizarCantidadLineaAsync(lineaAEditar.Id, 6);
+
+        // Assert: la línea editada cambia, la otra queda intacta
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value.Cantidad.Should().Be(6);
+        resultado.Value.PrecioUnitario.Should().Be(4.5m);
+        resultado.Value.ProductoId.Should().Be(producto1.Value.Id);
+
+        var compras = await _repository.GetAllAsync();
+        var lineaIntacta = compras.Single().Lineas.Single(l => l.ProductoId == producto2.Value.Id);
+        lineaIntacta.Cantidad.Should().Be(1);
+    }
+
+    [Test]
+    public async Task ActualizarCantidadLineaAsync_LineaNoExiste_DevuelveFailure()
+    {
+        // Act
+        var resultado = await _repository.ActualizarCantidadLineaAsync(999, 6);
+
+        // Assert
+        resultado.IsFailure.Should().BeTrue();
+    }
+
+    [Test]
     public async Task GetAllAsync_DevuelveLasComprasConSusLineas()
     {
         // Arrange

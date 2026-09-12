@@ -104,4 +104,13 @@ public class ProductoService : IProductoService
                 resultado.Value.Id, resultado.Value.Nombre, nuevoPrecio);
         return resultado;
     }
+
+    public async Task<Result<Producto, DomainError>> AjustarStockAsync(int id, int delta)
+    {
+        var resultado = await _repository.AjustarStockActualAsync(id, delta);
+        if (resultado.IsSuccess)
+            Log.Information("Stock ajustado: Id={Id}, Nombre={Nombre}, Delta={Delta}, StockResultante={StockResultante}",
+                resultado.Value.Id, resultado.Value.Nombre, delta, resultado.Value.StockActual);
+        return resultado;
+    }
 }

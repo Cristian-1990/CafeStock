@@ -83,16 +83,32 @@ else
         </HeaderContent>
         <RowTemplate>
             <MudTd DataLabel="Producto">@(context.ProductoNombre ?? $"Producto #{context.ProductoId}")</MudTd>
-            <MudTd DataLabel="Cantidad">@context.Cantidad</MudTd>
+            <MudTd DataLabel="Cantidad">
+                @if (_editandoLineaId == context.Id)
+                {
+                    <MudNumericField T="int" @bind-Value="_cantidadEnEdicion"
+                                      Min="1" Variant="Variant.Outlined"
+                                      Style="max-width:90px;"/>
+                }
+                else
+                {
+                    <div class="d-flex align-center" style="gap:4px;">
+                        <span>@context.Cantidad</span>
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
+                                       title="Editar cantidad recibida"
+                                       OnClick="@(() => EmpezarEdicionLinea(context))"/>
+                    </div>
+                }
+            </MudTd>
             <MudTd DataLabel="Precio unitario">
                 @if (_editandoLineaId == context.Id)
                 {
                     <div class="d-flex align-center" style="gap:4px;">
                         <MudNumericField T="decimal" @bind-Value="_precioEnEdicion"
-                                          Min="0" Format="F2" Variant="Variant.Outlined"
-                                          Style="max-width:110px;"/>
+                                          Min="0" Format="F4" Variant="Variant.Outlined"
+                                          Style="max-width:130px;"/>
                         <MudIconButton Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small"
-                                       OnClick="@(() => GuardarPrecioLineaAsync(context))"/>
+                                       OnClick="@(() => GuardarLineaAsync(context))"/>
                         <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small"
                                        OnClick="@(() => _editandoLineaId = null)"/>
                     </div>
@@ -100,10 +116,10 @@ else
                 else
                 {
                     <div class="d-flex align-center" style="gap:4px;">
-                        <span>@context.PrecioUnitario.ToString("F2") €</span>
+                        <span>@context.PrecioUnitario.ToString("F4") €</span>
                         <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
                                        title="Editar precio"
-                                       OnClick="@(() => EmpezarEdicionPrecio(context))"/>
+                                       OnClick="@(() => EmpezarEdicionLinea(context))"/>
                     </div>
                 }
             </MudTd>
@@ -144,9 +160,10 @@ else
     // string? porque el TextField puede dejarlo a null; se normaliza a "" al guardar.
     private string? _notas = string.Empty;
 
-    // Id de la LineaCompra en edición inline (null = ninguna fila en modo edición) y buffer
-    // del precio mientras se edita, igual de patrón que ListaCompra.razor con las cantidades.
+    // Id de la LineaCompra en edición inline (null = ninguna fila en modo edición) y buffers
+    // de cantidad/precio mientras se edita, igual de patrón que ListaCompra.razor.
     private int? _editandoLineaId;
+    private int _cantidadEnEdicion;
     private decimal _precioEnEdicion;
 
     private decimal _total => _factura?.Lineas.Sum(l => l.Cantidad * l.PrecioUnitario) ?? 0;
@@ -187,18 +204,22 @@ else
         }
     }
 
-    private void EmpezarEdicionPrecio(LineaCompra linea)
+    private void EmpezarEdicionLinea(LineaCompra linea)
     {
         _editandoLineaId = linea.Id;
         _precioEnEdicion = linea.PrecioUnitario;
+        _cantidadEnEdicion = linea.Cantidad;
     }
 
     /// <summary>
-    /// Corrige el precio real de una línea ya guardada. El servicio ya decide si además hay
-    /// que sincronizar Producto.PrecioUnitario (solo si esta es la compra más reciente con
-    /// ese producto) — aquí solo se refleja el nuevo precio de la línea en la vista.
+    /// Corrige la cantidad recibida y/o el precio real de una línea ya guardada. Cada campo
+    /// solo se manda a guardar si realmente ha cambiado. El servicio de precio ya decide si
+    /// además hay que sincronizar Producto.PrecioUnitario (solo si esta es la compra más
+    /// reciente con ese producto); el de cantidad siempre traslada la diferencia al stock del
+    /// producto. Si uno de los dos falla, el otro que haya tenido éxito se queda guardado y la
+    /// fila sigue en edición para poder reintentar solo lo que falló.
     /// </summary>
-    private async Task GuardarPrecioLineaAsync(LineaCompra linea)
+    private async Task GuardarLineaAsync(LineaCompra linea)
     {
         if (_factura is null) return;
 
@@ -207,20 +228,51 @@ else
             Snackbar.Add("El precio unitario debe ser mayor que 0", Severity.Warning);
             return;
         }
+        if (_cantidadEnEdicion <= 0)
+        {
+            Snackbar.Add("La cantidad recibida debe ser mayor que 0", Severity.Warning);
+            return;
+        }
 
-        var resultado = await CompraService.ActualizarPrecioLineaAsync(linea.Id, _precioEnEdicion);
-        if (resultado.IsSuccess)
+        var lineaActualizada = linea;
+        var huboError = false;
+
+        if (_cantidadEnEdicion != linea.Cantidad)
+        {
+            var resultadoCantidad = await CompraService.ActualizarCantidadLineaAsync(linea.Id, _cantidadEnEdicion);
+            if (resultadoCantidad.IsSuccess)
+                lineaActualizada = lineaActualizada with { Cantidad = _cantidadEnEdicion };
+            else
+            {
+                Snackbar.Add(resultadoCantidad.Error.Message, Severity.Error);
+                huboError = true;
+            }
+        }
+
+        if (_precioEnEdicion != linea.PrecioUnitario)
+        {
+            var resultadoPrecio = await CompraService.ActualizarPrecioLineaAsync(linea.Id, _precioEnEdicion);
+            if (resultadoPrecio.IsSuccess)
+                lineaActualizada = lineaActualizada with { PrecioUnitario = _precioEnEdicion };
+            else
+            {
+                Snackbar.Add(resultadoPrecio.Error.Message, Severity.Error);
+                huboError = true;
+            }
+        }
+
+        if (lineaActualizada != linea)
         {
             var lineasActualizadas = _factura.Lineas
-                .Select(l => l.Id == linea.Id ? l with { PrecioUnitario = _precioEnEdicion } : l)
+                .Select(l => l.Id == linea.Id ? lineaActualizada : l)
                 .ToList();
             _factura = _factura with { Lineas = lineasActualizadas };
-            _editandoLineaId = null;
-            Snackbar.Add("Precio corregido", Severity.Success);
         }
-        else
+
+        if (!huboError)
         {
-            Snackbar.Add(resultado.Error.Message, Severity.Error);
+            _editandoLineaId = null;
+            Snackbar.Add("Línea corregida", Severity.Success);
         }
     }
 }
