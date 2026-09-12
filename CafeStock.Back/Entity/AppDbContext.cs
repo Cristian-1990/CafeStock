@@ -428,14 +428,18 @@ public class AppDbContext : DbContext
 
     /// <summary>
     /// Igual que AsegurarAgrupacionPorUnidadPucheroAsync pero activa
-    /// PrecioUnitarioAltaPrecision en el proveedor Priegola (su precio por unidad sale de
+    /// PrecioUnitarioAltaPrecision en el proveedor Priégola (su precio por unidad sale de
     /// dividir un precio de caja entre muchas unidades, y con 2 decimales se pierde precisión
     /// real). Requiere que la columna PrecioUnitarioAltaPrecision ya exista (llamar después de
     /// AsegurarColumnaPrecioUnitarioAltaPrecisionAsync).
+    ///
+    /// Compara con Trim() porque el nombre real en producción es "Priégola " (con espacio
+    /// final) — una comparación exacta nunca habría igualado y esta migración no habría hecho
+    /// nada nunca, en silencio (bug real ya sufrido: la migración jamás activó el flag).
     /// </summary>
     public async Task AsegurarPrecioAltaPrecisionPriegolaAsync()
     {
-        var priegola = await Proveedores.FirstOrDefaultAsync(p => p.Nombre == "Priegola");
+        var priegola = await Proveedores.FirstOrDefaultAsync(p => p.Nombre.Trim() == "Priégola");
         if (priegola is null || priegola.PrecioUnitarioAltaPrecision) return;
 
         priegola.PrecioUnitarioAltaPrecision = true;

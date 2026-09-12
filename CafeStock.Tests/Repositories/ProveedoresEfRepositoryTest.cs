@@ -112,16 +112,34 @@ public class ProveedoresEfRepositoryTest
     [Test]
     public async Task Initialize_ProveedorPriegola_ActivaPrecioUnitarioAltaPrecision()
     {
-        // Arrange: Priegola se crea como cualquier otro proveedor, sin el flag
+        // Arrange: Priégola se crea como cualquier otro proveedor, sin el flag
         var priegolaSeed = new ProveedoresEfRepository(_connectionString);
-        await priegolaSeed.CreateAsync(new Proveedor { Nombre = "Priegola" });
+        await priegolaSeed.CreateAsync(new Proveedor { Nombre = "Priégola" });
 
         // Act: _repository (fresca, _initialized aún en false) dispara la migración en su
         // primera llamada — como al arrancar la app de verdad.
         var proveedores = (await _repository.GetAllAsync()).ToList();
 
         // Assert
-        var priegola = proveedores.Single(p => p.Nombre == "Priegola");
+        var priegola = proveedores.Single(p => p.Nombre == "Priégola");
+        priegola.PrecioUnitarioAltaPrecision.Should().BeTrue();
+    }
+
+    [Test]
+    public async Task Initialize_ProveedorPriegolaConEspacioFinal_ActivaPrecioUnitarioAltaPrecision()
+    {
+        // Arrange: regresión de un bug real — el nombre en producción es "Priégola " (con
+        // espacio final), y la migración original comparaba con "==" exacto sin recortar,
+        // así que nunca coincidía y el flag se quedaba en false en silencio, sin que nadie lo
+        // notara hasta comprobarlo a mano en la base de datos real.
+        var priegolaSeed = new ProveedoresEfRepository(_connectionString);
+        await priegolaSeed.CreateAsync(new Proveedor { Nombre = "Priégola " });
+
+        // Act
+        var proveedores = (await _repository.GetAllAsync()).ToList();
+
+        // Assert
+        var priegola = proveedores.Single(p => p.Nombre == "Priégola ");
         priegola.PrecioUnitarioAltaPrecision.Should().BeTrue();
     }
 
