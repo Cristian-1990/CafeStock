@@ -427,7 +427,7 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
-.idea/
+.idea/
 
 # Configuracion local con credenciales (no versionar)
 appsettings.json
@@ -436,5 +436,3 @@ appsettings.Development.json
 # Salida de dotnet publish (contiene copia de appsettings con credenciales)
 publicado/
 
-# Documentación local de contexto para el asistente (no versionada)
-CLAUDE.md
