@@ -131,6 +131,38 @@ else
         </FooterContent>
     </MudTable>
 
+    @if (_proveedor?.EsSupermercadoGenerico == true)
+    {
+        <MudPaper Class="pa-4 mt-6" Elevation="1" Style="max-width:600px;">
+            <MudText Typo="Typo.subtitle2" Class="mb-2" Style="color:#6D4C41; text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">
+                Compras excepcionales
+            </MudText>
+
+            <MudTextField @bind-Value="_descripcionExcepcional"
+                          Label="¿Qué se compró? (opcional)"
+                          Variant="Variant.Outlined"
+                          Lines="2"
+                          Class="mb-3"/>
+
+            <MudNumericField T="decimal" @bind-Value="_importeExcepcional"
+                              Label="Total (€)"
+                              Variant="Variant.Outlined"
+                              Min="0"
+                              Format="F2"
+                              Adornment="Adornment.Start"
+                              AdornmentText="€"
+                              Class="mb-4"
+                              Style="max-width:180px;"/>
+
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Save"
+                       OnClick="GuardarComprasExcepcionalesAsync">
+                Guardar
+            </MudButton>
+        </MudPaper>
+    }
+
     <MudPaper Class="pa-4 mt-6" Elevation="1" Style="max-width:600px;">
         <MudText Typo="Typo.subtitle2" Class="mb-2" Style="color:#6D4C41; text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">
             Notas
@@ -160,13 +192,19 @@ else
     // string? porque el TextField puede dejarlo a null; se normaliza a "" al guardar.
     private string? _notas = string.Empty;
 
+    // Compras excepcionales (ver Compra.DescripcionComprasExcepcionales): igual patrón que
+    // Notas, editable en cualquier momento por si hay que corregirlo o añadirlo a posteriori.
+    private string? _descripcionExcepcional = string.Empty;
+    private decimal _importeExcepcional;
+
     // Id de la LineaCompra en edición inline (null = ninguna fila en modo edición) y buffers
     // de cantidad/precio mientras se edita, igual de patrón que ListaCompra.razor.
     private int? _editandoLineaId;
     private int _cantidadEnEdicion;
     private decimal _precioEnEdicion;
 
-    private decimal _total => _factura?.Lineas.Sum(l => l.Cantidad * l.PrecioUnitario) ?? 0;
+    private decimal _total =>
+        (_factura?.Lineas.Sum(l => l.Cantidad * l.PrecioUnitario) ?? 0) + (_factura?.ImporteComprasExcepcionales ?? 0);
 
     /// <summary>
     /// "F4" (4 decimales) si el proveedor de esta factura tiene
@@ -182,6 +220,8 @@ else
         if (_factura is not null)
         {
             _notas = _factura.Notas;
+            _descripcionExcepcional = _factura.DescripcionComprasExcepcionales;
+            _importeExcepcional = _factura.ImporteComprasExcepcionales;
 
             if (_factura.ProveedorId is int proveedorId)
             {
@@ -204,6 +244,34 @@ else
         {
             _factura = _factura with { Notas = notas };
             Snackbar.Add("Notas guardadas", Severity.Success);
+        }
+        else
+        {
+            Snackbar.Add(resultado.Error.Message, Severity.Error);
+        }
+    }
+
+    private async Task GuardarComprasExcepcionalesAsync()
+    {
+        if (_factura is null) return;
+
+        if (_importeExcepcional < 0)
+        {
+            Snackbar.Add("El total no puede ser negativo", Severity.Warning);
+            return;
+        }
+
+        var descripcion = _descripcionExcepcional ?? string.Empty;
+        var resultado = await CompraService.ActualizarComprasExcepcionalesAsync(_factura.Id, descripcion, _importeExcepcional);
+
+        if (resultado.IsSuccess)
+        {
+            _factura = _factura with
+            {
+                DescripcionComprasExcepcionales = descripcion,
+                ImporteComprasExcepcionales = _importeExcepcional
+            };
+            Snackbar.Add("Compras excepcionales guardadas", Severity.Success);
         }
         else
         {

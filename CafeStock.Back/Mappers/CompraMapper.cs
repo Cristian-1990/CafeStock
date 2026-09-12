@@ -16,7 +16,9 @@ public static class CompraMapper
             MetodoPago = compra.MetodoPago,
             NumeroFacturaProveedor = compra.NumeroFacturaProveedor,
             FacturaAdjuntaUrl = compra.FacturaAdjuntaUrl,
-            Notas = compra.Notas
+            Notas = compra.Notas,
+            DescripcionComprasExcepcionales = compra.DescripcionComprasExcepcionales,
+            ImporteComprasExcepcionales = compra.ImporteComprasExcepcionales
         };
     }
 
@@ -31,7 +33,9 @@ public static class CompraMapper
             MetodoPago = entity.MetodoPago,
             NumeroFacturaProveedor = entity.NumeroFacturaProveedor,
             FacturaAdjuntaUrl = entity.FacturaAdjuntaUrl,
-            Notas = entity.Notas
+            Notas = entity.Notas,
+            DescripcionComprasExcepcionales = entity.DescripcionComprasExcepcionales,
+            ImporteComprasExcepcionales = entity.ImporteComprasExcepcionales
         };
     }
 

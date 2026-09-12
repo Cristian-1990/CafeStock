@@ -94,5 +94,5 @@ else
     }
 
     private static decimal CalcularTotal(Compra factura) =>
-        factura.Lineas.Sum(l => l.Cantidad * l.PrecioUnitario);
+        factura.Lineas.Sum(l => l.Cantidad * l.PrecioUnitario) + factura.ImporteComprasExcepcionales;
 }

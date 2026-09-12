@@ -167,6 +167,65 @@ public class ComprasEfRepositoryTest
     }
 
     [Test]
+    public async Task CreateAsync_SinLineasConImporteExcepcional_SeGuardaComoCompraExcepcionalPura()
+    {
+        // Arrange: un molde, un cubo de basura... sin ningún Producto asociado
+        var alcampo = await _proveedorRepository.CreateAsync(new Proveedor { Nombre = "Alcampo", EsSupermercadoGenerico = true });
+        var compra = new Compra
+        {
+            ProveedorId = alcampo.Value.Id,
+            Fecha = DateTime.Now,
+            Lineas = [],
+            DescripcionComprasExcepcionales = "Molde, cubo de basura, cuchillo",
+            ImporteComprasExcepcionales = 23.40m
+        };
+
+        // Act
+        var resultado = await _repository.CreateAsync(compra);
+
+        // Assert
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value.Lineas.Should().BeEmpty();
+        resultado.Value.DescripcionComprasExcepcionales.Should().Be("Molde, cubo de basura, cuchillo");
+        resultado.Value.ImporteComprasExcepcionales.Should().Be(23.40m);
+    }
+
+    [Test]
+    public async Task ActualizarComprasExcepcionalesAsync_ModificaSoloEsosCampos()
+    {
+        // Arrange: una compra normal con líneas, sin compra excepcional todavía
+        var proveedor = await _proveedorRepository.CreateAsync(new Proveedor { Nombre = "Alcampo" });
+        var producto = await _productoRepository.CreateAsync(
+            new Producto { Nombre = "Café", StockActual = 2, StockMaximo = 5, ProveedorId = proveedor.Value.Id });
+        var creada = await _repository.CreateAsync(new Compra
+        {
+            ProveedorId = proveedor.Value.Id,
+            Fecha = DateTime.Now,
+            Lineas = [new LineaCompra { ProductoId = producto.Value.Id, Cantidad = 3, PrecioUnitario = 4.5m }]
+        });
+
+        // Act: se añade a posteriori (p.ej. se olvidó anotarlo al recepcionar)
+        var resultado = await _repository.ActualizarComprasExcepcionalesAsync(creada.Value.Id, "Un cubo de basura", 8.0m);
+
+        // Assert: los nuevos campos cambian, las líneas quedan intactas
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value.DescripcionComprasExcepcionales.Should().Be("Un cubo de basura");
+        resultado.Value.ImporteComprasExcepcionales.Should().Be(8.0m);
+        resultado.Value.Lineas.Should().HaveCount(1);
+        resultado.Value.Lineas[0].Cantidad.Should().Be(3);
+    }
+
+    [Test]
+    public async Task ActualizarComprasExcepcionalesAsync_CompraNoExiste_DevuelveFailure()
+    {
+        // Act
+        var resultado = await _repository.ActualizarComprasExcepcionalesAsync(999, "Algo", 5.0m);
+
+        // Assert
+        resultado.IsFailure.Should().BeTrue();
+    }
+
+    [Test]
     public async Task GetAllAsync_DevuelveLasComprasConSusLineas()
     {
         // Arrange

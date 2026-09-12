@@ -11,6 +11,39 @@
     <MudText Typo="Typo.h4" Style="color:#3E2723; margin:0;">Recepcionar</MudText>
 </div>
 
+@* Siempre visible, sin depender de si hoy hace falta reponer stock — para artículos sueltos
+   (un molde, un cubo de basura...) que compramos muy de vez en cuando en el supermercado y no
+   valen la pena como Producto con seguimiento de stock. Ver Compra.DescripcionComprasExcepcionales. *@
+@foreach (var proveedor in _proveedores.Where(p => p.EsSupermercadoGenerico))
+{
+    <MudPaper Class="pa-4 mb-4" Elevation="2" Style="max-width:500px;">
+        <MudText Typo="Typo.h6" Class="mb-3" Style="color:#3E2723;">
+            Compras excepcionales — @proveedor.Nombre
+        </MudText>
+        <MudTextField @bind-Value="_descripcionExcepcional[proveedor.Id]"
+                      Label="¿Qué se compró? (opcional, p.ej. un molde, un cubo de basura...)"
+                      Variant="Variant.Outlined"
+                      Lines="2"
+                      Class="mb-3"/>
+        <MudNumericField T="decimal" @bind-Value="_importeExcepcional[proveedor.Id]"
+                          Label="Total (€)"
+                          Variant="Variant.Outlined"
+                          Min="0"
+                          Format="F2"
+                          Adornment="Adornment.Start"
+                          AdornmentText="€"
+                          Class="mb-3"
+                          Style="max-width:180px;"/>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Save"
+                   OnClick="@(() => GuardarCompraExcepcionalAsync(proveedor))"
+                   Disabled="_guardandoExcepcional.Contains(proveedor.Id)">
+            @(_guardandoExcepcional.Contains(proveedor.Id) ? "Guardando..." : "Guardar")
+        </MudButton>
+    </MudPaper>
+}
+
 @if (_cargando)
 {
     <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
@@ -126,12 +159,21 @@ else
     private HashSet<int?> _confirmandoGrupo = [];
     private bool _cargando = true;
 
+    // Buffers del panel de "Compras excepcionales", uno por proveedor con
+    // EsSupermercadoGenerico activo — independientes de _productos/_grupos porque el panel
+    // debe estar siempre disponible, haya o no algo pendiente de reponer ese día.
+    private Dictionary<int, string> _descripcionExcepcional = [];
+    private Dictionary<int, decimal> _importeExcepcional = [];
+    private HashSet<int> _guardandoExcepcional = [];
+
     private IEnumerable<(Proveedor? Proveedor, List<Producto> Productos)> _grupos =>
         AgrupadorProveedor.AgruparPorProveedor(_productos, _proveedores);
 
     protected override async Task OnInitializedAsync()
     {
         _proveedores = await ProveedorService.GetAllAsync();
+        _descripcionExcepcional = _proveedores.ToDictionary(p => p.Id, _ => string.Empty);
+        _importeExcepcional = _proveedores.ToDictionary(p => p.Id, _ => 0m);
         await CargarAsync();
     }
 
@@ -247,6 +289,51 @@ else
         finally
         {
             _confirmandoGrupo.Remove(proveedorId);
+        }
+    }
+
+    /// <summary>
+    /// Registra una compra excepcional como una Compra propia, sin líneas — no toca stock ni
+    /// productos, solo queda guardado el importe y la descripción (ver
+    /// Compra.DescripcionComprasExcepcionales). Si el importe es 0, no hay nada que guardar:
+    /// significa que ese día no hubo compra excepcional, no un error.
+    /// </summary>
+    private async Task GuardarCompraExcepcionalAsync(Proveedor proveedor)
+    {
+        var importe = _importeExcepcional[proveedor.Id];
+        if (importe <= 0)
+        {
+            Snackbar.Add("El total debe ser mayor que 0 para guardar una compra excepcional", Severity.Warning);
+            return;
+        }
+
+        _guardandoExcepcional.Add(proveedor.Id);
+        try
+        {
+            var compra = new Compra
+            {
+                ProveedorId = proveedor.Id,
+                Fecha = DateTime.Now,
+                Lineas = [],
+                DescripcionComprasExcepcionales = _descripcionExcepcional[proveedor.Id],
+                ImporteComprasExcepcionales = importe
+            };
+
+            var resultado = await CompraService.CreateAsync(compra);
+            if (resultado.IsSuccess)
+            {
+                Snackbar.Add("Compra excepcional registrada", Severity.Success);
+                _descripcionExcepcional[proveedor.Id] = string.Empty;
+                _importeExcepcional[proveedor.Id] = 0m;
+            }
+            else
+            {
+                Snackbar.Add(resultado.Error.Message, Severity.Error);
+            }
+        }
+        finally
+        {
+            _guardandoExcepcional.Remove(proveedor.Id);
         }
     }
 }

@@ -30,6 +30,19 @@ public record Compra
     public string Notas { get; set; } = string.Empty;
 
     /// <summary>
+    /// Compras excepcionales: artículos sueltos comprados muy de vez en cuando en un
+    /// supermercado genérico (ver Proveedor.EsSupermercadoGenerico) que no vale la pena dar de
+    /// alta como Producto con seguimiento de stock (p.ej. un molde, un cubo de basura, un
+    /// cuchillo). Descripcion es texto libre escrito a mano por el usuario (qué se compró);
+    /// Importe es el total que el propio usuario ya suma por su cuenta, no una suma de líneas
+    /// — esta Compra puede no tener ninguna LineaCompra y representar solo esto. Ambos
+    /// editables después desde FacturaDetalle.razor por si hace falta corregirlos. Vacío/0
+    /// significa "no hubo compra excepcional ese día", no un dato real ausente.
+    /// </summary>
+    public string DescripcionComprasExcepcionales { get; set; } = string.Empty;
+    public decimal ImporteComprasExcepcionales { get; set; }
+
+    /// <summary>
     /// Nombre del proveedor ya resuelto, para consultas de solo lectura (Facturas) que no
     /// quieren obligar a la vista a hacer una búsqueda aparte. Null si no se ha resuelto
     /// (p.ej. al crear la compra) o si la compra no tiene proveedor asignado.
