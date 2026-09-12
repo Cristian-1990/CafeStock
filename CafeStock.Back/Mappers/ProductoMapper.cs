@@ -20,6 +20,7 @@ public static class ProductoMapper
            SeguimientoIndividual = producto.SeguimientoIndividual,
            AplicaConciliacionTpv = producto.AplicaConciliacionTpv,
            UnidadesPorPack = producto.UnidadesPorPack,
+           Pasillo = producto.Pasillo,
        };
     }
 
@@ -38,7 +39,8 @@ public static class ProductoMapper
             PrecioUnitario = entity.PrecioUnitario,
             SeguimientoIndividual = entity.SeguimientoIndividual,
             AplicaConciliacionTpv = entity.AplicaConciliacionTpv,
-            UnidadesPorPack = entity.UnidadesPorPack
+            UnidadesPorPack = entity.UnidadesPorPack,
+            Pasillo = entity.Pasillo
         };
     }
 }

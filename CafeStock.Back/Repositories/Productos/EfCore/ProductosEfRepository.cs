@@ -42,6 +42,9 @@ public class ProductosEfRepository : IProductoRepository
         // AsegurarSeguimientoIndividualCafePucheroAsync (que consulta Productos vía EF)
         // porque ProductoEntity ya tiene la propiedad UnidadesPorPack.
         await context.AsegurarColumnaUnidadesPorPackAsync();
+        // Mismo motivo: ProductoEntity ya tiene la propiedad Pasillo, así que esta también
+        // tiene que ir antes de AsegurarSeguimientoIndividualCafePucheroAsync.
+        await context.AsegurarColumnaPasilloAsync();
         await context.AsegurarSeguimientoIndividualCafePucheroAsync();
         _initialized = true;
     }
@@ -109,6 +112,7 @@ public class ProductosEfRepository : IProductoRepository
             entity.PrecioUnitario = producto.PrecioUnitario;
             entity.AplicaConciliacionTpv = producto.AplicaConciliacionTpv;
             entity.UnidadesPorPack = producto.UnidadesPorPack;
+            entity.Pasillo = producto.Pasillo;
             await context.SaveChangesAsync();
             return Result.Success<Producto, DomainError>(entity.ToProducto());
         }

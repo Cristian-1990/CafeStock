@@ -46,6 +46,13 @@
                      AdornmentText="€"
                      Class="mb-4"/>
 
+    <MudNumericField T="int?" @bind-Value="_pasillo"
+                     Label="Pasillo (solo para ordenar la lista de la compra en supermercados)"
+                     Variant="Variant.Outlined"
+                     Min="0"
+                     Clearable="true"
+                     Class="mb-4"/>
+
     <MudSelect @bind-Value="_unidad"
                Label="Unidad"
                Variant="Variant.Outlined"
@@ -134,6 +141,7 @@
     private int _stockActual;
     private int _stockMaximo;
     private decimal _precioUnitario;
+    private int? _pasillo;
     private UnidadMedida _unidad = UnidadMedida.SinEspecificar;
     private string _descripcion = string.Empty;
     private string _imagenUrl = string.Empty;
@@ -172,6 +180,7 @@
                 _stockActual = resultado.Value.StockActual;
                 _stockMaximo = resultado.Value.StockMaximo;
                 _precioUnitario = resultado.Value.PrecioUnitario;
+                _pasillo = resultado.Value.Pasillo;
                 _unidad = resultado.Value.Unidad;
                 _descripcion = resultado.Value.Descripcion;
                 _imagenUrl = resultado.Value.ImagenUrl;
@@ -195,6 +204,7 @@
             StockActual = _stockActual,
             StockMaximo = _stockMaximo,
             PrecioUnitario = _precioUnitario,
+            Pasillo = _pasillo,
             Unidad = _unidad,
             Descripcion = _descripcion,
             ImagenUrl = _imagenUrl,

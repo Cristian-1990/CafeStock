@@ -17,4 +17,5 @@ public class ProductoEntity
     public bool SeguimientoIndividual { get; set; }
     public bool AplicaConciliacionTpv { get; set; }
     public int? UnidadesPorPack { get; set; }
+    public int? Pasillo { get; set; }
 }

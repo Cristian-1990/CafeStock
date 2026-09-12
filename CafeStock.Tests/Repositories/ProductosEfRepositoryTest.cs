@@ -101,6 +101,22 @@ public class ProductosEfRepositoryTest
     }
 
     [Test]
+    public async Task UpdateAsync_ModificaPasillo()
+    {
+        // Arrange
+        var creado = await _repository.CreateAsync(
+            new Producto { Nombre = "Café", StockActual = 2, StockMaximo = 5, Pasillo = null });
+        var modificado = creado.Value with { Pasillo = 3 };
+
+        // Act
+        var resultado = await _repository.UpdateAsync(creado.Value.Id, modificado);
+
+        // Assert
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value.Pasillo.Should().Be(3);
+    }
+
+    [Test]
     public async Task DeleteAsync_EliminaProducto()
     {
         // Arrange

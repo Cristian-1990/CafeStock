@@ -38,4 +38,16 @@ public record Producto
     /// de Recepcionar no ofrece el toggle de packs y todo funciona exactamente como antes.
     /// </summary>
     public int? UnidadesPorPack { get; set; }
+
+    /// <summary>
+    /// Pasillo del supermercado donde se encuentra este producto (solo tiene sentido para
+    /// proveedores con Proveedor.EsSupermercadoGenerico activo, p.ej. Alcampo) — se usa
+    /// ÚNICAMENTE para ordenar la lista de la compra siguiendo el recorrido físico de la
+    /// tienda (ver AgrupadorProveedor), nunca se muestra en ningún listado ni ficha; solo es
+    /// editable desde el formulario de producto. Convención manual de numeración (no hay más
+    /// de 50 pasillos reales en ningún supermercado): productos que deban ir siempre al final
+    /// de la lista para no estropearse (p.ej. el helado, que se derrite) usan un número alto
+    /// como 100 en vez de su pasillo físico real. Null mientras no se haya rellenado todavía.
+    /// </summary>
+    public int? Pasillo { get; set; }
 };

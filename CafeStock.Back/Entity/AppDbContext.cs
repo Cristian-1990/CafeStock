@@ -189,6 +189,15 @@ public class AppDbContext : DbContext
         AsegurarColumnaAsync("Productos", "UnidadesPorPack", "INTEGER NULL");
 
     /// <summary>
+    /// Igual que AsegurarColumnaUnidadesPorPackAsync pero para Pasillo (orden físico en la
+    /// tienda, solo relevante para proveedores "supermercado genérico" — ver
+    /// AgrupadorProveedor). Sin DEFAULT numérico a propósito: null significa "sin asignar
+    /// todavía", no "pasillo 0".
+    /// </summary>
+    public Task AsegurarColumnaPasilloAsync() =>
+        AsegurarColumnaAsync("Productos", "Pasillo", "INTEGER NULL");
+
+    /// <summary>
     /// Igual que las anteriores, para los dos campos de captura silenciosa del excedente de
     /// stock al recepcionar (LineaCompra.StockResultanteTrasRecepcion/StockMaximoEnMomento),
     /// añadidos después de que la tabla LineasCompra ya existiera en producción. Sin NOT NULL
