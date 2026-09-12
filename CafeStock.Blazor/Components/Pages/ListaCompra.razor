@@ -87,11 +87,11 @@ else
                                               Value="_preciosRecibidos[context.Id]"
                                               ValueChanged="@((decimal v) => _preciosRecibidos[context.Id] = v)"
                                               Min="0"
-                                              Format="F2"
+                                              Format="@(grupo.Proveedor?.PrecioUnitarioAltaPrecision == true ? "F4" : "F2")"
                                               Adornment="Adornment.Start"
                                               AdornmentText="€"
                                               Variant="Variant.Outlined"
-                                              Style="max-width:120px;"/>
+                                              Style="max-width:130px;"/>
                         </MudTd>
                     }
                 </RowTemplate>

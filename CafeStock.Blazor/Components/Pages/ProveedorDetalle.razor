@@ -306,6 +306,12 @@ else
     private bool _mostrarPestanasUnidad =>
         _proveedor?.AgruparPorTipoUnidad == true && _productos.Select(p => p.Unidad.Grupo()).Distinct().Count() > 1;
 
+    /// <summary>
+    /// "F4" (4 decimales) si este proveedor tiene Proveedor.PrecioUnitarioAltaPrecision activo
+    /// (p.ej. Priegola), "F2" (los 2 habituales) para el resto (p.ej. Alcampo).
+    /// </summary>
+    private string _formatoPrecio => _proveedor?.PrecioUnitarioAltaPrecision == true ? "F4" : "F2";
+
     private RenderFragment<IEnumerable<Producto>> TablaProductos => productos =>
         @<MudTable Items="productos" Hover="true" Striped="true" Elevation="2">
             <HeaderContent>
@@ -322,7 +328,7 @@ else
                         @context.CantidadAComprar
                     </MudText>
                 </MudTd>
-                <MudTd DataLabel="Precio">@context.PrecioUnitario.ToString("F2") €</MudTd>
+                <MudTd DataLabel="Precio">@context.PrecioUnitario.ToString(_formatoPrecio) €</MudTd>
             </RowTemplate>
         </MudTable>;
 

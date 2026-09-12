@@ -31,7 +31,13 @@ public class ProveedoresEfRepository : IProveedorRepository
         await context.AsegurarColumnaDireccionAsync();
         await context.AsegurarColumnaNifCifAsync();
         await context.AsegurarColumnaAgruparPorTipoUnidadAsync();
+        await context.AsegurarColumnaPrecioUnitarioAltaPrecisionAsync();
+        // Las dos siguientes hacen consultas LINQ normales (no SQL crudo), así que necesitan
+        // que TODAS las columnas de ProveedorEntity ya existan — deben ir después de todos los
+        // AsegurarColumnaXAsync, nunca entremezcladas con ellos (ver bug ya sufrido en
+        // producción: "no such column" al consultar Proveedores antes de tiempo).
         await context.AsegurarAgrupacionPorUnidadPucheroAsync();
+        await context.AsegurarPrecioAltaPrecisionPriegolaAsync();
         _initialized = true;
     }
 
@@ -92,6 +98,7 @@ public class ProveedoresEfRepository : IProveedorRepository
             entity.NifCif = proveedor.NifCif;
             entity.EsSupermercadoGenerico = proveedor.EsSupermercadoGenerico;
             entity.AgruparPorTipoUnidad = proveedor.AgruparPorTipoUnidad;
+            entity.PrecioUnitarioAltaPrecision = proveedor.PrecioUnitarioAltaPrecision;
             await context.SaveChangesAsync();
             return Result.Success<Proveedor, DomainError>(entity.ToProveedor());
         }

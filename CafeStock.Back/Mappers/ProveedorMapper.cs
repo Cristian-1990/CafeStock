@@ -20,6 +20,7 @@ public static class ProveedorMapper
             NifCif = proveedor.NifCif,
             EsSupermercadoGenerico = proveedor.EsSupermercadoGenerico,
             AgruparPorTipoUnidad = proveedor.AgruparPorTipoUnidad,
+            PrecioUnitarioAltaPrecision = proveedor.PrecioUnitarioAltaPrecision,
         };
     }
 
@@ -38,7 +39,8 @@ public static class ProveedorMapper
             Direccion = entity.Direccion,
             NifCif = entity.NifCif,
             EsSupermercadoGenerico = entity.EsSupermercadoGenerico,
-            AgruparPorTipoUnidad = entity.AgruparPorTipoUnidad
+            AgruparPorTipoUnidad = entity.AgruparPorTipoUnidad,
+            PrecioUnitarioAltaPrecision = entity.PrecioUnitarioAltaPrecision
         };
     }
 }

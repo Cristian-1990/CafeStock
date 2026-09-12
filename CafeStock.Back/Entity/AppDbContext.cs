@@ -117,6 +117,14 @@ public class AppDbContext : DbContext
         AsegurarColumnaAsync("Proveedores", "AgruparPorTipoUnidad", "INTEGER NOT NULL DEFAULT 0");
 
     /// <summary>
+    /// Igual que AsegurarColumnaEsSupermercadoGenericoAsync pero para
+    /// PrecioUnitarioAltaPrecision (4 decimales en vez de 2 al mostrar/editar el precio
+    /// unitario), añadido después de que ya hubiera proveedores en producción.
+    /// </summary>
+    public Task AsegurarColumnaPrecioUnitarioAltaPrecisionAsync() =>
+        AsegurarColumnaAsync("Proveedores", "PrecioUnitarioAltaPrecision", "INTEGER NOT NULL DEFAULT 0");
+
+    /// <summary>
     /// Igual que AsegurarColumnaEsSupermercadoGenericoAsync pero para el precio unitario
     /// de Producto, añadido después de que ya hubiera productos en producción.
     /// </summary>
@@ -415,6 +423,22 @@ public class AppDbContext : DbContext
         if (puchero is null || puchero.AgruparPorTipoUnidad) return;
 
         puchero.AgruparPorTipoUnidad = true;
+        await SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Igual que AsegurarAgrupacionPorUnidadPucheroAsync pero activa
+    /// PrecioUnitarioAltaPrecision en el proveedor Priegola (su precio por unidad sale de
+    /// dividir un precio de caja entre muchas unidades, y con 2 decimales se pierde precisión
+    /// real). Requiere que la columna PrecioUnitarioAltaPrecision ya exista (llamar después de
+    /// AsegurarColumnaPrecioUnitarioAltaPrecisionAsync).
+    /// </summary>
+    public async Task AsegurarPrecioAltaPrecisionPriegolaAsync()
+    {
+        var priegola = await Proveedores.FirstOrDefaultAsync(p => p.Nombre == "Priegola");
+        if (priegola is null || priegola.PrecioUnitarioAltaPrecision) return;
+
+        priegola.PrecioUnitarioAltaPrecision = true;
         await SaveChangesAsync();
     }
 }

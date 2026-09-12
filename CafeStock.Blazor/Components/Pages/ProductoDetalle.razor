@@ -72,7 +72,7 @@ else
         </div>
         <div class="d-flex align-center">
             <MudIcon Icon="@Icons.Material.Filled.Euro" Class="mr-2"/>
-            <MudText Typo="Typo.body1">Precio unitario: <b>@_producto.PrecioUnitario.ToString("F2") €</b></MudText>
+            <MudText Typo="Typo.body1">Precio unitario: <b>@_producto.PrecioUnitario.ToString(_formatoPrecio) €</b></MudText>
         </div>
     </MudPaper>
 
@@ -96,7 +96,15 @@ else
 
     private Producto? _producto;
     private string? _nombreProveedor;
+    private bool _precioUnitarioAltaPrecision;
     private bool _cargando = true;
+
+    /// <summary>
+    /// "F4" (4 decimales) si el proveedor de este producto tiene
+    /// Proveedor.PrecioUnitarioAltaPrecision activo (p.ej. Priegola), "F2" para el resto
+    /// (p.ej. Alcampo) o si no tiene proveedor asignado.
+    /// </summary>
+    private string _formatoPrecio => _precioUnitarioAltaPrecision ? "F4" : "F2";
 
     private static string FormatearUnidad(UnidadMedida unidad) =>
         unidad == UnidadMedida.SinEspecificar ? "— Sin especificar —" : unidad.ToString();
@@ -111,7 +119,10 @@ else
             {
                 var proveedor = await ProveedorService.GetByIdAsync(_producto.ProveedorId.Value);
                 if (proveedor.IsSuccess)
+                {
                     _nombreProveedor = proveedor.Value.Nombre;
+                    _precioUnitarioAltaPrecision = proveedor.Value.PrecioUnitarioAltaPrecision;
+                }
             }
         }
         _cargando = false;

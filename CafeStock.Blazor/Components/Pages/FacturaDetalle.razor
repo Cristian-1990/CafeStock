@@ -105,7 +105,7 @@ else
                 {
                     <div class="d-flex align-center" style="gap:4px;">
                         <MudNumericField T="decimal" @bind-Value="_precioEnEdicion"
-                                          Min="0" Format="F4" Variant="Variant.Outlined"
+                                          Min="0" Format="@_formatoPrecio" Variant="Variant.Outlined"
                                           Style="max-width:130px;"/>
                         <MudIconButton Icon="@Icons.Material.Filled.Check" Color="Color.Success" Size="Size.Small"
                                        OnClick="@(() => GuardarLineaAsync(context))"/>
@@ -116,7 +116,7 @@ else
                 else
                 {
                     <div class="d-flex align-center" style="gap:4px;">
-                        <span>@context.PrecioUnitario.ToString("F4") €</span>
+                        <span>@context.PrecioUnitario.ToString(_formatoPrecio) €</span>
                         <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small"
                                        title="Editar precio"
                                        OnClick="@(() => EmpezarEdicionLinea(context))"/>
@@ -167,6 +167,13 @@ else
     private decimal _precioEnEdicion;
 
     private decimal _total => _factura?.Lineas.Sum(l => l.Cantidad * l.PrecioUnitario) ?? 0;
+
+    /// <summary>
+    /// "F4" (4 decimales) si el proveedor de esta factura tiene
+    /// Proveedor.PrecioUnitarioAltaPrecision activo (p.ej. Priegola), "F2" (los 2 habituales)
+    /// para el resto (p.ej. Alcampo) o si la factura no tiene proveedor asignado.
+    /// </summary>
+    private string _formatoPrecio => _proveedor?.PrecioUnitarioAltaPrecision == true ? "F4" : "F2";
 
     protected override async Task OnInitializedAsync()
     {

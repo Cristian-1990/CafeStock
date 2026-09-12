@@ -80,6 +80,11 @@
                  Color="Color.Primary"
                  Class="mb-4"/>
 
+    <MudCheckBox @bind-Value="_precioUnitarioAltaPrecision"
+                 Label="Precio unitario con 4 decimales (en vez de 2)"
+                 Color="Color.Primary"
+                 Class="mb-4"/>
+
     <div class="d-flex gap-2">
         <MudButton Variant="Variant.Filled"
                    Color="Color.Primary"
@@ -118,6 +123,7 @@
     private string _notas = string.Empty;
     private bool _esSupermercadoGenerico;
     private bool _agruparPorTipoUnidad;
+    private bool _precioUnitarioAltaPrecision;
     private string? _error;
     private bool _esNuevo => Id is null;
 
@@ -139,6 +145,7 @@
                 _notas = resultado.Value.Notas;
                 _esSupermercadoGenerico = resultado.Value.EsSupermercadoGenerico;
                 _agruparPorTipoUnidad = resultado.Value.AgruparPorTipoUnidad;
+                _precioUnitarioAltaPrecision = resultado.Value.PrecioUnitarioAltaPrecision;
             }
             else
             {
@@ -162,7 +169,8 @@
             Direccion = _direccion,
             Notas = _notas,
             EsSupermercadoGenerico = _esSupermercadoGenerico,
-            AgruparPorTipoUnidad = _agruparPorTipoUnidad
+            AgruparPorTipoUnidad = _agruparPorTipoUnidad,
+            PrecioUnitarioAltaPrecision = _precioUnitarioAltaPrecision
         };
 
         var resultado = _esNuevo
