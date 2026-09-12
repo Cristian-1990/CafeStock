@@ -23,6 +23,12 @@ public interface ICompraService
     Task<Result<Compra, DomainError>> ActualizarNotasAsync(int id, string notas);
 
     /// <summary>
+    /// Corrige la descripción/importe de compras excepcionales de una Compra ya registrada.
+    /// Valida solo que el importe no sea negativo; no exige que la compra tenga líneas.
+    /// </summary>
+    Task<Result<Compra, DomainError>> ActualizarComprasExcepcionalesAsync(int id, string descripcion, decimal importe);
+
+    /// <summary>
     /// Corrige el precio de una LineaCompra ya registrada (factura ya creada). Si la Compra
     /// dueña de esa línea es la más reciente (Fecha desc, Id desc como desempate) entre todas
     /// las que incluyen ese mismo producto, sincroniza también Producto.PrecioUnitario al

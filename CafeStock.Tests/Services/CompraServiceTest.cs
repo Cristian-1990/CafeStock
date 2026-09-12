@@ -344,4 +344,49 @@ public class CompraServiceTest
         // Assert
         resultado.IsSuccess.Should().BeTrue();
     }
+
+    // ---- ActualizarComprasExcepcionalesAsync ----
+
+    [Test]
+    public async Task ActualizarComprasExcepcionalesAsync_ImporteValido_LlamaAlRepositorio()
+    {
+        // Arrange
+        _repositoryMock
+            .Setup(r => r.ActualizarComprasExcepcionalesAsync(1, "Un cubo de basura", 8.0m))
+            .ReturnsAsync(Result.Success<Compra, DomainError>(new Compra { Id = 1 }));
+
+        // Act
+        var resultado = await _service.ActualizarComprasExcepcionalesAsync(1, "Un cubo de basura", 8.0m);
+
+        // Assert
+        resultado.IsSuccess.Should().BeTrue();
+        _repositoryMock.Verify(r => r.ActualizarComprasExcepcionalesAsync(1, "Un cubo de basura", 8.0m), Times.Once);
+    }
+
+    [Test]
+    public async Task ActualizarComprasExcepcionalesAsync_ImporteNegativo_NoLlamaAlRepositorio()
+    {
+        // Act
+        var resultado = await _service.ActualizarComprasExcepcionalesAsync(1, "Algo", -1m);
+
+        // Assert
+        resultado.IsFailure.Should().BeTrue();
+        _repositoryMock.Verify(r => r.ActualizarComprasExcepcionalesAsync(
+            It.IsAny<int>(), It.IsAny<string>(), It.IsAny<decimal>()), Times.Never);
+    }
+
+    [Test]
+    public async Task ActualizarComprasExcepcionalesAsync_ImporteCero_LlamaAlRepositorio()
+    {
+        // Arrange: 0 es válido — significa "se quita la compra excepcional que hubiera"
+        _repositoryMock
+            .Setup(r => r.ActualizarComprasExcepcionalesAsync(1, "", 0m))
+            .ReturnsAsync(Result.Success<Compra, DomainError>(new Compra { Id = 1 }));
+
+        // Act
+        var resultado = await _service.ActualizarComprasExcepcionalesAsync(1, "", 0m);
+
+        // Assert
+        resultado.IsSuccess.Should().BeTrue();
+    }
 }

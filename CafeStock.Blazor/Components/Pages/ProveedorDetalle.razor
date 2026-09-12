@@ -197,7 +197,7 @@ else
             </HeaderContent>
             <RowTemplate>
                 <MudTd DataLabel="Fecha">@context.Fecha.ToString("dd/MM/yyyy HH:mm")</MudTd>
-                <MudTd DataLabel="Total">@context.Lineas.Sum(l => l.Cantidad * l.PrecioUnitario).ToString("F2") €</MudTd>
+                <MudTd DataLabel="Total">@((context.Lineas.Sum(l => l.Cantidad * l.PrecioUnitario) + context.ImporteComprasExcepcionales).ToString("F2")) €</MudTd>
             </RowTemplate>
         </MudTable>
     }

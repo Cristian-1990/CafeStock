@@ -21,6 +21,13 @@ public interface ICompraRepository
     Task<Result<Compra, DomainError>> ActualizarNotasAsync(int id, string notas);
 
     /// <summary>
+    /// Actualiza ÚNICAMENTE Descripcion/ImporteComprasExcepcionales de una Compra ya
+    /// registrada, sin tocar Lineas ni ningún otro campo. Pensado para corregir a posteriori
+    /// desde FacturaDetalle.razor, o para añadirlo si no se rellenó al confirmar la recepción.
+    /// </summary>
+    Task<Result<Compra, DomainError>> ActualizarComprasExcepcionalesAsync(int id, string descripcion, decimal importe);
+
+    /// <summary>
     /// Actualiza ÚNICAMENTE PrecioUnitario de una LineaCompra ya registrada, sin tocar
     /// Cantidad, ProductoId ni ninguna otra línea de la misma Compra. Pensado para corregir
     /// a posteriori el precio real de una factura ya guardada (FacturaDetalle.razor).

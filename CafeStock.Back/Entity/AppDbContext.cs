@@ -164,6 +164,19 @@ public class AppDbContext : DbContext
         AsegurarColumnaAsync("Compras", "Notas", "TEXT NOT NULL DEFAULT ''");
 
     /// <summary>
+    /// Igual que las anteriores, para las dos columnas de compras excepcionales de Compra
+    /// (artículos sueltos de supermercado que no valen la pena como Producto, ver
+    /// Compra.DescripcionComprasExcepcionales), añadidas después de que la tabla Compras ya
+    /// existiera en producción. '' y 0 significan "no hubo compra excepcional", que es el
+    /// dato real para todo el historial anterior a este campo.
+    /// </summary>
+    public Task AsegurarColumnaComprasExcepcionalesAsync() =>
+        AsegurarColumnaAsync("Compras", "DescripcionComprasExcepcionales", "TEXT NOT NULL DEFAULT ''");
+
+    public Task AsegurarColumnaImporteComprasExcepcionalesAsync() =>
+        AsegurarColumnaAsync("Compras", "ImporteComprasExcepcionales", "TEXT NOT NULL DEFAULT '0'");
+
+    /// <summary>
     /// Igual que las anteriores, para el campo SeguimientoIndividual de Producto, añadido
     /// después de que ya hubiera productos en producción (todos arrancan en false).
     /// </summary>

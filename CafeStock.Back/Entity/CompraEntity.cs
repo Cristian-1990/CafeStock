@@ -11,4 +11,6 @@ public class CompraEntity
     public string NumeroFacturaProveedor { get; set; } = string.Empty;
     public string FacturaAdjuntaUrl { get; set; } = string.Empty;
     public string Notas { get; set; } = string.Empty;
+    public string DescripcionComprasExcepcionales { get; set; } = string.Empty;
+    public decimal ImporteComprasExcepcionales { get; set; }
 }

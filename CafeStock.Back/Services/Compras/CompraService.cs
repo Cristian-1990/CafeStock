@@ -108,6 +108,18 @@ public class CompraService : ICompraService
         return resultado;
     }
 
+    public async Task<Result<Compra, DomainError>> ActualizarComprasExcepcionalesAsync(int id, string descripcion, decimal importe)
+    {
+        if (importe < 0)
+            return Result.Failure<Compra, DomainError>(
+                CompraErrors.Validation(["El importe de compras excepcionales no puede ser negativo"]));
+
+        var resultado = await _repository.ActualizarComprasExcepcionalesAsync(id, descripcion, importe);
+        if (resultado.IsSuccess)
+            Log.Information("Compras excepcionales actualizadas: Id={Id}, Importe={Importe}", id, importe);
+        return resultado;
+    }
+
     /// <summary>
     /// Corrige el precio de una línea ya registrada. La recencia (qué Compra es la más
     /// reciente entre las que incluyen ese producto) se calcula en memoria sobre

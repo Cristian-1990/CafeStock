@@ -34,6 +34,8 @@ public class ComprasEfRepository : ICompraRepository
         await context.AsegurarColumnaNotasCompraAsync();
         await context.AsegurarColumnaStockResultanteTrasRecepcionAsync();
         await context.AsegurarColumnaStockMaximoEnMomentoAsync();
+        await context.AsegurarColumnaComprasExcepcionalesAsync();
+        await context.AsegurarColumnaImporteComprasExcepcionalesAsync();
         _initialized = true;
     }
 
@@ -111,6 +113,27 @@ public class ComprasEfRepository : ICompraRepository
         catch (Exception ex)
         {
             Log.Error(ex, "Error al actualizar las notas de la compra {Id}", id);
+            return Result.Failure<Compra, DomainError>(CompraErrors.DatabaseError(ex.Message));
+        }
+    }
+
+    public async Task<Result<Compra, DomainError>> ActualizarComprasExcepcionalesAsync(int id, string descripcion, decimal importe)
+    {
+        await InitializeAsync();
+        using var context = CreateContext();
+        var entity = await context.Compras.Include(e => e.Lineas).FirstOrDefaultAsync(e => e.Id == id);
+        if (entity is null)
+            return Result.Failure<Compra, DomainError>(CompraErrors.NotFound(id));
+        try
+        {
+            entity.DescripcionComprasExcepcionales = descripcion;
+            entity.ImporteComprasExcepcionales = importe;
+            await context.SaveChangesAsync();
+            return Result.Success<Compra, DomainError>(entity.ToCompra());
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error al actualizar las compras excepcionales de la compra {Id}", id);
             return Result.Failure<Compra, DomainError>(CompraErrors.DatabaseError(ex.Message));
         }
     }

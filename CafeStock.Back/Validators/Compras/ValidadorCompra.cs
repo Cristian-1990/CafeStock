@@ -16,8 +16,13 @@ public class ValidadorCompra : IValidador<Compra>
     {
         var errores = new List<string>();
 
-        if (!compra.Lineas.Any())
-            errores.Add("La compra debe tener al menos una línea");
+        // Una compra normal necesita al menos una línea, pero una compra excepcional (ver
+        // Compra.DescripcionComprasExcepcionales) puede no tener ninguna: son artículos
+        // sueltos sin Producto asociado, solo un importe que el usuario ya suma por su cuenta.
+        if (!compra.Lineas.Any() && compra.ImporteComprasExcepcionales <= 0)
+            errores.Add("La compra debe tener al menos una línea o un importe de compras excepcionales");
+        if (compra.ImporteComprasExcepcionales < 0)
+            errores.Add("El importe de compras excepcionales no puede ser negativo");
 
         foreach (var linea in compra.Lineas)
         {
