@@ -11,50 +11,17 @@
     <MudText Typo="Typo.h4" Style="color:#3E2723; margin:0;">Recepcionar</MudText>
 </div>
 
-@* Siempre visible, sin depender de si hoy hace falta reponer stock — para artículos sueltos
-   (un molde, un cubo de basura...) que compramos muy de vez en cuando en el supermercado y no
-   valen la pena como Producto con seguimiento de stock. Ver Compra.DescripcionComprasExcepcionales. *@
-@foreach (var proveedor in _proveedores.Where(p => p.EsSupermercadoGenerico))
-{
-    <MudPaper Class="pa-4 mb-4" Elevation="2" Style="max-width:500px;">
-        <MudText Typo="Typo.h6" Class="mb-3" Style="color:#3E2723;">
-            Compras excepcionales — @proveedor.Nombre
-        </MudText>
-        <MudTextField @bind-Value="_descripcionExcepcional[proveedor.Id]"
-                      Label="¿Qué se compró? (opcional, p.ej. un molde, un cubo de basura...)"
-                      Variant="Variant.Outlined"
-                      Lines="2"
-                      Class="mb-3"/>
-        <MudNumericField T="decimal" @bind-Value="_importeExcepcional[proveedor.Id]"
-                          Label="Total (€)"
-                          Variant="Variant.Outlined"
-                          Min="0"
-                          Format="F2"
-                          Adornment="Adornment.Start"
-                          AdornmentText="€"
-                          Class="mb-3"
-                          Style="max-width:180px;"/>
-        <MudButton Variant="Variant.Filled"
-                   Color="Color.Primary"
-                   StartIcon="@Icons.Material.Filled.Save"
-                   OnClick="@(() => GuardarCompraExcepcionalAsync(proveedor))"
-                   Disabled="_guardandoExcepcional.Contains(proveedor.Id)">
-            @(_guardandoExcepcional.Contains(proveedor.Id) ? "Guardando..." : "Guardar")
-        </MudButton>
-    </MudPaper>
-}
-
 @if (_cargando)
 {
     <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
 }
-else if (!_productos.Any())
+else if (!_productos.Any() && !_proveedores.Any(p => p.EsSupermercadoGenerico))
 {
     <MudAlert Severity="Severity.Success">Todo completo, no hay nada que comprar.</MudAlert>
 }
 else
 {
-    @foreach (var grupo in _grupos)
+    @foreach (var grupo in _gruposCompletos)
     {
         var proveedorId = grupo.Proveedor?.Id;
         var nombreProveedor = grupo.Proveedor?.Nombre ?? "Sin proveedor asignado";
@@ -63,6 +30,49 @@ else
                 @nombreProveedor
             </MudText>
 
+            @* Compra excepcional de artículos sueltos (un molde, un cubo de basura...) — solo
+               para supermercados genéricos, y siempre visible dentro de su propia tarjeta,
+               haya o no algo pendiente de reponer hoy de ese proveedor (ver
+               Compra.DescripcionComprasExcepcionales y _gruposCompletos). Va como complemento
+               DENTRO de la tarjeta del proveedor, nunca como bloque independiente. *@
+            @if (grupo.Proveedor?.EsSupermercadoGenerico == true)
+            {
+                <div class="mb-4 pa-3" style="background-color:#F5EFE6; border-radius:8px;">
+                    <MudText Typo="Typo.subtitle2" Class="mb-2" Style="color:#3E2723;">
+                        Compra excepcional (artículo suelto)
+                    </MudText>
+                    <MudTextField @bind-Value="_descripcionExcepcional[grupo.Proveedor.Id]"
+                                  Label="¿Qué se compró? (opcional, p.ej. un molde, un cubo de basura...)"
+                                  Variant="Variant.Outlined"
+                                  Lines="2"
+                                  Class="mb-3"/>
+                    <MudNumericField T="decimal" @bind-Value="_importeExcepcional[grupo.Proveedor.Id]"
+                                      Label="Total (€)"
+                                      Variant="Variant.Outlined"
+                                      Min="0"
+                                      Format="F2"
+                                      Adornment="Adornment.Start"
+                                      AdornmentText="€"
+                                      Class="mb-3"
+                                      Style="max-width:180px;"/>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Save"
+                               OnClick="@(() => GuardarCompraExcepcionalAsync(grupo.Proveedor))"
+                               Disabled="_guardandoExcepcional.Contains(grupo.Proveedor.Id)">
+                        @(_guardandoExcepcional.Contains(grupo.Proveedor.Id) ? "Guardando..." : "Guardar")
+                    </MudButton>
+                </div>
+            }
+
+            @if (!grupo.Productos.Any())
+            {
+                <MudText Typo="Typo.body2" Style="color:#8D7B6E;">
+                    Nada pendiente de reponer de @nombreProveedor hoy.
+                </MudText>
+            }
+            else
+            {
             <MudTable Items="grupo.Productos" Hover="true" Striped="true" Elevation="0">
                 <HeaderContent>
                     <MudTh>Producto</MudTh>
@@ -138,6 +148,7 @@ else
                        Disabled="_confirmandoGrupo.Contains(proveedorId)">
                 @(_confirmandoGrupo.Contains(proveedorId) ? "Confirmando..." : "Confirmar recepción")
             </MudButton>
+            }
         </MudPaper>
     }
 }
@@ -168,6 +179,30 @@ else
 
     private IEnumerable<(Proveedor? Proveedor, List<Producto> Productos)> _grupos =>
         AgrupadorProveedor.AgruparPorProveedor(_productos, _proveedores);
+
+    /// <summary>
+    /// _grupos + una tarjeta vacía por cada supermercado genérico que hoy no tiene nada
+    /// pendiente de reponer (AgruparPorProveedor solo genera grupo para proveedores con algún
+    /// producto en _productos) — así su tarjeta de "Compra excepcional" sigue apareciendo
+    /// siempre, como pide la UI, en vez de depender de que haya stock bajo mínimo ese día.
+    /// </summary>
+    private IEnumerable<(Proveedor? Proveedor, List<Producto> Productos)> _gruposCompletos
+    {
+        get
+        {
+            var grupos = _grupos.ToList();
+            var proveedoresConGrupo = grupos
+                .Where(g => g.Proveedor is not null)
+                .Select(g => g.Proveedor!.Id)
+                .ToHashSet();
+
+            var extra = _proveedores
+                .Where(p => p.EsSupermercadoGenerico && !proveedoresConGrupo.Contains(p.Id))
+                .Select(p => (Proveedor: (Proveedor?)p, Productos: new List<Producto>()));
+
+            return grupos.Concat(extra);
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
