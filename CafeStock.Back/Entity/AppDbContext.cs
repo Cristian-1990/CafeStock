@@ -211,6 +211,30 @@ public class AppDbContext : DbContext
         AsegurarColumnaAsync("Productos", "Pasillo", "INTEGER NULL");
 
     /// <summary>
+    /// Igual que AsegurarColumnaPasilloAsync pero para OrdenEnPasillo (posición dentro del
+    /// pasillo). DEFAULT 0 porque, a diferencia de Pasillo, 0 sí es un valor válido: significa
+    /// "sin definir todavía", exactamente como para los productos ya existentes.
+    /// </summary>
+    public Task AsegurarColumnaOrdenEnPasilloAsync() =>
+        AsegurarColumnaAsync("Productos", "OrdenEnPasillo", "INTEGER NOT NULL DEFAULT 0");
+
+    /// <summary>
+    /// Igual que AsegurarColumnaOrdenEnPasilloAsync pero para EsFrontalPasillo. false es un
+    /// dato real para todo el historial (igual que AplicaConciliacionTpv): ningún producto
+    /// anterior a este campo estaba marcado como frontal.
+    /// </summary>
+    public Task AsegurarColumnaEsFrontalPasilloAsync() =>
+        AsegurarColumnaAsync("Productos", "EsFrontalPasillo", "INTEGER NOT NULL DEFAULT 0");
+
+    /// <summary>
+    /// Igual que AsegurarColumnaEsFrontalPasilloAsync pero para Seccion (SeccionEspecial —
+    /// frutería/infusiones, ver Producto.Seccion). DEFAULT 0 porque Ninguna es el valor 0 del
+    /// enum: ningún producto anterior a este campo pertenecía a una sección especial.
+    /// </summary>
+    public Task AsegurarColumnaSeccionAsync() =>
+        AsegurarColumnaAsync("Productos", "Seccion", "INTEGER NOT NULL DEFAULT 0");
+
+    /// <summary>
     /// Igual que las anteriores, para los dos campos de captura silenciosa del excedente de
     /// stock al recepcionar (LineaCompra.StockResultanteTrasRecepcion/StockMaximoEnMomento),
     /// añadidos después de que la tabla LineasCompra ya existiera en producción. Sin NOT NULL

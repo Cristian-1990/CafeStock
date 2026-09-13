@@ -36,12 +36,14 @@ public static class AgrupadorProveedor
 
     /// <summary>
     /// Para proveedores "supermercado genérico" (compra suelta caminando por la tienda, p.ej.
-    /// Alcampo — ver Proveedor.EsSupermercadoGenerico), ordena por Pasillo para seguir el
-    /// recorrido físico y no ir de un lado a otro; el resto de proveedores (reparto por
-    /// distribuidor) mantiene el orden de siempre, sin cambios.
+    /// Alcampo — ver Proveedor.EsSupermercadoGenerico), ordena por Pasillo y, dentro de él,
+    /// por OrdenEnPasillo para seguir el recorrido físico exacto (no alfabético) y no ir de un
+    /// lado a otro; el resto de proveedores (reparto por distribuidor) mantiene el orden de
+    /// siempre, sin cambios. Nombre como último desempate, solo por si dos productos comparten
+    /// Pasillo y OrdenEnPasillo sin haberse terminado de ordenar todavía.
     /// </summary>
     private static List<Producto> OrdenarProductosDelGrupo(IEnumerable<Producto> productosDelGrupo, Proveedor? proveedor) =>
         proveedor?.EsSupermercadoGenerico == true
-            ? productosDelGrupo.OrderBy(p => p.Pasillo ?? PasilloSinAsignar).ThenBy(p => p.Nombre).ToList()
+            ? productosDelGrupo.OrderBy(p => p.Pasillo ?? PasilloSinAsignar).ThenBy(p => p.OrdenEnPasillo).ThenBy(p => p.Nombre).ToList()
             : productosDelGrupo.ToList();
 }

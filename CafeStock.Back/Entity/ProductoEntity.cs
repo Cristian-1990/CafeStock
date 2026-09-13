@@ -18,4 +18,7 @@ public class ProductoEntity
     public bool AplicaConciliacionTpv { get; set; }
     public int? UnidadesPorPack { get; set; }
     public int? Pasillo { get; set; }
+    public int OrdenEnPasillo { get; set; }
+    public bool EsFrontalPasillo { get; set; }
+    public SeccionEspecial Seccion { get; set; }
 }
