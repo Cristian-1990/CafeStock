@@ -83,32 +83,23 @@ public class PdfService
                                         header.Cell().Padding(6).Text("Precio unitario").FontColor("#3E2723").Bold().FontSize(11);
                                     });
 
-                                    // Línea divisoria entre TODOS los productos (también dentro del mismo
-                                    // pasillo, para separar visualmente cada fila) y más marcada solo entre
-                                    // pasillos distintos (ver Producto.Pasillo/OrdenEnPasillo) para seguir el
-                                    // recorrido físico de la tienda; el resto de proveedores no usa Pasillo,
-                                    // así que ahí solo se ve la línea fina de siempre.
-                                    int? pasilloAnterior = null;
+                                    // Sin líneas divisorias entre filas (a petición expresa, no convencían
+                                    // visualmente) — el único marcado visual por fila es el fondo de
+                                    // SeccionEspecial (ver Producto.Seccion): frutería/infusiones, el resto
+                                    // de filas queda sin fondo propio.
                                     foreach (var producto in grupo.Productos)
                                     {
-                                        var esLimitePasillo = pasilloAnterior is not null && producto.Pasillo != pasilloAnterior;
-                                        pasilloAnterior = producto.Pasillo;
-                                        var grosorBorde = esLimitePasillo ? 1.5f : 0.75f;
-                                        var colorBorde = esLimitePasillo ? "#6D4C41" : "#C7B291";
-
-                                        // Fondo de fila según SeccionEspecial (ver Producto.Seccion) — solo
-                                        // resalta frutería/infusiones, el resto de filas queda sin fondo propio.
                                         var fondoFila = producto.Seccion switch
                                         {
-                                            SeccionEspecial.Fruteria => "#D7EAD1",
-                                            SeccionEspecial.Infusiones => "#E8C9A0",
+                                            SeccionEspecial.Fruteria => "#A9D18E",
+                                            SeccionEspecial.Infusiones => "#D9A066",
                                             _ => (string?)null
                                         };
 
                                         IContainer CeldaFila() =>
                                             fondoFila is not null
-                                                ? table.Cell().Background(fondoFila).BorderBottom(grosorBorde).BorderColor(colorBorde).Padding(6)
-                                                : table.Cell().BorderBottom(grosorBorde).BorderColor(colorBorde).Padding(6);
+                                                ? table.Cell().Background(fondoFila).Padding(6)
+                                                : table.Cell().Padding(6);
 
                                         CeldaFila()
                                             .Text(text =>
@@ -192,31 +183,16 @@ public class PdfService
                                     .Padding(8)
                                     .Text(titulo).FontSize(16).Bold().FontColor("#3E2723");
 
-                                // Línea divisoria entre TODOS los productos (también dentro del mismo
-                                // pasillo) y más marcada solo entre pasillos distintos (ver
-                                // Producto.Pasillo/OrdenEnPasillo y AgrupadorProveedor); para proveedores
-                                // que no usan Pasillo solo se ve la línea fina de siempre.
-                                var esPrimero = true;
-                                int? pasilloAnterior = null;
+                                // Sin líneas divisorias entre filas (a petición expresa, no convencían
+                                // visualmente) — el único marcado visual por fila es el fondo de
+                                // SeccionEspecial (ver Producto.Seccion): frutería/infusiones, el resto
+                                // de filas queda sin fondo propio.
                                 foreach (var producto in grupo.Productos)
                                 {
-                                    var esLimitePasillo = pasilloAnterior is not null && producto.Pasillo != pasilloAnterior;
-                                    if (!esPrimero)
-                                    {
-                                        var grosorLinea = esLimitePasillo ? 1f : 0.5f;
-                                        var colorLinea = esLimitePasillo ? "#6D4C41" : "#C7B291";
-                                        grupoColumn.Item().PaddingLeft(12).PaddingVertical(2)
-                                            .LineHorizontal(grosorLinea).LineColor(colorLinea);
-                                    }
-                                    pasilloAnterior = producto.Pasillo;
-                                    esPrimero = false;
-
-                                    // Fondo de fila según SeccionEspecial (ver Producto.Seccion) — solo
-                                    // resalta frutería/infusiones, el resto de filas queda sin fondo propio.
                                     var fondoFila = producto.Seccion switch
                                     {
-                                        SeccionEspecial.Fruteria => "#D7EAD1",
-                                        SeccionEspecial.Infusiones => "#E8C9A0",
+                                        SeccionEspecial.Fruteria => "#A9D18E",
+                                        SeccionEspecial.Infusiones => "#D9A066",
                                         _ => (string?)null
                                     };
 
