@@ -53,6 +53,27 @@
                      Clearable="true"
                      Class="mb-4"/>
 
+    <MudNumericField @bind-Value="_ordenEnPasillo"
+                     Label="Orden dentro del pasillo (solo para ordenar la lista de la compra)"
+                     Variant="Variant.Outlined"
+                     Min="0"
+                     Class="mb-4"/>
+
+    <MudCheckBox @bind-Value="_esFrontalPasillo"
+                 Label="Está en el frontal del pasillo (sale subrayado en la lista de la compra)"
+                 Color="Color.Primary"
+                 Class="mb-4"/>
+
+    <MudSelect @bind-Value="_seccion"
+               Label="Sección especial (colorea la fila en la lista de la compra)"
+               Variant="Variant.Outlined"
+               Class="mb-4">
+        @foreach (var seccion in Enum.GetValues<SeccionEspecial>())
+        {
+            <MudSelectItem Value="@seccion">@FormatearSeccion(seccion)</MudSelectItem>
+        }
+    </MudSelect>
+
     <MudSelect @bind-Value="_unidad"
                Label="Unidad"
                Variant="Variant.Outlined"
@@ -142,6 +163,9 @@
     private int _stockMaximo;
     private decimal _precioUnitario;
     private int? _pasillo;
+    private int _ordenEnPasillo;
+    private bool _esFrontalPasillo;
+    private SeccionEspecial _seccion = SeccionEspecial.Ninguna;
     private UnidadMedida _unidad = UnidadMedida.SinEspecificar;
     private string _descripcion = string.Empty;
     private string _imagenUrl = string.Empty;
@@ -166,6 +190,14 @@
     private static string FormatearUnidad(UnidadMedida unidad) =>
         unidad == UnidadMedida.SinEspecificar ? "— Sin especificar —" : unidad.ToString();
 
+    private static string FormatearSeccion(SeccionEspecial seccion) => seccion switch
+    {
+        SeccionEspecial.Ninguna => "— Ninguna —",
+        SeccionEspecial.Fruteria => "Frutería",
+        SeccionEspecial.Infusiones => "Infusiones",
+        _ => seccion.ToString()
+    };
+
     protected override async Task OnInitializedAsync()
     {
         _proveedores = await ProveedorService.GetAllAsync();
@@ -181,6 +213,9 @@
                 _stockMaximo = resultado.Value.StockMaximo;
                 _precioUnitario = resultado.Value.PrecioUnitario;
                 _pasillo = resultado.Value.Pasillo;
+                _ordenEnPasillo = resultado.Value.OrdenEnPasillo;
+                _esFrontalPasillo = resultado.Value.EsFrontalPasillo;
+                _seccion = resultado.Value.Seccion;
                 _unidad = resultado.Value.Unidad;
                 _descripcion = resultado.Value.Descripcion;
                 _imagenUrl = resultado.Value.ImagenUrl;
@@ -205,6 +240,9 @@
             StockMaximo = _stockMaximo,
             PrecioUnitario = _precioUnitario,
             Pasillo = _pasillo,
+            OrdenEnPasillo = _ordenEnPasillo,
+            EsFrontalPasillo = _esFrontalPasillo,
+            Seccion = _seccion,
             Unidad = _unidad,
             Descripcion = _descripcion,
             ImagenUrl = _imagenUrl,

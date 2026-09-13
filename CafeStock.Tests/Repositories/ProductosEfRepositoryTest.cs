@@ -117,6 +117,22 @@ public class ProductosEfRepositoryTest
     }
 
     [Test]
+    public async Task UpdateAsync_ModificaSeccion()
+    {
+        // Arrange
+        var creado = await _repository.CreateAsync(
+            new Producto { Nombre = "Tomate", StockActual = 2, StockMaximo = 5, Seccion = SeccionEspecial.Ninguna });
+        var modificado = creado.Value with { Seccion = SeccionEspecial.Fruteria };
+
+        // Act
+        var resultado = await _repository.UpdateAsync(creado.Value.Id, modificado);
+
+        // Assert
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value.Seccion.Should().Be(SeccionEspecial.Fruteria);
+    }
+
+    [Test]
     public async Task DeleteAsync_EliminaProducto()
     {
         // Arrange

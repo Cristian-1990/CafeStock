@@ -83,13 +83,42 @@ public class PdfService
                                         header.Cell().Padding(6).Text("Precio unitario").FontColor("#3E2723").Bold().FontSize(11);
                                     });
 
+                                    // Línea divisoria entre TODOS los productos (también dentro del mismo
+                                    // pasillo, para separar visualmente cada fila) y más marcada solo entre
+                                    // pasillos distintos (ver Producto.Pasillo/OrdenEnPasillo) para seguir el
+                                    // recorrido físico de la tienda; el resto de proveedores no usa Pasillo,
+                                    // así que ahí solo se ve la línea fina de siempre.
+                                    int? pasilloAnterior = null;
                                     foreach (var producto in grupo.Productos)
                                     {
-                                        table.Cell().BorderBottom(1).BorderColor("#E3D2AE").Padding(6)
-                                            .Text(producto.Nombre).FontColor("#2C2C2A");
-                                        table.Cell().BorderBottom(1).BorderColor("#E3D2AE").Padding(6)
+                                        var esLimitePasillo = pasilloAnterior is not null && producto.Pasillo != pasilloAnterior;
+                                        pasilloAnterior = producto.Pasillo;
+                                        var grosorBorde = esLimitePasillo ? 1.5f : 0.75f;
+                                        var colorBorde = esLimitePasillo ? "#6D4C41" : "#C7B291";
+
+                                        // Fondo de fila según SeccionEspecial (ver Producto.Seccion) — solo
+                                        // resalta frutería/infusiones, el resto de filas queda sin fondo propio.
+                                        var fondoFila = producto.Seccion switch
+                                        {
+                                            SeccionEspecial.Fruteria => "#D7EAD1",
+                                            SeccionEspecial.Infusiones => "#E8C9A0",
+                                            _ => (string?)null
+                                        };
+
+                                        IContainer CeldaFila() =>
+                                            fondoFila is not null
+                                                ? table.Cell().Background(fondoFila).BorderBottom(grosorBorde).BorderColor(colorBorde).Padding(6)
+                                                : table.Cell().BorderBottom(grosorBorde).BorderColor(colorBorde).Padding(6);
+
+                                        CeldaFila()
+                                            .Text(text =>
+                                            {
+                                                var span = text.Span(producto.Nombre).FontColor("#2C2C2A");
+                                                if (producto.EsFrontalPasillo) span.Underline();
+                                            });
+                                        CeldaFila()
                                             .Text(producto.CantidadAComprar.ToString()).FontColor("#2C2C2A");
-                                        table.Cell().BorderBottom(1).BorderColor("#E3D2AE").Padding(6)
+                                        CeldaFila()
                                             .Text($"{producto.PrecioUnitario:F2} €").FontColor("#2C2C2A");
                                     }
                                 });
@@ -163,11 +192,46 @@ public class PdfService
                                     .Padding(8)
                                     .Text(titulo).FontSize(16).Bold().FontColor("#3E2723");
 
+                                // Línea divisoria entre TODOS los productos (también dentro del mismo
+                                // pasillo) y más marcada solo entre pasillos distintos (ver
+                                // Producto.Pasillo/OrdenEnPasillo y AgrupadorProveedor); para proveedores
+                                // que no usan Pasillo solo se ve la línea fina de siempre.
+                                var esPrimero = true;
+                                int? pasilloAnterior = null;
                                 foreach (var producto in grupo.Productos)
                                 {
-                                    grupoColumn.Item().PaddingLeft(12).PaddingTop(4)
-                                        .Text($"{producto.Nombre} — {producto.CantidadAComprar}")
-                                        .FontSize(12).FontColor("#2C2C2A");
+                                    var esLimitePasillo = pasilloAnterior is not null && producto.Pasillo != pasilloAnterior;
+                                    if (!esPrimero)
+                                    {
+                                        var grosorLinea = esLimitePasillo ? 1f : 0.5f;
+                                        var colorLinea = esLimitePasillo ? "#6D4C41" : "#C7B291";
+                                        grupoColumn.Item().PaddingLeft(12).PaddingVertical(2)
+                                            .LineHorizontal(grosorLinea).LineColor(colorLinea);
+                                    }
+                                    pasilloAnterior = producto.Pasillo;
+                                    esPrimero = false;
+
+                                    // Fondo de fila según SeccionEspecial (ver Producto.Seccion) — solo
+                                    // resalta frutería/infusiones, el resto de filas queda sin fondo propio.
+                                    var fondoFila = producto.Seccion switch
+                                    {
+                                        SeccionEspecial.Fruteria => "#D7EAD1",
+                                        SeccionEspecial.Infusiones => "#E8C9A0",
+                                        _ => (string?)null
+                                    };
+
+                                    IContainer FilaContainer() =>
+                                        fondoFila is not null
+                                            ? grupoColumn.Item().Background(fondoFila).PaddingLeft(12).PaddingVertical(4)
+                                            : grupoColumn.Item().PaddingLeft(12).PaddingVertical(4);
+
+                                    FilaContainer()
+                                        .Text(text =>
+                                        {
+                                            var span = text.Span($"{producto.Nombre} — {producto.CantidadAComprar}")
+                                                .FontSize(12).FontColor("#2C2C2A");
+                                            if (producto.EsFrontalPasillo) span.Underline();
+                                        });
                                 }
                             });
                         }
