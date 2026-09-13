@@ -1,4 +1,5 @@
 ﻿@inherits LayoutComponentBase
+@inject IWebHostEnvironment WebHostEnvironment
 
 <MudThemeProvider Theme="_theme"/>
 <MudPopoverProvider/>
@@ -6,9 +7,14 @@
 <MudSnackbarProvider/>
 
 <MudLayout>
-    <MudAppBar Elevation="1">
+    @* Aviso bien visible en Development (dotnet run, ver Program.cs) — usa cafestock-test.db,
+       NUNCA la base de datos real, pero conviene que no se confunda a simple vista con la app
+       de producción (mismo aspecto salvo por esto) cuando ambas corren a la vez en la Pi. *@
+    <MudAppBar Elevation="1" Style="@(WebHostEnvironment.IsDevelopment() ? "background-color:#B71C1C;" : null)">
         <img src="LogoCafeteria.png" alt="Logo" style="height:40px; margin-right:12px; background-color:white; border-radius:50%; padding:2px;"/>
-        <MudText Typo="Typo.h5" Style="color:#FFFFFF;">CafeStock</MudText>
+        <MudText Typo="Typo.h5" Style="color:#FFFFFF;">
+            CafeStock@(WebHostEnvironment.IsDevelopment() ? " — MODO PRUEBAS (datos no reales)" : "")
+        </MudText>
     </MudAppBar>
 
     @* Width 320px (por defecto 240px): sitio para que AppMascot quepa dentro de la columna

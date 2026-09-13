@@ -60,8 +60,12 @@ try
     // Singleton: diccionario estático de solo lectura, sin estado por circuito.
     builder.Services.AddSingleton<CafeStock.Blazor.Services.IMascotMessageProvider, CafeStock.Blazor.Services.MascotMessageProvider>();
 
-    // Configurar la base de datos
-    var dbPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "cafestock.db");
+    // Configurar la base de datos — en Development (dotnet run, ver launchSettings.json) usa un
+    // fichero de pruebas aparte, NUNCA la base de datos real de producción (cafestock.db, la
+    // que usa el servicio systemd en Production). Así se puede levantar la app en local/en la
+    // Pi para probar cambios sin arriesgar el stock/compras real de la cafetería.
+    var dbFileName = builder.Environment.IsDevelopment() ? "cafestock-test.db" : "cafestock.db";
+    var dbPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), dbFileName);
     var connectionString = $"Data Source={dbPath}";
 
     // Registrar dependencias del Back
