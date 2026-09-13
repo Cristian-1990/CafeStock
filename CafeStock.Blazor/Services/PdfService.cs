@@ -91,8 +91,8 @@ public class PdfService
                                     {
                                         var fondoFila = producto.Seccion switch
                                         {
-                                            SeccionEspecial.Fruteria => "#A9D18E",
-                                            SeccionEspecial.Infusiones => "#D9A066",
+                                            SeccionEspecial.Fruteria => "#9AC27F",
+                                            SeccionEspecial.Infusiones => "#CA9157",
                                             _ => (string?)null
                                         };
 
@@ -191,8 +191,8 @@ public class PdfService
                                 {
                                     var fondoFila = producto.Seccion switch
                                     {
-                                        SeccionEspecial.Fruteria => "#A9D18E",
-                                        SeccionEspecial.Infusiones => "#D9A066",
+                                        SeccionEspecial.Fruteria => "#9AC27F",
+                                        SeccionEspecial.Infusiones => "#CA9157",
                                         _ => (string?)null
                                     };
 
