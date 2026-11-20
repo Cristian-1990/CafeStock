@@ -1,5 +1,6 @@
 @page "/productos/nuevo"
 @page "/productos/editar/{Id:int}"
+@attribute [Authorize(Policy = Politicas.Encargado)]
 @inject IProductoService ProductoService
 @inject IProveedorService ProveedorService
 @inject NavigationManager Navigation

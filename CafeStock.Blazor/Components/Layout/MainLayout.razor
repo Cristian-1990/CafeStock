@@ -15,20 +15,50 @@
         <MudText Typo="Typo.h5" Style="color:#FFFFFF;">
             CafeStock@(WebHostEnvironment.IsDevelopment() ? " — MODO PRUEBAS (datos no reales)" : "")
         </MudText>
+        <MudSpacer/>
+        <AuthorizeView>
+            <Authorized>
+                <MudText Typo="Typo.body2" Style="color:#FFFFFF;" Class="mr-3">
+                    @context.User.Identity?.Name · @context.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value
+                </MudText>
+                @* POST normal a /auth/logout: cerrar sesión borra la cookie, algo que solo se puede
+                   hacer en una respuesta HTTP, no desde el circuito interactivo. *@
+                <form method="post" action="/auth/logout" style="margin:0;">
+                    <AntiforgeryToken/>
+                    <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Outlined" Size="Size.Small"
+                               StartIcon="@Icons.Material.Filled.Logout" Style="color:#FFFFFF; border-color:#FFFFFF;">
+                        Salir
+                    </MudButton>
+                </form>
+            </Authorized>
+        </AuthorizeView>
     </MudAppBar>
 
     @* Width 320px (por defecto 240px): sitio para que AppMascot quepa dentro de la columna
        de navegación sin invadir la zona de contenido — ver AppMascot.razor.css. *@
     <MudDrawer Open="true" Elevation="2" Variant="@DrawerVariant.Persistent" Width="320px">
         <MudNavMenu>
-            <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Inicio</MudNavLink>
-            <MudNavLink Href="proveedores" Icon="@Icons.Material.Filled.LocalShipping">Proveedores</MudNavLink>
-            <MudNavLink Href="lista-detallada" Icon="@Icons.Material.Filled.ViewModule">Productos</MudNavLink>
-            <MudNavLink Href="productos" Icon="@Icons.Material.Filled.Inventory2">Stock</MudNavLink>
-            <MudNavLink Href="vender" Icon="@CustomIcons.CoffeeBean">Venta</MudNavLink>
-            <MudNavLink Href="lista-compra" Icon="@Icons.Material.Filled.MoveToInbox">Recepcionar</MudNavLink>
-            <MudNavLink Href="facturas" Icon="@Icons.Material.Filled.Receipt">Facturas</MudNavLink>
-            <MudNavLink Href="informes" Icon="@Icons.Material.Filled.Insights">Informes</MudNavLink>
+            @* Cada enlace solo aparece si el rol del usuario puede entrar (ver Politicas). Ocultar el
+               enlace es comodidad; la protección real está en el atributo [Authorize] de cada página. *@
+            <AuthorizeView Policy="@Politicas.Trabajador">
+                <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Inicio</MudNavLink>
+            </AuthorizeView>
+            <AuthorizeView Policy="@Politicas.Encargado">
+                <MudNavLink Href="proveedores" Icon="@Icons.Material.Filled.LocalShipping">Proveedores</MudNavLink>
+                <MudNavLink Href="lista-detallada" Icon="@Icons.Material.Filled.ViewModule">Productos</MudNavLink>
+            </AuthorizeView>
+            <AuthorizeView Policy="@Politicas.Trabajador">
+                <MudNavLink Href="productos" Icon="@Icons.Material.Filled.Inventory2">Stock</MudNavLink>
+                <MudNavLink Href="vender" Icon="@CustomIcons.CoffeeBean">Venta</MudNavLink>
+                <MudNavLink Href="lista-compra" Icon="@Icons.Material.Filled.MoveToInbox">Recepcionar</MudNavLink>
+            </AuthorizeView>
+            <AuthorizeView Policy="@Politicas.Encargado">
+                <MudNavLink Href="facturas" Icon="@Icons.Material.Filled.Receipt">Facturas</MudNavLink>
+                <MudNavLink Href="informes" Icon="@Icons.Material.Filled.Insights">Informes</MudNavLink>
+            </AuthorizeView>
+            <AuthorizeView Policy="@Politicas.Admin">
+                <MudNavLink Href="admin/usuarios" Icon="@Icons.Material.Filled.ManageAccounts">Usuarios</MudNavLink>
+            </AuthorizeView>
         </MudNavMenu>
         @* .mud-drawer-content ya es flex column a toda la altura del drawer — AppMascot se
            ancla abajo con margin-top:auto en su propio contenedor, sin envoltorio extra. *@
@@ -49,21 +79,5 @@
 </div>
 
 @code {
-    private readonly MudTheme _theme = new()
-    {
-        PaletteLight = new PaletteLight
-        {
-            Primary = "#6D4C41",
-            Secondary = "#8D6E63",
-            AppbarBackground = "#6D4C41",
-            Background = "#EFE6DA",
-            Surface = "#FFFBF5",
-            DrawerBackground = "#B8956A",
-            DrawerText = "#3E2723",
-            DrawerIcon = "#3E2723",
-            TextPrimary = "#2C2C2A",
-            Error = "#993C1D",
-            Dark = "#3E2723"
-        }
-    };
+    private readonly MudTheme _theme = TemaCafeStock.Tema;
 }

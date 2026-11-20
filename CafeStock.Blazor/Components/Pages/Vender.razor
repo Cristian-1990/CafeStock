@@ -1,4 +1,5 @@
 @page "/vender"
+@attribute [Authorize(Policy = Politicas.Trabajador)]
 @inject IProductoService ProductoService
 @inject IRegistroCafeService RegistroCafeService
 @inject ISnackbar Snackbar

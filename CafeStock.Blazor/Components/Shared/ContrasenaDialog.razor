@@ -1,0 +1,27 @@
+<MudDialog>
+    <DialogContent>
+        <MudText Class="mb-3">Nueva contraseña para <strong>@NombreUsuario</strong>.</MudText>
+        <MudTextField @bind-Value="_password" Label="Nueva contraseña" InputType="InputType.Password"
+                      HelperText="Mínimo 8 caracteres, con letras y un número" Variant="Variant.Outlined"
+                      Immediate="true" AutoFocus="true"/>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancelar">Cancelar</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Aceptar"
+                   Disabled="@string.IsNullOrEmpty(_password)">
+            Restablecer
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public string NombreUsuario { get; set; } = string.Empty;
+
+    private string _password = string.Empty;
+
+    private void Aceptar() => MudDialog.Close(DialogResult.Ok(_password));
+
+    private void Cancelar() => MudDialog.Cancel();
+}

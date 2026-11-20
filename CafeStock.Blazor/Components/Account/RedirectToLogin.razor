@@ -1,0 +1,11 @@
+@inject NavigationManager Navigation
+
+@code {
+    // Lleva a /login recordando a dónde quería ir el usuario (returnUrl). forceLoad: el inicio de
+    // sesión escribe una cookie, algo que solo se puede hacer en una petición HTTP normal.
+    protected override void OnInitialized()
+    {
+        var destino = "/" + Navigation.ToBaseRelativePath(Navigation.Uri);
+        Navigation.NavigateTo($"/login?returnUrl={Uri.EscapeDataString(destino)}", forceLoad: true);
+    }
+}

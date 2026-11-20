@@ -1,6 +1,23 @@
 ﻿<Router AppAssembly="typeof(Program).Assembly" NotFoundPage="typeof(Pages.NotFound)">
     <Found Context="routeData">
-        <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)"/>
+        <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
+            <NotAuthorized>
+                @if (context.User.Identity?.IsAuthenticated != true)
+                {
+                    <Account.RedirectToLogin/>
+                }
+                else
+                {
+                    @* Con sesión pero sin el rol que pide la página (p. ej. un Trabajador entrando por URL en Informes). *@
+                    <MudAlert Severity="Severity.Warning" Class="mt-4">
+                        No tienes permiso para ver esta página. Si crees que es un error, pídeselo a un encargado o administrador.
+                    </MudAlert>
+                }
+            </NotAuthorized>
+            <Authorizing>
+                <p>Comprobando sesión…</p>
+            </Authorizing>
+        </AuthorizeRouteView>
         <FocusOnNavigate RouteData="routeData" Selector="h1"/>
     </Found>
 </Router>
