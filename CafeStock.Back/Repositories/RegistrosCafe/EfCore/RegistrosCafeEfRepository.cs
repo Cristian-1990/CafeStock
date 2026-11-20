@@ -14,7 +14,6 @@ namespace CafeStock.Back.Repositories.RegistrosCafe.EfCore;
 public class RegistrosCafeEfRepository : IRegistroCafeRepository
 {
     private readonly string _connectionString;
-    private bool _initialized;
 
     public RegistrosCafeEfRepository(string connection)
     {
@@ -23,17 +22,9 @@ public class RegistrosCafeEfRepository : IRegistroCafeRepository
 
     private AppDbContext CreateContext() => new AppDbContext(_connectionString);
 
-    private async Task InitializeAsync()
-    {
-        if (_initialized) return;
-        using var context = CreateContext();
-        await context.EnsureCreatedAsync();
-        // Se asegura también la columna SeguimientoIndividual (y no solo su propia tabla)
-        // porque RegistrarVentaAsync lee y escribe ProductoEntity en el mismo contexto.
-        await context.AsegurarColumnaSeguimientoIndividualAsync();
-        await context.AsegurarTablaRegistrosCafeAsync();
-        _initialized = true;
-    }
+    // El esquema lo gestiona DatabaseInitializer (EF Core Migrations); es idempotente y se
+    // ejecuta una sola vez por base de datos aunque lo llamen los seis repositorios.
+    private Task InitializeAsync() => DatabaseInitializer.EnsureInitializedAsync(_connectionString);
 
     public async Task<IEnumerable<RegistroCafe>> GetUltimosAsync(int cantidad)
     {

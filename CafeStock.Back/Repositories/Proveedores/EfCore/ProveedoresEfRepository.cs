@@ -1,4 +1,5 @@
 using CafeStock.Back.Entity;
+using CafeStock.Back.Infrastructure;
 using CafeStock.Back.Errors.Common;
 using CafeStock.Back.Errors.Proveedores;
 using CafeStock.Back.Models;
@@ -13,7 +14,6 @@ namespace CafeStock.Back.Repositories.Proveedores.EfCore;
 public class ProveedoresEfRepository : IProveedorRepository
 {
     private readonly string _connectionString;
-    private bool _initialized;
 
     public ProveedoresEfRepository(string connection)
     {
@@ -22,24 +22,9 @@ public class ProveedoresEfRepository : IProveedorRepository
 
     private AppDbContext CreateContext() => new AppDbContext(_connectionString);
 
-    private async Task InitializeAsync()
-    {
-        if (_initialized) return;
-        using var context = CreateContext();
-        await context.EnsureCreatedAsync();
-        await context.AsegurarColumnaEsSupermercadoGenericoAsync();
-        await context.AsegurarColumnaDireccionAsync();
-        await context.AsegurarColumnaNifCifAsync();
-        await context.AsegurarColumnaAgruparPorTipoUnidadAsync();
-        await context.AsegurarColumnaPrecioUnitarioAltaPrecisionAsync();
-        // Las dos siguientes hacen consultas LINQ normales (no SQL crudo), así que necesitan
-        // que TODAS las columnas de ProveedorEntity ya existan — deben ir después de todos los
-        // AsegurarColumnaXAsync, nunca entremezcladas con ellos (ver bug ya sufrido en
-        // producción: "no such column" al consultar Proveedores antes de tiempo).
-        await context.AsegurarAgrupacionPorUnidadPucheroAsync();
-        await context.AsegurarPrecioAltaPrecisionPriegolaAsync();
-        _initialized = true;
-    }
+    // El esquema lo gestiona DatabaseInitializer (EF Core Migrations); es idempotente y se
+    // ejecuta una sola vez por base de datos aunque lo llamen los seis repositorios.
+    private Task InitializeAsync() => DatabaseInitializer.EnsureInitializedAsync(_connectionString);
 
     public async Task<IEnumerable<Proveedor>> GetAllAsync()
     {

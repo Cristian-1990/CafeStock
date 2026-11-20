@@ -14,7 +14,6 @@ namespace CafeStock.Back.Repositories.Productos.EfCore;
 public class ProductosEfRepository : IProductoRepository
 {
     private readonly string _connectionString;
-    private bool _initialized;
 
     public ProductosEfRepository(string connection)
     {
@@ -23,37 +22,9 @@ public class ProductosEfRepository : IProductoRepository
 
     private AppDbContext CreateContext() => new AppDbContext(_connectionString);
 
-    private async Task InitializeAsync()
-    {
-        if (_initialized) return;
-        using var context = CreateContext();
-        await context.EnsureCreatedAsync();
-        await context.AsegurarColumnaPrecioUnitarioAsync();
-        await context.AsegurarColumnaSeguimientoIndividualAsync();
-        // El ADD COLUMN va ANTES de AsegurarSeguimientoIndividualCafePucheroAsync a propósito:
-        // ese método hace una consulta EF sobre context.Productos, y como ProductoEntity ya
-        // tiene la propiedad AplicaConciliacionTpv, EF genera un SELECT que incluye esa
-        // columna — si la tabla real todavía no la tiene (falta ejecutar el ALTER TABLE),
-        // esa consulta revienta con "no such column" (comprobado: HTTP 500 real al arrancar
-        // con el orden invertido). Cualquier Asegurar...Async que solo haga ALTER
-        // TABLE/CREATE TABLE puede ir en cualquier orden entre sí, pero uno que además
-        // consulte la tabla vía EF (como este) necesita que el esquema ya esté al día antes.
-        await context.AsegurarColumnaAplicaConciliacionTpvAsync();
-        // Mismo motivo que AsegurarColumnaAplicaConciliacionTpvAsync: va antes de
-        // AsegurarSeguimientoIndividualCafePucheroAsync (que consulta Productos vía EF)
-        // porque ProductoEntity ya tiene la propiedad UnidadesPorPack.
-        await context.AsegurarColumnaUnidadesPorPackAsync();
-        // Mismo motivo: ProductoEntity ya tiene la propiedad Pasillo, así que esta también
-        // tiene que ir antes de AsegurarSeguimientoIndividualCafePucheroAsync.
-        await context.AsegurarColumnaPasilloAsync();
-        // Mismo motivo: ProductoEntity ya tiene OrdenEnPasillo/EsFrontalPasillo.
-        await context.AsegurarColumnaOrdenEnPasilloAsync();
-        await context.AsegurarColumnaEsFrontalPasilloAsync();
-        // Mismo motivo: ProductoEntity ya tiene la propiedad Seccion.
-        await context.AsegurarColumnaSeccionAsync();
-        await context.AsegurarSeguimientoIndividualCafePucheroAsync();
-        _initialized = true;
-    }
+    // El esquema lo gestiona DatabaseInitializer (EF Core Migrations); es idempotente y se
+    // ejecuta una sola vez por base de datos aunque lo llamen los seis repositorios.
+    private Task InitializeAsync() => DatabaseInitializer.EnsureInitializedAsync(_connectionString);
     
     
     
