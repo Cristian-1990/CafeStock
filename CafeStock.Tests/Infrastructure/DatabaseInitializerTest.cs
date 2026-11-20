@@ -6,6 +6,8 @@ using CafeStock.Back.Repositories.Proveedores.EfCore;
 using FluentAssertions;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace CafeStock.Tests.Infrastructure;
 
@@ -51,8 +53,7 @@ public class DatabaseInitializerTest
 
         await using var context = new AppDbContext(_connectionString);
         (await context.Database.GetPendingMigrationsAsync()).Should().BeEmpty();
-        (await context.Database.GetAppliedMigrationsAsync()).Should().ContainSingle()
-            .Which.Should().EndWith("_InitialCreate");
+        (await context.Database.GetAppliedMigrationsAsync()).Should().BeEquivalentTo(context.Database.GetMigrations());
     }
 
     [Test]
@@ -141,8 +142,8 @@ public class DatabaseInitializerTest
         productos.Should().ContainSingle().Which.Should().Match<Producto>(p => p.Nombre == "Harina" && p.StockActual == 3);
 
         await using var context = new AppDbContext(_connectionString);
-        (await context.Database.GetAppliedMigrationsAsync()).Should().ContainSingle()
-            .Which.Should().EndWith("_InitialCreate");
+        (await context.Database.GetAppliedMigrationsAsync()).Should().BeEquivalentTo(context.Database.GetMigrations());
+        (await ListarTablasAsync()).Should().Contain(["AspNetUsers", "AspNetRoles"]); // migraciones posteriores al baseline sí se aplican
         (await context.Database.GetPendingMigrationsAsync()).Should().BeEmpty();
     }
 
@@ -290,11 +291,18 @@ public class DatabaseInitializerTest
 
     // ---------- Ayudas ----------
 
-    /// <summary>Crea una base como lo hacía la app antes de las migraciones: EnsureCreated, sin historial.</summary>
+    /// <summary>
+    /// Crea una base como la que tenía la app antes de las migraciones: el esquema de InitialCreate
+    /// (el del sistema antiguo, sin tablas de Identity) pero SIN tabla de historial. No sirve
+    /// EnsureCreated: crearía el modelo actual completo, con tablas posteriores a InitialCreate.
+    /// </summary>
     private async Task CrearBaseHeredadaAsync(Func<AppDbContext, Task> sembrar)
     {
         await using var context = new AppDbContext(_connectionString);
-        await context.Database.EnsureCreatedAsync();
+        var migracionInicial = context.Database.GetMigrations().First();
+        await context.GetService<IMigrator>().MigrateAsync(migracionInicial);
+        await EjecutarAsync(context, "DROP TABLE IF EXISTS __EFMigrationsHistory");
+        await EjecutarAsync(context, "DROP TABLE IF EXISTS __EFMigrationsLock");
         await sembrar(context);
     }
 

@@ -1,10 +1,13 @@
 ﻿using CafeStock.Back.Models;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 namespace CafeStock.Back.Entity;
 /// <summary>
-/// Hereda de dbContext para tener todas sus funcionalidades
+/// Contexto único de la app. Hereda de IdentityDbContext para guardar usuarios y roles en la
+/// misma base de datos (y el mismo historial de migraciones) que el resto de tablas.
 /// </summary>
-public partial class AppDbContext : DbContext
+public partial class AppDbContext : IdentityDbContext<IdentityUser>
 {
     private readonly string _connectionString; //Guarda la ruta al erchivo SQLite
 
@@ -37,6 +40,10 @@ public partial class AppDbContext : DbContext
     /// </summary>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // Imprescindible en un IdentityDbContext: configura las tablas de usuarios y roles
+        // (AspNetUsers, AspNetRoles, AspNetUserRoles…).
+        base.OnModelCreating(modelBuilder);
+
         // Concurrencia optimista sin cambiar el esquema: EF añade la condición
         // "AND StockActual = <valor leído>" al UPDATE. Si otra tablet cambió el stock entre
         // la lectura y el guardado, el UPDATE afecta a 0 filas y EF lanza
