@@ -68,6 +68,12 @@ try
     var dbPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), dbFileName);
     var connectionString = $"Data Source={dbPath}";
 
+    // Crea o actualiza el esquema con EF Core Migrations ANTES de aceptar peticiones: si la base
+    // de datos no se puede preparar, la app falla al arrancar con un error claro en el log en
+    // vez de dar un HTTP 500 en la primera página que se visite. Las bases antiguas (creadas
+    // sin migraciones) se actualizan y se marcan como baseline automáticamente.
+    await DatabaseInitializer.EnsureInitializedAsync(connectionString);
+
     // Registrar dependencias del Back
     var provider = DependenciesProvider.BuildServiceProvider(connectionString);
     builder.Services.AddSingleton(provider.GetService<IProductoRepository>()!);
