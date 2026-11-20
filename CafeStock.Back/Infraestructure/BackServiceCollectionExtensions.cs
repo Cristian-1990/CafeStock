@@ -13,6 +13,7 @@ using CafeStock.Back.Repositories.SnapshotsInventario.Base;
 using CafeStock.Back.Repositories.SnapshotsInventario.EfCore;
 using CafeStock.Back.Services.Compras;
 using CafeStock.Back.Services.Facturas;
+using CafeStock.Back.Services.Informes;
 using CafeStock.Back.Services.Presupuestos;
 using CafeStock.Back.Services.Productos;
 using CafeStock.Back.Services.Proveedores;
@@ -24,6 +25,7 @@ using CafeStock.Back.Validators.Presupuestos;
 using CafeStock.Back.Validators.Productos;
 using CafeStock.Back.Validators.Proveedores;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace CafeStock.Back.Infrastructure;
 
@@ -60,6 +62,10 @@ public static class BackServiceCollectionExtensions
         services.AddScoped<IRegistroCafeService, RegistroCafeService>();
         services.AddScoped<IPresupuestoService, PresupuestoService>();
         services.AddScoped<ISnapshotInventarioService, SnapshotInventarioService>();
+
+        // Cálculos de los informes: puros (sin base de datos); "hoy" sale del reloj inyectado.
+        services.TryAddSingleton(TimeProvider.System);
+        services.AddSingleton<IInformeService, InformeService>();
 
         return services;
     }
