@@ -24,6 +24,19 @@
 <script src="@Assets["_framework/blazor.web.js"]"></script>
 <script src="_content/MudBlazor/MudBlazor.min.js"></script>
 <script>
+    // Foto que no carga (fichero que no existe en este equipo, borrado...): se sustituye por una
+    // imagen de reserva en vez de enseñar el icono de imagen rota con su texto alternativo.
+    // Los eventos "error" no burbujean: se captura en el documento. data-sin-imagen evita un
+    // bucle si la propia imagen de reserva fallara.
+    document.addEventListener('error', (e) => {
+        const img = e.target;
+        if (img && img.tagName === 'IMG' && !img.dataset.sinImagen) {
+            img.dataset.sinImagen = '1';
+            img.src = '/images/sin-imagen.svg';
+        }
+    }, true);
+</script>
+<script>
     // Registra el service worker mínimo (ver wwwroot/service-worker.js) que
     // permite instalar CafeStock como PWA con ventana propia.
     if ('serviceWorker' in navigator) {

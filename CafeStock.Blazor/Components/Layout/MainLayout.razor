@@ -11,14 +11,22 @@
        NUNCA la base de datos real, pero conviene que no se confunda a simple vista con la app
        de producción (mismo aspecto salvo por esto) cuando ambas corren a la vez en la Pi. *@
     <MudAppBar Elevation="1" Style="@(WebHostEnvironment.IsDevelopment() ? "background-color:#B71C1C;" : null)">
-        <img src="LogoCafeteria.png" alt="Logo" style="height:40px; margin-right:12px; background-color:white; border-radius:50%; padding:2px;"/>
-        <MudText Typo="Typo.h5" Style="color:#FFFFFF;">
-            CafeStock@(WebHostEnvironment.IsDevelopment() ? " — MODO PRUEBAS (datos no reales)" : "")
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Class="d-md-none mr-2"
+                       aria-label="Abrir menú" OnClick="@(() => _menuAbierto = !_menuAbierto)"/>
+        <img src="LogoCafeteria.png" alt="Logo" class="d-none d-sm-inline" style="height:40px; margin-right:12px; background-color:white; border-radius:50%; padding:2px;"/>
+        <MudText Typo="Typo.h5" Style="color:#FFFFFF; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+            CafeStock
+            @if (WebHostEnvironment.IsDevelopment())
+            {
+                @* Texto corto en pantallas estrechas: el largo partía la cabecera en varias líneas. *@
+                <span class="d-none d-sm-inline">— MODO PRUEBAS (datos no reales)</span>
+                <span class="d-sm-none">· PRUEBAS</span>
+            }
         </MudText>
         <MudSpacer/>
         <AuthorizeView>
             <Authorized>
-                <MudText Typo="Typo.body2" Style="color:#FFFFFF;" Class="mr-3">
+                <MudText Typo="Typo.body2" Style="color:#FFFFFF;" Class="mr-3 d-none d-sm-block">
                     @context.User.Identity?.Name · @context.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value
                 </MudText>
                 @* POST normal a /auth/logout: cerrar sesión borra la cookie, algo que solo se puede
@@ -36,7 +44,10 @@
 
     @* Width 320px (por defecto 240px): sitio para que AppMascot quepa dentro de la columna
        de navegación sin invadir la zona de contenido — ver AppMascot.razor.css. *@
-    <MudDrawer Open="true" Elevation="2" Variant="@DrawerVariant.Persistent" Width="320px">
+    @* Responsive: fijo a la izquierda desde el breakpoint Md (≥960 px) y, en tablet vertical y
+       móvil, un panel que se abre con el botón de la cabecera y deja el contenido a ancho completo. *@
+    <MudDrawer @bind-Open="_menuAbierto" Elevation="2" Variant="@DrawerVariant.Responsive"
+               Breakpoint="Breakpoint.Md" Width="min(320px, 85vw)">
         <MudNavMenu>
             @* Cada enlace solo aparece si el rol del usuario puede entrar (ver Politicas). Ocultar el
                enlace es comodidad; la protección real está en el atributo [Authorize] de cada página. *@
@@ -80,4 +91,7 @@
 
 @code {
     private readonly MudTheme _theme = TemaCafeStock.Tema;
+
+    // En pantallas anchas el menú siempre está a la vista; en estrechas empieza cerrado.
+    private bool _menuAbierto = true;
 }
