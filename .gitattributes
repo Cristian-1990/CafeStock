@@ -1,0 +1,3 @@
+# Los scripts de shell se ejecutan en la Raspberry Pi (Linux): siempre con saltos de línea LF,
+# aunque se editen o se descarguen en Windows (con CRLF fallarían con "bash: No such file").
+*.sh text eol=lf
