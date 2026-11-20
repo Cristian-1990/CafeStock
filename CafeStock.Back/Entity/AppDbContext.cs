@@ -37,6 +37,14 @@ public class AppDbContext : DbContext
     /// </summary>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // Concurrencia optimista sin cambiar el esquema: EF añade la condición
+        // "AND StockActual = <valor leído>" al UPDATE. Si otra tablet cambió el stock entre
+        // la lectura y el guardado, el UPDATE afecta a 0 filas y EF lanza
+        // DbUpdateConcurrencyException (ver ReintentoConcurrencia) en vez de pisar su cambio.
+        modelBuilder.Entity<ProductoEntity>()
+            .Property(p => p.StockActual)
+            .IsConcurrencyToken();
+
         modelBuilder.Entity<ProductoEntity>()
             .HasOne(p => p.Proveedor)
             .WithMany()

@@ -327,4 +327,51 @@ public class ProductosEfRepositoryTest
         productos.Single().Nombre.Should().Be("Brasil");
         productos.Single().SeguimientoIndividual.Should().BeFalse();
     }
+
+    [Test]
+    public async Task ConfirmarRecepcionAsync_RecepcionesSimultaneas_NoPierdeNingunaSuma()
+    {
+        // Arrange: 15 recepciones de 2 unidades a la vez sobre el mismo producto.
+        var creado = await _repository.CreateAsync(new Producto { Nombre = "Leche", StockActual = 0, StockMaximo = 100 });
+        var id = creado.Value.Id;
+
+        // Act
+        var salida = new TaskCompletionSource();
+        var tareas = Enumerable.Range(0, 15).Select(async _ =>
+        {
+            var repo = new ProductosEfRepository(_connectionString);
+            await salida.Task;
+            return await repo.ConfirmarRecepcionAsync(id, 2);
+        }).ToList();
+        salida.SetResult();
+        var resultados = await Task.WhenAll(tareas);
+
+        // Assert
+        resultados.Should().OnlyContain(r => r.IsSuccess);
+        (await _repository.GetByIdAsync(id)).Value.StockActual.Should().Be(30);
+    }
+
+    [Test]
+    public async Task AjustarStockActualAsync_AjustesSimultaneos_RespetaElLimiteDeCero()
+    {
+        // Arrange: stock 5 y 10 descuentos de 1 a la vez; solo 5 caben, el resto debe fallar
+        // por validación (stock < 0) y nunca dejar el stock en negativo.
+        var creado = await _repository.CreateAsync(new Producto { Nombre = "Leche", StockActual = 5, StockMaximo = 10 });
+        var id = creado.Value.Id;
+
+        // Act
+        var salida = new TaskCompletionSource();
+        var tareas = Enumerable.Range(0, 10).Select(async _ =>
+        {
+            var repo = new ProductosEfRepository(_connectionString);
+            await salida.Task;
+            return await repo.AjustarStockActualAsync(id, -1);
+        }).ToList();
+        salida.SetResult();
+        var resultados = await Task.WhenAll(tareas);
+
+        // Assert
+        resultados.Count(r => r.IsSuccess).Should().Be(5);
+        (await _repository.GetByIdAsync(id)).Value.StockActual.Should().Be(0);
+    }
 }

@@ -1,5 +1,6 @@
 ﻿using CafeStock.Back.Entity;
 using CafeStock.Back.Errors.Common;
+using CafeStock.Back.Infrastructure;
 using CafeStock.Back.Errors.Productos;
 using CafeStock.Back.Models;
 using CafeStock.Back.Mappers;
@@ -156,15 +157,20 @@ public class ProductosEfRepository : IProductoRepository
     public async Task<Result<Producto, DomainError>> ConfirmarRecepcionAsync(int id, int cantidadRecibida)
     {
         await InitializeAsync();
-        using var context = CreateContext();
-        var entity = await context.Productos.FindAsync(id);
-        if (entity is null)
-            return Result.Failure<Producto, DomainError>(ProductoErrors.NotFound(id));
         try
         {
-            entity.StockActual += cantidadRecibida;
-            await context.SaveChangesAsync();
-            return Result.Success<Producto, DomainError>(entity.ToProducto());
+            // Concurrencia optimista: ver ReintentoConcurrencia y el token en AppDbContext.
+            return await ReintentoConcurrencia.EjecutarAsync(async () =>
+            {
+                using var context = CreateContext();
+                var entity = await context.Productos.FindAsync(id);
+                if (entity is null)
+                    return Result.Failure<Producto, DomainError>(ProductoErrors.NotFound(id));
+
+                entity.StockActual += cantidadRecibida;
+                await context.SaveChangesAsync();
+                return Result.Success<Producto, DomainError>(entity.ToProducto());
+            });
         }
         catch (Exception ex)
         {
@@ -176,20 +182,25 @@ public class ProductosEfRepository : IProductoRepository
     public async Task<Result<Producto, DomainError>> AjustarStockActualAsync(int id, int delta)
     {
         await InitializeAsync();
-        using var context = CreateContext();
-        var entity = await context.Productos.FindAsync(id);
-        if (entity is null)
-            return Result.Failure<Producto, DomainError>(ProductoErrors.NotFound(id));
         try
         {
-            var nuevoStock = entity.StockActual + delta;
-            if (nuevoStock < 0)
-                return Result.Failure<Producto, DomainError>(
-                    ProductoErrors.Validation(["El stock no puede quedar por debajo de 0"]));
+            // Concurrencia optimista: ver ReintentoConcurrencia y el token en AppDbContext.
+            return await ReintentoConcurrencia.EjecutarAsync(async () =>
+            {
+                using var context = CreateContext();
+                var entity = await context.Productos.FindAsync(id);
+                if (entity is null)
+                    return Result.Failure<Producto, DomainError>(ProductoErrors.NotFound(id));
 
-            entity.StockActual = nuevoStock;
-            await context.SaveChangesAsync();
-            return Result.Success<Producto, DomainError>(entity.ToProducto());
+                var nuevoStock = entity.StockActual + delta;
+                if (nuevoStock < 0)
+                    return Result.Failure<Producto, DomainError>(
+                        ProductoErrors.Validation(["El stock no puede quedar por debajo de 0"]));
+
+                entity.StockActual = nuevoStock;
+                await context.SaveChangesAsync();
+                return Result.Success<Producto, DomainError>(entity.ToProducto());
+            });
         }
         catch (Exception ex)
         {

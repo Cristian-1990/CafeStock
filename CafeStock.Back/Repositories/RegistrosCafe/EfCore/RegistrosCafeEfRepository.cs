@@ -1,5 +1,6 @@
 using CafeStock.Back.Entity;
 using CafeStock.Back.Errors.Common;
+using CafeStock.Back.Infrastructure;
 using CafeStock.Back.Errors.RegistrosCafe;
 using CafeStock.Back.Mappers;
 using CafeStock.Back.Models;
@@ -48,27 +49,34 @@ public class RegistrosCafeEfRepository : IRegistroCafeRepository
     public async Task<Result<RegistroCafe, DomainError>> RegistrarVentaAsync(int productoId, string nombreTrabajador)
     {
         await InitializeAsync();
-        using var context = CreateContext();
-        var producto = await context.Productos.FindAsync(productoId);
-        if (producto is null)
-            return Result.Failure<RegistroCafe, DomainError>(RegistroCafeErrors.ProductoNoEncontrado(productoId));
-        if (producto.StockActual <= 0)
-            return Result.Failure<RegistroCafe, DomainError>(RegistroCafeErrors.SinStock(productoId));
-
         try
         {
-            producto.StockActual -= 1;
-
-            var entity = new RegistroCafeEntity
+            // Concurrencia optimista: StockActual es un token de concurrencia (ver AppDbContext),
+            // así que si otra tablet vendió el mismo producto entre nuestra lectura y nuestro
+            // guardado, EF lanza DbUpdateConcurrencyException y se repite desde la lectura
+            // con el stock ya actualizado (puede acabar en SinStock, que es lo correcto).
+            return await ReintentoConcurrencia.EjecutarAsync(async () =>
             {
-                ProductoId = productoId,
-                NombreTrabajador = nombreTrabajador,
-                Fecha = DateTime.Now
-            };
-            context.RegistrosCafe.Add(entity);
+                using var context = CreateContext();
+                var producto = await context.Productos.FindAsync(productoId);
+                if (producto is null)
+                    return Result.Failure<RegistroCafe, DomainError>(RegistroCafeErrors.ProductoNoEncontrado(productoId));
+                if (producto.StockActual <= 0)
+                    return Result.Failure<RegistroCafe, DomainError>(RegistroCafeErrors.SinStock(productoId));
 
-            await context.SaveChangesAsync();
-            return Result.Success<RegistroCafe, DomainError>(entity.ToRegistroCafe());
+                producto.StockActual -= 1;
+
+                var entity = new RegistroCafeEntity
+                {
+                    ProductoId = productoId,
+                    NombreTrabajador = nombreTrabajador,
+                    Fecha = DateTime.Now
+                };
+                context.RegistrosCafe.Add(entity);
+
+                await context.SaveChangesAsync();
+                return Result.Success<RegistroCafe, DomainError>(entity.ToRegistroCafe());
+            });
         }
         catch (Exception ex)
         {
