@@ -24,6 +24,16 @@ public record Producto
     public bool SeguimientoIndividual { get; set; }
 
     /// <summary>
+    /// Solo para editar: el StockActual que tenía el producto cuando se abrió el formulario de
+    /// edición. Permite a UpdateAsync distinguir "el usuario no tocó el stock" de "lo cambió a
+    /// propósito": en el primer caso no lo escribe, para no pisar ventas o recepciones hechas
+    /// mientras el formulario estaba abierto. Null (por defecto) = no se sabe, y UpdateAsync se
+    /// comporta como siempre (escribe StockActual). Ningún mapper lo rellena: lo informa quien
+    /// edita.
+    /// </summary>
+    public int? StockActualAlLeer { get; set; }
+
+    /// <summary>
     /// Marca productos que se venden íntegros (p.ej. una lata de Coca-Cola: se compra una
     /// unidad y se vende esa misma unidad, sin transformación) — de cara a una futura
     /// conciliación con el TPV. Default false es un dato real para todo el historial (a
