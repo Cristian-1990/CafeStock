@@ -1,12 +1,19 @@
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
 namespace CafeStock.Back.Infrastructure;
 
 /// <summary>
-/// Concurrencia optimista: ejecuta una operación de "leer → modificar → guardar" y, si otro
-/// usuario cambió el mismo registro entre la lectura y el guardado
-/// (<see cref="DbUpdateConcurrencyException"/>), la repite desde cero con datos frescos.
+/// Concurrencia: ejecuta una operación de "leer → modificar → guardar" y, si otro usuario la
+/// pisó mientras tanto, la repite desde cero con datos frescos. Dos situaciones se reintentan:
+///
+/// 1. <see cref="DbUpdateConcurrencyException"/>: concurrencia optimista de EF. Otro cambió el
+///    mismo registro entre la lectura y el guardado (ver el token de concurrencia en AppDbContext).
+/// 2. SQLITE_BUSY / SQLITE_LOCKED: SQLite solo admite un escritor a la vez. Si dos transacciones
+///    leen y luego intentan escribir a la vez, una no puede "subir" de lectura a escritura y
+///    SQLite la rechaza al instante con "database is locked" (esperar no lo arreglaría: la otra
+///    ya habría cambiado los datos que leyó). La solución correcta es la misma: repetir.
 ///
 /// La operación debe crear su propio <c>AppDbContext</c> en cada ejecución: el contexto que
 /// falló conserva en memoria los valores antiguos, así que reutilizarlo reintentaría
@@ -22,6 +29,10 @@ public static class ReintentoConcurrencia
     /// </summary>
     public const int MaxIntentos = 25;
 
+    // Códigos primarios de SQLite (https://www.sqlite.org/rescode.html).
+    private const int SqliteBusy = 5;
+    private const int SqliteLocked = 6;
+
     public static async Task<T> EjecutarAsync<T>(Func<Task<T>> operacion)
     {
         for (var intento = 1; ; intento++)
@@ -30,7 +41,7 @@ public static class ReintentoConcurrencia
             {
                 return await operacion();
             }
-            catch (DbUpdateConcurrencyException ex) when (intento < MaxIntentos)
+            catch (Exception ex) when (EsReintentable(ex) && intento < MaxIntentos)
             {
                 Log.Debug(ex, "Conflicto de concurrencia (intento {Intento}/{Max}); se reintenta con datos frescos",
                     intento, MaxIntentos);
@@ -40,4 +51,9 @@ public static class ReintentoConcurrencia
             }
         }
     }
+
+    public static bool EsReintentable(Exception ex) =>
+        ex is DbUpdateConcurrencyException
+        || ex is SqliteException { SqliteErrorCode: SqliteBusy or SqliteLocked }
+        || ex is DbUpdateException { InnerException: SqliteException { SqliteErrorCode: SqliteBusy or SqliteLocked } };
 }
