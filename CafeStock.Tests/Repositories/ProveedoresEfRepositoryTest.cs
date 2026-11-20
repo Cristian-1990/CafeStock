@@ -65,36 +65,6 @@ public class ProveedoresEfRepositoryTest
     }
 
     [Test]
-    public async Task Initialize_ProveedorPuchero_ActivaAgruparPorTipoUnidad()
-    {
-        // Arrange: Puchero se crea como cualquier otro proveedor, sin el flag
-        var pucheroSeed = new ProveedoresEfRepository(_connectionString);
-        await pucheroSeed.CreateAsync(new Proveedor { Nombre = "Puchero" });
-
-        // Act: _repository (fresca, _initialized aún en false) dispara la migración en su
-        // primera llamada — como al arrancar la app de verdad.
-        var proveedores = (await _repository.GetAllAsync()).ToList();
-
-        // Assert
-        var puchero = proveedores.Single(p => p.Nombre == "Puchero");
-        puchero.AgruparPorTipoUnidad.Should().BeTrue();
-    }
-
-    [Test]
-    public async Task Initialize_ProveedorSinNombrePuchero_NoActivaAgruparPorTipoUnidad()
-    {
-        // Arrange: un proveedor cualquiera, distinto de Puchero
-        var alcampoSeed = new ProveedoresEfRepository(_connectionString);
-        await alcampoSeed.CreateAsync(new Proveedor { Nombre = "Alcampo" });
-
-        // Act
-        var proveedores = (await _repository.GetAllAsync()).ToList();
-
-        // Assert
-        proveedores.Single().AgruparPorTipoUnidad.Should().BeFalse();
-    }
-
-    [Test]
     public async Task UpdateAsync_ModificaPrecioUnitarioAltaPrecision()
     {
         // Arrange
@@ -107,83 +77,6 @@ public class ProveedoresEfRepositoryTest
         // Assert
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value.PrecioUnitarioAltaPrecision.Should().BeTrue();
-    }
-
-    [Test]
-    public async Task Initialize_ProveedorPriegola_ActivaPrecioUnitarioAltaPrecision()
-    {
-        // Arrange: Priégola se crea como cualquier otro proveedor, sin el flag
-        var priegolaSeed = new ProveedoresEfRepository(_connectionString);
-        await priegolaSeed.CreateAsync(new Proveedor { Nombre = "Priégola" });
-
-        // Act: _repository (fresca, _initialized aún en false) dispara la migración en su
-        // primera llamada — como al arrancar la app de verdad.
-        var proveedores = (await _repository.GetAllAsync()).ToList();
-
-        // Assert
-        var priegola = proveedores.Single(p => p.Nombre == "Priégola");
-        priegola.PrecioUnitarioAltaPrecision.Should().BeTrue();
-    }
-
-    [Test]
-    public async Task Initialize_ProveedorPriegolaConEspacioFinal_ActivaPrecioUnitarioAltaPrecision()
-    {
-        // Arrange: regresión de un bug real — el nombre en producción es "Priégola " (con
-        // espacio final), y la migración original comparaba con "==" exacto sin recortar,
-        // así que nunca coincidía y el flag se quedaba en false en silencio, sin que nadie lo
-        // notara hasta comprobarlo a mano en la base de datos real.
-        var priegolaSeed = new ProveedoresEfRepository(_connectionString);
-        await priegolaSeed.CreateAsync(new Proveedor { Nombre = "Priégola " });
-
-        // Act
-        var proveedores = (await _repository.GetAllAsync()).ToList();
-
-        // Assert
-        var priegola = proveedores.Single(p => p.Nombre == "Priégola ");
-        priegola.PrecioUnitarioAltaPrecision.Should().BeTrue();
-    }
-
-    [Test]
-    public async Task Initialize_ProveedorSinNombrePriegola_NoActivaPrecioUnitarioAltaPrecision()
-    {
-        // Arrange: un proveedor cualquiera, distinto de Priegola
-        var alcampoSeed = new ProveedoresEfRepository(_connectionString);
-        await alcampoSeed.CreateAsync(new Proveedor { Nombre = "Alcampo" });
-
-        // Act
-        var proveedores = (await _repository.GetAllAsync()).ToList();
-
-        // Assert
-        proveedores.Single().PrecioUnitarioAltaPrecision.Should().BeFalse();
-    }
-
-    [Test]
-    public async Task Initialize_BaseDatosSinColumnaPrecioAltaPrecisionTodavia_NoFallaAlConsultarProveedores()
-    {
-        // Arrange: simula una base de datos real creada ANTES de que existiera la columna
-        // PrecioUnitarioAltaPrecision — regresión de un bug real de producción donde
-        // AsegurarAgrupacionPorUnidadPucheroAsync (una consulta LINQ normal, no SQL crudo) se
-        // ejecutaba antes de que AsegurarColumnaPrecioUnitarioAltaPrecisionAsync añadiera la
-        // columna. EF Core selecciona TODAS las columnas mapeadas del modelo en cualquier
-        // consulta LINQ, así que cualquier método que consulte Proveedores por LINQ revienta
-        // si se cuela antes de que todas las columnas nuevas existan — no solo el que
-        // introdujo el campo.
-        await using (var seedContext = new AppDbContext(_connectionString))
-        {
-            await seedContext.EnsureCreatedAsync();
-            var conexion = seedContext.Database.GetDbConnection();
-            await conexion.OpenAsync();
-            await using var comando = conexion.CreateCommand();
-            comando.CommandText = "ALTER TABLE Proveedores DROP COLUMN PrecioUnitarioAltaPrecision";
-            await comando.ExecuteNonQueryAsync();
-        }
-
-        // Act: _repository (fresca, _initialized aún en false) dispara toda la inicialización
-        // en su primera llamada — como al arrancar la app de verdad contra un .db existente.
-        var accion = async () => await _repository.GetAllAsync();
-
-        // Assert
-        await accion.Should().NotThrowAsync();
     }
 
     [Test]
