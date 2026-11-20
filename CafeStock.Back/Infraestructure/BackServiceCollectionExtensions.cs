@@ -1,4 +1,4 @@
-﻿using CafeStock.Back.Models;
+using CafeStock.Back.Models;
 using CafeStock.Back.Repositories.Compras.Base;
 using CafeStock.Back.Repositories.Compras.EfCore;
 using CafeStock.Back.Repositories.Presupuestos.Base;
@@ -27,53 +27,40 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace CafeStock.Back.Infrastructure;
 
-public static class DependenciesProvider
+/// <summary>
+/// Único sitio donde se registran las dependencias del Back (repositorios, validadores y
+/// servicios), directamente en el contenedor del host. Sustituye a DependenciesProvider, que
+/// construía un segundo ServiceProvider aparte y obligaba a Program.cs a copiar cada servicio
+/// a mano: dos listas que debían mantenerse sincronizadas.
+/// </summary>
+public static class BackServiceCollectionExtensions
 {
-    public static IServiceProvider BuildServiceProvider(string connectionString)
+    public static IServiceCollection AddCafeStockBack(this IServiceCollection services, string connectionString)
     {
-        var services = new ServiceCollection();
+        // Repositorios: singleton, sin estado. Cada operación crea y libera su propio
+        // AppDbContext (equivale a una fábrica de contextos), así que son seguros entre hilos.
+        services.AddSingleton<IProductoRepository>(_ => new ProductosEfRepository(connectionString));
+        services.AddSingleton<IProveedorRepository>(_ => new ProveedoresEfRepository(connectionString));
+        services.AddSingleton<ICompraRepository>(_ => new ComprasEfRepository(connectionString));
+        services.AddSingleton<IRegistroCafeRepository>(_ => new RegistrosCafeEfRepository(connectionString));
+        services.AddSingleton<IPresupuestoRepository>(_ => new PresupuestosEfRepository(connectionString));
+        services.AddSingleton<ISnapshotInventarioRepository>(_ => new SnapshotsInventarioEfRepository(connectionString));
 
-        RegisterValidators(services);
-        RegisterRepositories(services, connectionString);
-        RegisterServices(services);
+        services.AddScoped<IValidador<Producto>, ValidadorProducto>();
+        services.AddScoped<IValidador<Proveedor>, ValidadorProveedor>();
+        services.AddScoped<IValidador<Compra>, ValidadorCompra>();
+        services.AddScoped<IValidador<Presupuesto>, ValidadorPresupuesto>();
 
-        return services.BuildServiceProvider();
-    }
-
-    private static void RegisterValidators(IServiceCollection services)
-    {
-        services.AddTransient<IValidador<Producto>, ValidadorProducto>();
-        services.AddTransient<IValidador<Proveedor>, ValidadorProveedor>();
-        services.AddTransient<IValidador<Compra>, ValidadorCompra>();
-        services.AddTransient<IValidador<Presupuesto>, ValidadorPresupuesto>();
-    }
-
-    private static void RegisterRepositories(IServiceCollection services, string connectionString)
-    {
-        services.AddSingleton<IProductoRepository>(sp =>
-            new ProductosEfRepository(connectionString));
-        services.AddSingleton<IProveedorRepository>(sp =>
-            new ProveedoresEfRepository(connectionString));
-        services.AddSingleton<ICompraRepository>(sp =>
-            new ComprasEfRepository(connectionString));
-        services.AddSingleton<IRegistroCafeRepository>(sp =>
-            new RegistrosCafeEfRepository(connectionString));
-        services.AddSingleton<IPresupuestoRepository>(sp =>
-            new PresupuestosEfRepository(connectionString));
-        services.AddSingleton<ISnapshotInventarioRepository>(sp =>
-            new SnapshotsInventarioEfRepository(connectionString));
-    }
-
-    private static void RegisterServices(IServiceCollection services)
-    {
         services.AddScoped<IProductoService, ProductoService>();
         services.AddScoped<IProveedorService, ProveedorService>();
         // CompraService depende de IProductoService (sincroniza Producto.PrecioUnitario tras
-        // registrar una compra) — debe registrarse después.
+        // registrar una compra); el contenedor lo resuelve solo, el orden aquí no importa.
         services.AddScoped<ICompraService, CompraService>();
         services.AddScoped<IFacturaService, FacturaService>();
         services.AddScoped<IRegistroCafeService, RegistroCafeService>();
         services.AddScoped<IPresupuestoService, PresupuestoService>();
         services.AddScoped<ISnapshotInventarioService, SnapshotInventarioService>();
+
+        return services;
     }
 }

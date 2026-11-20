@@ -74,25 +74,8 @@ try
     // sin migraciones) se actualizan y se marcan como baseline automáticamente.
     await DatabaseInitializer.EnsureInitializedAsync(connectionString);
 
-    // Registrar dependencias del Back
-    var provider = DependenciesProvider.BuildServiceProvider(connectionString);
-    builder.Services.AddSingleton(provider.GetService<IProductoRepository>()!);
-    builder.Services.AddScoped<IProductoService, CafeStock.Back.Services.Productos.ProductoService>();
-    builder.Services.AddScoped<CafeStock.Back.Validators.Common.IValidador<CafeStock.Back.Models.Producto>, CafeStock.Back.Validators.Productos.ValidadorProducto>();
-    builder.Services.AddSingleton(provider.GetService<IProveedorRepository>()!);
-    builder.Services.AddScoped<IProveedorService, CafeStock.Back.Services.Proveedores.ProveedorService>();
-    builder.Services.AddScoped<CafeStock.Back.Validators.Common.IValidador<CafeStock.Back.Models.Proveedor>, CafeStock.Back.Validators.Proveedores.ValidadorProveedor>();
-    builder.Services.AddSingleton(provider.GetService<ICompraRepository>()!);
-    builder.Services.AddScoped<ICompraService, CafeStock.Back.Services.Compras.CompraService>();
-    builder.Services.AddScoped<CafeStock.Back.Validators.Common.IValidador<CafeStock.Back.Models.Compra>, CafeStock.Back.Validators.Compras.ValidadorCompra>();
-    builder.Services.AddScoped<IFacturaService, CafeStock.Back.Services.Facturas.FacturaService>();
-    builder.Services.AddSingleton(provider.GetService<IRegistroCafeRepository>()!);
-    builder.Services.AddScoped<IRegistroCafeService, CafeStock.Back.Services.RegistrosCafe.RegistroCafeService>();
-    builder.Services.AddSingleton(provider.GetService<IPresupuestoRepository>()!);
-    builder.Services.AddScoped<IPresupuestoService, CafeStock.Back.Services.Presupuestos.PresupuestoService>();
-    builder.Services.AddScoped<CafeStock.Back.Validators.Common.IValidador<CafeStock.Back.Models.Presupuesto>, CafeStock.Back.Validators.Presupuestos.ValidadorPresupuesto>();
-    builder.Services.AddSingleton(provider.GetService<ISnapshotInventarioRepository>()!);
-    builder.Services.AddScoped<ISnapshotInventarioService, CafeStock.Back.Services.SnapshotsInventario.SnapshotInventarioService>();
+    // Registrar dependencias del Back (repositorios, validadores y servicios) en el contenedor del host
+    builder.Services.AddCafeStockBack(connectionString);
 
     var app = builder.Build();
 
