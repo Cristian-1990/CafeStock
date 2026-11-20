@@ -1,4 +1,10 @@
+using CafeStock.Back.Auth;
 using CafeStock.Back.Infrastructure;
+using CafeStock.Back.Services.Usuarios;
+using CafeStock.Blazor.Endpoints;
+using CafeStock.Blazor.Services;
+using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Identity;
 using CafeStock.Back.Repositories.Compras.Base;
 using CafeStock.Back.Repositories.Presupuestos.Base;
 using CafeStock.Back.Repositories.Productos.Base;
@@ -77,7 +83,32 @@ try
     // Registrar dependencias del Back (repositorios, validadores y servicios) en el contenedor del host
     builder.Services.AddCafeStockBack(connectionString);
 
+    // Autenticación: usuarios y roles con ASP.NET Core Identity (guardados en la misma base de
+    // datos) y sesión por cookie. SignInManager vive aquí y no en el Back porque necesita HttpContext.
+    builder.Services.AddCafeStockIdentity(connectionString).AddSignInManager();
+    builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme)
+        .AddIdentityCookies(cookies => cookies.ApplicationCookie?.Configure(opciones =>
+        {
+            opciones.Cookie.Name = "CafeStock.Sesion";
+            opciones.LoginPath = "/login";
+            opciones.AccessDeniedPath = "/acceso-denegado";
+            // Tablet de la cafetería: la sesión aguanta un turno largo y se renueva con el uso.
+            opciones.ExpireTimeSpan = TimeSpan.FromHours(12);
+            opciones.SlidingExpiration = true;
+        }));
+
+    // Cada política incluye los roles superiores (ver Politicas.RolesPermitidos).
+    builder.Services.AddAuthorizationBuilder()
+        .AddPolicy(Politicas.Trabajador, p => p.RequireRole(Politicas.RolesPermitidos(Politicas.Trabajador)))
+        .AddPolicy(Politicas.Encargado, p => p.RequireRole(Politicas.RolesPermitidos(Politicas.Encargado)))
+        .AddPolicy(Politicas.Admin, p => p.RequireRole(Politicas.RolesPermitidos(Politicas.Admin)));
+    builder.Services.AddCascadingAuthenticationState();
+    builder.Services.AddScoped<AuthenticationStateProvider, RevalidacionSesion>();
+
     var app = builder.Build();
+
+    // Los tres roles tienen que existir antes de que nadie pueda iniciar sesión.
+    await app.Services.GetRequiredService<IUsuarioService>().AsegurarRolesAsync();
 
     // Configure the HTTP request pipeline.
     if (!app.Environment.IsDevelopment())
@@ -88,6 +119,10 @@ try
 
     app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
     app.UseHttpsRedirection();
+    // Orden obligatorio: primero saber quién es (autenticación), luego qué puede hacer
+    // (autorización) y después validar el token antifalsificación de los formularios.
+    app.UseAuthentication();
+    app.UseAuthorization();
     app.UseAntiforgery();
 
     // Complementa a MapStaticAssets: ese middleware solo conoce el manifiesto
@@ -101,6 +136,7 @@ try
         RequestPath = "/images"
     });
     app.MapStaticAssets();
+    app.MapAuthEndpoints();
     app.MapRazorComponents<App>()
         .AddInteractiveServerRenderMode();
 

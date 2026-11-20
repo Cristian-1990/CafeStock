@@ -1,0 +1,48 @@
+@page "/primer-acceso"
+@layout LoginLayout
+@attribute [AllowAnonymous]
+@inject IUsuarioService Usuarios
+@inject NavigationManager Navigation
+
+<PageTitle>Configuración inicial · CafeStock</PageTitle>
+
+<div class="acceso-tarjeta">
+    <img src="LogoCafeteria.png" alt="CafeStock" class="acceso-logo"/>
+    <h1 class="acceso-titulo">Configuración inicial</h1>
+    <p class="acceso-subtitulo">
+        Todavía no hay ningún usuario. Crea la cuenta de <strong>administrador</strong>:
+        desde ella podrás dar de alta a los encargados y trabajadores.
+    </p>
+
+    @if (!string.IsNullOrWhiteSpace(Error))
+    {
+        <div class="acceso-error" role="alert">@Error</div>
+    }
+
+    <form method="post" action="/auth/primer-acceso">
+        <AntiforgeryToken/>
+
+        <label for="usuario">Nombre de usuario</label>
+        <input id="usuario" name="usuario" type="text" autocomplete="username" autocapitalize="none" required autofocus/>
+
+        <label for="password">Contraseña</label>
+        <input id="password" name="password" type="password" autocomplete="new-password" minlength="8" required/>
+        <small>Mínimo 8 caracteres, con letras y al menos un número.</small>
+
+        <label for="confirmar">Repite la contraseña</label>
+        <input id="confirmar" name="confirmar" type="password" autocomplete="new-password" required/>
+
+        <button type="submit">Crear administrador y entrar</button>
+    </form>
+</div>
+
+@code {
+    [SupplyParameterFromQuery] private string? Error { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // La configuración inicial solo existe mientras no haya usuarios.
+        if (await Usuarios.HayUsuariosAsync())
+            Navigation.NavigateTo("/login", forceLoad: true);
+    }
+}

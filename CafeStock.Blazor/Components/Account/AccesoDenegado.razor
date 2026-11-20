@@ -1,0 +1,14 @@
+@page "/acceso-denegado"
+@layout Layout.MainLayout
+@attribute [Authorize]
+
+<PageTitle>Acceso denegado</PageTitle>
+
+@* A esta página llega quien tiene sesión pero no el rol que pide la página (ver AccessDeniedPath en Program.cs). *@
+<MudAlert Severity="Severity.Warning" Class="mt-4">
+    <MudText Typo="Typo.h6">No tienes permiso para ver esa página</MudText>
+    <MudText>
+        Tu rol no incluye esa sección. Si la necesitas, pídeselo a un encargado o administrador.
+    </MudText>
+</MudAlert>
+<MudButton Href="/" Variant="Variant.Filled" Color="Color.Primary" Class="mt-4">Volver al inicio</MudButton>
