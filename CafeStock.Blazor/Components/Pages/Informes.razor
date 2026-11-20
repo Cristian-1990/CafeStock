@@ -2,11 +2,13 @@
 @using System.Globalization
 @using System.Text.Json
 @using ApexCharts
+@using CafeStock.Back.Models.Informes
 @inject CafeStock.Back.Services.Facturas.IFacturaService FacturaService
 @inject IProductoService ProductoService
 @inject IProveedorService ProveedorService
 @inject CafeStock.Back.Services.SnapshotsInventario.ISnapshotInventarioService SnapshotInventarioService
 @inject CafeStock.Back.Services.Presupuestos.IPresupuestoService PresupuestoService
+@inject CafeStock.Back.Services.Informes.IInformeService InformeService
 
 <PageTitle>Informes</PageTitle>
 
@@ -487,10 +489,6 @@ else
 }
 
 @code {
-    private const int UmbralDiasSinCompra = 14;
-
-    private enum RangoFechas { UltimaSemana, UltimoMes, UltimoAno, Todo }
-
     private bool _cargando = true;
     private List<Compra> _compras = [];
     private List<Producto> _productos = [];
@@ -542,7 +540,6 @@ else
     private List<LineaExcedenteStock> _recepcionesConExcedente = [];
 
     // 11. Frecuencia real de compra vs día de reparto esperado
-    private const decimal UmbralPorcentajeCumplimientoReparto = 50m;
     private List<InformeReparto> _frecuenciaRepartoVsEsperado = [];
 
     // 12. Presupuesto vs Real
@@ -673,62 +670,44 @@ else
         _presupuestos = (await PresupuestoService.GetAllAsync()).ToList();
         _snapshotsInventario = (await SnapshotInventarioService.GetAllAsync()).OrderBy(s => s.Fecha).ToList();
 
-        CalcularGastoMesActual();
+        // Los cálculos viven en InformeService (CafeStock.Back, con tests); esta página solo
+        // carga los datos, guarda el estado de los filtros y pinta.
+        var gastoMensual = InformeService.CalcularGastoMesActual(_compras);
+        _gastoMesActual = gastoMensual.GastoMesActual;
+        _variacionPct = gastoMensual.VariacionPorcentual;
+
         // Un único filtrado (rango + proveedor), reutilizado para los dos informes que
         // comparten el filtro (2 y 10) — _compras no cambia entre estas dos líneas.
-        var comprasFiltradasProveedores = FiltrarCompras(
-            _compras, _rangoFiltroProveedores, _fechaDesdeFiltroProveedores, _fechaHastaFiltroProveedores, _proveedorIdFiltroProveedores);
-        _gastoPorProveedor = CalcularGastoPorProveedor(comprasFiltradasProveedores);
-        _productosPorGastoTotal = CalcularProductosPorGastoTotal();
-        _gastoPorMetodoPago = CalcularGastoPorMetodoPago();
-        _proveedoresSinCompraReciente = CalcularProveedoresSinCompraReciente();
-        _ppvPorProducto = CalcularPpvPorProducto();
-        _gastoPorTipoProveedor = CalcularGastoPorTipoProveedor();
+        var comprasFiltradasProveedores = InformeService.FiltrarCompras(
+            _compras, _rangoFiltroProveedores, _fechaDesdeFiltroProveedores, _fechaHastaFiltroProveedores, _proveedorIdFiltroProveedores).ToList();
+        _gastoPorProveedor = InformeService.CalcularGastoPorProveedor(comprasFiltradasProveedores);
+        _productosPorGastoTotal = InformeService.CalcularProductosPorGastoTotal(_compras);
+        _gastoPorMetodoPago = InformeService.CalcularGastoPorMetodoPago(_compras);
+        _proveedoresSinCompraReciente = InformeService.CalcularProveedoresSinCompraReciente(_compras, _proveedores);
+        _ppvPorProducto = InformeService.CalcularPpvPorProducto(_compras, _productos);
+        _gastoPorTipoProveedor = InformeService.CalcularGastoPorTipoProveedor(_compras, _proveedores);
 
         // Gasto por proveedor sin ningún filtro (histórico completo), reutilizado para el % de
         // concentración y para el € que muestra su tooltip (problema 2) — un único cálculo.
         // Independiente de los filtros de fecha/proveedor de "Gasto por proveedor" (informe 2):
         // la concentración siempre es sobre el total histórico.
-        var gastoPorProveedorEuros = CalcularGastoPorProveedor(_compras);
-        _concentracionGastoPorProveedor = CalcularConcentracionGastoPorProveedor(gastoPorProveedorEuros);
+        var gastoPorProveedorEuros = InformeService.CalcularGastoPorProveedor(_compras);
+        _concentracionGastoPorProveedor = InformeService.CalcularConcentracionGastoPorProveedor(gastoPorProveedorEuros);
         _opcionesBarrasConcentracion.Tooltip = new Tooltip
         {
             Y = new TooltipY { Formatter = ConstruirFormatterConcentracion(gastoPorProveedorEuros) }
         };
 
-        _ticketMedioPorProveedor = CalcularTicketMedioPorProveedor(comprasFiltradasProveedores);
-        _recepcionesConExcedente = CalcularRecepcionesConExcedente(comprasFiltradasProveedores);
-        _frecuenciaRepartoVsEsperado = CalcularFrecuenciaRepartoVsEsperado();
+        _ticketMedioPorProveedor = InformeService.CalcularTicketMedioPorProveedor(comprasFiltradasProveedores);
+        _recepcionesConExcedente = InformeService.CalcularRecepcionesConExcedente(comprasFiltradasProveedores);
+        _frecuenciaRepartoVsEsperado = InformeService.CalcularFrecuenciaRepartoVsEsperado(_compras, _proveedores);
         RecalcularPresupuestoVsReal();
         _evolucionValorInventario = _snapshotsInventario.Select(s => new PuntoDato(s.Fecha.ToString("dd/MM/yy"), s.ValorTotal)).ToList();
 
         _cargando = false;
     }
 
-    // ---- 1. Gasto del mes actual ----
-
-    private void CalcularGastoMesActual()
-    {
-        var ahora = DateTime.Now;
-        var inicioMesActual = new DateTime(ahora.Year, ahora.Month, 1);
-        var inicioMesAnterior = inicioMesActual.AddMonths(-1);
-
-        _gastoMesActual = _compras
-            .Where(c => c.Fecha >= inicioMesActual && c.Fecha < inicioMesActual.AddMonths(1))
-            .SelectMany(c => c.Lineas)
-            .Sum(l => l.Cantidad * l.PrecioUnitario);
-
-        var gastoMesAnterior = _compras
-            .Where(c => c.Fecha >= inicioMesAnterior && c.Fecha < inicioMesActual)
-            .SelectMany(c => c.Lineas)
-            .Sum(l => l.Cantidad * l.PrecioUnitario);
-
-        _variacionPct = gastoMesAnterior > 0
-            ? (_gastoMesActual - gastoMesAnterior) / gastoMesAnterior * 100
-            : null;
-    }
-
-    // ---- 2. Gasto por proveedor ----
+    // ---- 2. Gasto por proveedor / 10. Ticket medio (filtro compartido) ----
 
     /// <summary>
     /// Cambia el rango a un chip preestablecido — descarta el rango libre que hubiera activo,
@@ -747,7 +726,7 @@ else
     private async Task OnFiltroLibreProveedoresAsync() => await RecalcularInformesProveedorAsync();
 
     private bool EsRangoActivoFiltroProveedores(RangoFechas rango) =>
-        _rangoFiltroProveedores == rango && !HayRangoLibre(_fechaDesdeFiltroProveedores, _fechaHastaFiltroProveedores);
+        _rangoFiltroProveedores == rango && !InformeService.HayRangoLibre(_fechaDesdeFiltroProveedores, _fechaHastaFiltroProveedores);
 
     /// <summary>
     /// Recalcula "Gasto por proveedor" (2) y "Ticket medio por proveedor" (10) juntos a partir
@@ -756,12 +735,12 @@ else
     /// </summary>
     private async Task RecalcularInformesProveedorAsync()
     {
-        var comprasFiltradas = FiltrarCompras(
-            _compras, _rangoFiltroProveedores, _fechaDesdeFiltroProveedores, _fechaHastaFiltroProveedores, _proveedorIdFiltroProveedores);
+        var comprasFiltradas = InformeService.FiltrarCompras(
+            _compras, _rangoFiltroProveedores, _fechaDesdeFiltroProveedores, _fechaHastaFiltroProveedores, _proveedorIdFiltroProveedores).ToList();
 
-        _gastoPorProveedor = CalcularGastoPorProveedor(comprasFiltradas);
-        _ticketMedioPorProveedor = CalcularTicketMedioPorProveedor(comprasFiltradas);
-        _recepcionesConExcedente = CalcularRecepcionesConExcedente(comprasFiltradas);
+        _gastoPorProveedor = InformeService.CalcularGastoPorProveedor(comprasFiltradas);
+        _ticketMedioPorProveedor = InformeService.CalcularTicketMedioPorProveedor(comprasFiltradas);
+        _recepcionesConExcedente = InformeService.CalcularRecepcionesConExcedente(comprasFiltradas);
 
         // StateHasChanged() ANTES de los dos UpdateSeriesAsync — no es cosmético, es necesario.
         // Sin esto, el segundo UpdateSeriesAsync (Ticket medio) pedía sus datos actuales antes
@@ -781,81 +760,6 @@ else
             await _chartTicketMedioProveedor.UpdateSeriesAsync();
     }
 
-    private List<PuntoDato> CalcularGastoPorProveedor(IEnumerable<Compra> compras) =>
-        AgruparGastoPorProveedorConId(compras)
-            .Select(g => new PuntoDato(g.Nombre, g.Gasto))
-            .ToList();
-
-    /// <summary>
-    /// Núcleo de "Gasto por proveedor" (Σ Cantidad×PrecioUnitario, agrupado por proveedor),
-    /// conservando el ProveedorId además del nombre ya resuelto — el informe 2 y "Presupuesto
-    /// vs Real" (12) reutilizan este mismo cálculo. PuntoDato no basta para el 12: necesita el
-    /// Id para cruzar con Presupuesto.ProveedorId, no solo el nombre.
-    /// </summary>
-    private static List<(int? ProveedorId, string Nombre, decimal Gasto)> AgruparGastoPorProveedorConId(IEnumerable<Compra> compras) =>
-        AgruparComprasPorProveedor(compras)
-            .Select(g => (
-                ProveedorId: g.Key,
-                Nombre: ResolverNombreProveedorDeGrupo(g),
-                Gasto: g.SelectMany(c => c.Lineas).Sum(l => l.Cantidad * l.PrecioUnitario)))
-            .OrderByDescending(t => t.Gasto)
-            .ToList();
-
-    /// <summary>
-    /// Agrupar compras por proveedor (Id) es el primer paso común a "Gasto por proveedor" (2,
-    /// vía AgruparGastoPorProveedorConId) y "Ticket medio por proveedor" (10,
-    /// CalcularTicketMedioPorProveedor) — solo cambia si sobre cada grupo se hace Sum o
-    /// Average. Antes de este cambio el informe 10 agrupaba por el string ProveedorNombre en
-    /// vez de por Id, con la misma resolución "Sin proveedor asignado" repetida a mano; ahora
-    /// comparten Id + resolución de nombre.
-    /// </summary>
-    private static IEnumerable<IGrouping<int?, Compra>> AgruparComprasPorProveedor(IEnumerable<Compra> compras) =>
-        compras.GroupBy(c => c.ProveedorId);
-
-    private static string ResolverNombreProveedorDeGrupo(IGrouping<int?, Compra> grupo) =>
-        grupo.First().ProveedorNombre ?? "Sin proveedor asignado";
-
-    /// <summary>
-    /// Filtro combinado de rango de fechas + proveedor concreto, compartido por "Gasto por
-    /// proveedor" (2) y "Ticket medio por proveedor" (10) — los dos únicos informes con
-    /// selector de rango libre y de proveedor.
-    /// </summary>
-    private static IEnumerable<Compra> FiltrarCompras(
-        IEnumerable<Compra> compras, RangoFechas rango, DateTime? fechaDesde, DateTime? fechaHasta, int? proveedorId)
-    {
-        var resultado = FiltrarPorRango(compras, rango, fechaDesde, fechaHasta);
-        return proveedorId is int id ? resultado.Where(c => c.ProveedorId == id) : resultado;
-    }
-
-    /// <summary>
-    /// El rango libre (fechaDesde + fechaHasta, ambas puestas) tiene prioridad sobre el chip
-    /// preestablecido — mismo criterio en HayRangoLibre/EsRangoActivo*, que decide qué chip se
-    /// pinta como seleccionado. Con una sola fecha puesta (el usuario todavía eligiendo) se
-    /// sigue aplicando el chip, para no filtrar con un rango a medias.
-    /// </summary>
-    private static IEnumerable<Compra> FiltrarPorRango(IEnumerable<Compra> compras, RangoFechas rango, DateTime? fechaDesde, DateTime? fechaHasta)
-    {
-        if (HayRangoLibre(fechaDesde, fechaHasta))
-            return compras.Where(c => c.Fecha.Date >= fechaDesde!.Value.Date && c.Fecha.Date <= fechaHasta!.Value.Date);
-
-        var hoy = DateTime.Now.Date;
-        return rango switch
-        {
-            // Calendario real (nunca ventana móvil tipo "últimos N días/meses" — eso es
-            // justo lo que tenía "Últimos 3 meses" antes y por lo que se eliminó): cada
-            // chip arranca en una fecha de calendario fija y llega hasta hoy.
-            RangoFechas.UltimaSemana => compras.Where(c => c.Fecha.Date >= LunesDeLaSemana(hoy) && c.Fecha.Date <= hoy),
-            RangoFechas.UltimoMes => compras.Where(c => c.Fecha.Date >= new DateTime(hoy.Year, hoy.Month, 1) && c.Fecha.Date <= hoy),
-            RangoFechas.UltimoAno => compras.Where(c => c.Fecha.Date >= new DateTime(hoy.Year, 1, 1) && c.Fecha.Date <= hoy),
-            _ => compras
-        };
-    }
-
-    /// <summary>Lunes de la semana ISO a la que pertenece <paramref name="fecha"/> (DayOfWeek.Sunday=0 en .NET, por eso el +6 % 7 en vez de restar DayOfWeek directamente).</summary>
-    private static DateTime LunesDeLaSemana(DateTime fecha) => fecha.Date.AddDays(-(((int)fecha.DayOfWeek + 6) % 7));
-
-    private static bool HayRangoLibre(DateTime? fechaDesde, DateTime? fechaHasta) => fechaDesde is not null && fechaHasta is not null;
-
     // ---- 3. Evolución de precio por producto ----
 
     private Task<IEnumerable<Producto>> BuscarProductos(string valor, CancellationToken token)
@@ -868,139 +772,22 @@ else
 
     private async Task OnCambioProductoSeleccionadoAsync()
     {
-        _evolucionPrecioProducto = CalcularEvolucionPrecio(_productoSeleccionado?.Id);
+        _evolucionPrecioProducto = InformeService.CalcularEvolucionPrecio(_compras, _productoSeleccionado?.Id);
         // Misma guarda defensiva que en el punto 2: si no hay suficiente historial el gráfico
         // no se monta (rama else de arriba), así que no actualizamos una instancia inexistente.
         if (_evolucionPrecioProducto.Count >= 2 && _chartEvolucionPrecio is not null)
             await _chartEvolucionPrecio.UpdateSeriesAsync();
     }
 
-    private List<PuntoDato> CalcularEvolucionPrecio(int? productoId)
-    {
-        if (productoId is null) return [];
-        return _compras
-            .SelectMany(c => c.Lineas.Where(l => l.ProductoId == productoId).Select(l => new { c.Fecha, l.PrecioUnitario }))
-            .OrderBy(x => x.Fecha)
-            .Select(x => new PuntoDato(x.Fecha.ToString("dd/MM/yy"), x.PrecioUnitario))
-            .ToList();
-    }
-
-    // ---- 4. Productos con más peso en el gasto ----
-
-    private List<PuntoDato> CalcularProductosPorGastoTotal() =>
-        _compras
-            .SelectMany(c => c.Lineas)
-            .GroupBy(l => l.ProductoNombre ?? $"Producto #{l.ProductoId}")
-            .Select(g => new PuntoDato(g.Key, g.Sum(l => l.Cantidad * l.PrecioUnitario)))
-            .OrderByDescending(p => p.Valor)
-            .Take(10)
-            .ToList();
-
-    // ---- 5. Gasto por método de pago ----
-
-    private List<PuntoDato> CalcularGastoPorMetodoPago() =>
-        _compras
-            .GroupBy(c => string.IsNullOrWhiteSpace(c.MetodoPago) ? "Sin especificar" : c.MetodoPago)
-            .Select(g => new PuntoDato(g.Key, g.SelectMany(c => c.Lineas).Sum(l => l.Cantidad * l.PrecioUnitario)))
-            .OrderByDescending(p => p.Valor)
-            .ToList();
-
-    // ---- 6. Proveedores sin compra reciente ----
-
-    private List<ProveedorAlerta> CalcularProveedoresSinCompraReciente()
-    {
-        var ultimaCompraPorProveedor = _compras
-            .Where(c => c.ProveedorId is not null)
-            .GroupBy(c => c.ProveedorId!.Value)
-            .ToDictionary(g => g.Key, g => g.Max(c => c.Fecha));
-
-        return _proveedores
-            .Where(p => !string.IsNullOrWhiteSpace(p.DiaReparto))
-            .Select(p => ultimaCompraPorProveedor.TryGetValue(p.Id, out var ultimaFecha)
-                ? new ProveedorAlerta(p.Nombre, (DateTime.Now - ultimaFecha).Days)
-                : new ProveedorAlerta(p.Nombre, null))
-            .Where(a => a.DiasDesdeUltimaCompra is null or > UmbralDiasSinCompra)
-            .OrderByDescending(a => a.DiasDesdeUltimaCompra ?? int.MaxValue)
-            .ToList();
-    }
-
-    // ---- 7. PPV (Purchase Price Variance) por producto ----
-
-    /// <summary>
-    /// Para cada producto con al menos una LineaCompra histórica y precio de referencia
-    /// fijado (Producto.PrecioUnitario > 0 — sin referencia no hay desviación que calcular):
-    /// PPV = Σ (PrecioUnitario real de cada línea − PrecioUnitario de referencia) × Cantidad.
-    /// PPV > 0 significa que se pagó de más respecto al precio de referencia; PPV &lt; 0, de menos.
-    /// El % de desviación compara el precio real medio ponderado por cantidad (no la media
-    /// simple, que pesaría igual una línea de 1 unidad que una de 100) contra la referencia.
-    /// </summary>
-    private List<PuntoDatoPpv> CalcularPpvPorProducto()
-    {
-        var productosPorId = _productos.ToDictionary(p => p.Id);
-
-        return _compras
-            .SelectMany(c => c.Lineas)
-            .GroupBy(l => l.ProductoId)
-            .Where(g => productosPorId.TryGetValue(g.Key, out var producto) && producto.PrecioUnitario > 0)
-            .Select(g =>
-            {
-                var producto = productosPorId[g.Key];
-                var ppv = g.Sum(l => (l.PrecioUnitario - producto.PrecioUnitario) * l.Cantidad);
-                var cantidadTotal = g.Sum(l => l.Cantidad);
-                var precioMedioPonderado = cantidadTotal > 0 ? g.Sum(l => l.PrecioUnitario * l.Cantidad) / cantidadTotal : 0;
-                var porcentajeDesviacion = (precioMedioPonderado - producto.PrecioUnitario) / producto.PrecioUnitario * 100;
-                return new PuntoDatoPpv(producto.Nombre, ppv, porcentajeDesviacion);
-            })
-            .OrderByDescending(p => Math.Abs(p.Valor))
-            .ToList();
-    }
-
-    // ---- 8. Gasto en supermercado genérico vs proveedores habituales ----
-
-    /// <summary>
-    /// Compras sin proveedor asignado (ProveedorId null) quedan fuera: no se pueden
-    /// clasificar como genérico/habitual sin proveedor.
-    /// </summary>
-    private List<PuntoDato> CalcularGastoPorTipoProveedor()
-    {
-        var proveedoresPorId = _proveedores.ToDictionary(p => p.Id);
-
-        return _compras
-            .Where(c => c.ProveedorId is not null && proveedoresPorId.ContainsKey(c.ProveedorId.Value))
-            .GroupBy(c => proveedoresPorId[c.ProveedorId!.Value].EsSupermercadoGenerico)
-            .Select(g => new PuntoDato(
-                g.Key ? "Supermercado genérico" : "Proveedores habituales",
-                g.SelectMany(c => c.Lineas).Sum(l => l.Cantidad * l.PrecioUnitario)))
-            .OrderByDescending(p => p.Valor)
-            .ToList();
-    }
-
-    // ---- 9. Concentración de gasto por proveedor ----
-
-    /// <summary>
-    /// Reutiliza CalcularGastoPorProveedor (informe 2, con RangoFechas.Todo — la concentración
-    /// siempre es sobre el histórico completo, no está sujeta al filtro de fecha del informe 2)
-    /// en vez de repetir el mismo GroupBy+Sum. El € por proveedor que devuelve esa llamada es
-    /// justo lo que necesita también el tooltip combinado %+€ (problema 2, ver
-    /// ConstruirFormatterConcentracion) — un único cálculo, dos usos.
-    /// </summary>
-    private List<PuntoDato> CalcularConcentracionGastoPorProveedor(List<PuntoDato> gastoPorProveedorEuros)
-    {
-        var gastoTotal = gastoPorProveedorEuros.Sum(g => g.Valor);
-        if (gastoTotal <= 0) return [];
-
-        return gastoPorProveedorEuros
-            .Select(g => new PuntoDato(g.Etiqueta, g.Valor / gastoTotal * 100))
-            .OrderByDescending(p => p.Valor)
-            .ToList();
-    }
+    // ---- 9. Concentración de gasto: tooltip ----
 
     /// <summary>
     /// Tooltip específico de esta gráfica (problema 2): además del %, muestra el € real entre
     /// paréntesis, para no dejar ambigüedad sobre si un 63% son 100€ o 10.000€. Necesita un
     /// formatter distinto de FormatterPorcentaje porque tiene que mirar el € correspondiente a
     /// cada punto — se le pasa como un objeto JS embebido (proveedor → €), construido aquí a
-    /// partir de gastoPorProveedorEuros (la misma lista reutilizada arriba).
+    /// partir de gastoPorProveedorEuros. Es presentación (JavaScript de ApexCharts), por eso se
+    /// queda en la página y no en InformeService.
     /// </summary>
     private static string ConstruirFormatterConcentracion(List<PuntoDato> gastoPorProveedorEuros)
     {
@@ -1019,87 +806,6 @@ else
             """;
     }
 
-    // ---- 10. Ticket medio de compra por proveedor ----
-    // Sin controles propios: comparte el filtro (rango + proveedor) y el recálculo con el
-    // informe 2 — ver RecalcularInformesProveedorAsync, más abajo en la sección 2.
-
-    private static List<PuntoDato> CalcularTicketMedioPorProveedor(IEnumerable<Compra> compras) =>
-        AgruparComprasPorProveedor(compras)
-            .Select(g => new PuntoDato(ResolverNombreProveedorDeGrupo(g), g.Average(c => c.Lineas.Sum(l => l.Cantidad * l.PrecioUnitario))))
-            .OrderByDescending(p => p.Valor)
-            .ToList();
-
-    // ---- 10b. Recepciones que superaron el stock máximo ----
-    // Sin controles propios: comparte el filtro (rango + proveedor) con los informes 2/10.
-
-    /// <summary>
-    /// StockResultanteTrasRecepcion/StockMaximoEnMomento son nullable (ver LineaCompra): las
-    /// líneas creadas antes de este campo no tienen este dato. Se excluyen sin más — is not
-    /// null en los dos antes de restar, nunca .Value a ciegas — y solo cuenta como excedente
-    /// real cuando la resta da estrictamente positivo (== 0 significa que llegó justo al
-    /// máximo, no que lo superó).
-    /// </summary>
-    private static List<LineaExcedenteStock> CalcularRecepcionesConExcedente(IEnumerable<Compra> compras) =>
-        compras
-            .SelectMany(c => c.Lineas.Select(l => (Compra: c, Linea: l)))
-            .Where(x => x.Linea.StockResultanteTrasRecepcion is not null
-                     && x.Linea.StockMaximoEnMomento is not null
-                     && x.Linea.StockResultanteTrasRecepcion.Value - x.Linea.StockMaximoEnMomento.Value > 0)
-            .Select(x => new LineaExcedenteStock(
-                x.Compra.Fecha,
-                x.Linea.ProductoNombre ?? $"Producto #{x.Linea.ProductoId}",
-                x.Compra.ProveedorNombre ?? "Sin proveedor asignado",
-                x.Linea.Cantidad,
-                x.Linea.StockResultanteTrasRecepcion!.Value - x.Linea.StockMaximoEnMomento!.Value))
-            .OrderByDescending(l => l.Fecha)
-            .ToList();
-
-    // ---- 11. Frecuencia real de compra vs día de reparto esperado ----
-
-    // Proveedor.DiaReparto es texto libre ("Miércoles 9:00", "Martes, Miércoles y Jueves"),
-    // no un día limpio — ver valores reales comprobados en la base de datos de desarrollo.
-    // Por eso la comparación es "¿el nombre del día real está contenido en el texto?" en vez
-    // de una igualdad estricta contra un único DayOfWeek.
-    private static readonly string[] NombresDiasSemana =
-        ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
-
-    /// <summary>
-    /// StringComparison.OrdinalIgnoreCase ignora mayúsculas/minúsculas pero NO tildes: "MIERCOLES"
-    /// tecleado a mano (sin tilde) no haría match contra "Miércoles". CompareInfo con
-    /// IgnoreNonSpace sí ignora diacríticos además de mayúsculas, así que "MIERCOLES",
-    /// "miercoles" y "MIÉRCOLES" coinciden igual contra el texto libre de DiaReparto.
-    /// </summary>
-    private static bool DiaRepartoContiene(string diaReparto, string nombreDia) =>
-        CultureInfo.InvariantCulture.CompareInfo.IndexOf(
-            diaReparto, nombreDia, CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace) >= 0;
-
-    /// <summary>
-    /// Por cada proveedor con DiaReparto definido: de sus compras históricas, cuántas cayeron
-    /// en un día que aparece mencionado en DiaReparto. Se marca Desviacion cuando hay compras
-    /// registradas pero menos de la mitad (UmbralPorcentajeCumplimientoReparto) cayeron en el
-    /// día esperado — mismo nivel de sencillez que el umbral fijo de "Proveedores sin compra
-    /// reciente" (informe 6).
-    /// </summary>
-    private List<InformeReparto> CalcularFrecuenciaRepartoVsEsperado()
-    {
-        return _proveedores
-            .Where(p => !string.IsNullOrWhiteSpace(p.DiaReparto))
-            .Select(p =>
-            {
-                var comprasProveedor = _compras.Where(c => c.ProveedorId == p.Id).ToList();
-                var total = comprasProveedor.Count;
-                var enDiaEsperado = comprasProveedor.Count(c =>
-                    DiaRepartoContiene(p.DiaReparto, NombresDiasSemana[(int)c.Fecha.DayOfWeek]));
-                var porcentaje = total > 0 ? (decimal)enDiaEsperado / total * 100 : 0;
-                var desviacion = total > 0 && porcentaje < UmbralPorcentajeCumplimientoReparto;
-
-                return new InformeReparto(p.Nombre, p.DiaReparto, total, enDiaEsperado, porcentaje, desviacion);
-            })
-            .OrderByDescending(r => r.Desviacion)
-            .ThenBy(r => r.Proveedor)
-            .ToList();
-    }
-
     // ---- 12. Presupuesto vs Real ----
 
     private async Task RecalcularPresupuestoVsRealAsync()
@@ -1112,44 +818,13 @@ else
             await _chartPresupuestoVsReal.UpdateSeriesAsync();
     }
 
-    /// <summary>
-    /// Todos los proveedores con al menos una Compra en el Mes/Año elegido (reutilizando
-    /// AgruparGastoPorProveedorConId, el mismo cálculo del informe 2 — no se repite el
-    /// GroupBy+Sum). Los que no tengan Presupuesto para ese Mes/Año no se excluyen: se marcan
-    /// SinPresupuesto para que la tabla los muestre igualmente, tal como se pidió.
-    /// </summary>
     private void RecalcularPresupuestoVsReal()
     {
-        var comprasDelMes = _compras.Where(c => c.Fecha.Year == _anioPresupuestoVsReal && c.Fecha.Month == _mesPresupuestoVsReal);
-        var gastoReal = AgruparGastoPorProveedorConId(comprasDelMes);
+        var resultado = InformeService.CalcularPresupuestoVsReal(
+            _compras, _presupuestos, _mesPresupuestoVsReal, _anioPresupuestoVsReal);
 
-        _presupuestoVsReal = gastoReal
-            .Select(g =>
-            {
-                var presupuesto = g.ProveedorId is int proveedorId
-                    ? _presupuestos.FirstOrDefault(p => p.ProveedorId == proveedorId && p.Mes == _mesPresupuestoVsReal && p.Anio == _anioPresupuestoVsReal)
-                    : null;
-                var porcentajeDesviacion = presupuesto is not null && presupuesto.ImporteAsignado > 0
-                    ? (g.Gasto - presupuesto.ImporteAsignado) / presupuesto.ImporteAsignado * 100
-                    : (decimal?)null;
-
-                return new PresupuestoVsRealFila(
-                    g.Nombre, presupuesto?.ImporteAsignado, g.Gasto, porcentajeDesviacion, presupuesto is null);
-            })
-            .OrderByDescending(f => f.Real)
-            .ToList();
-
-        // La gráfica solo tiene sentido para quien tiene los dos valores que comparar; los
-        // "Sin presupuesto" quedan solo en la tabla (nunca excluidos del informe entero).
-        var conPresupuesto = _presupuestoVsReal.Where(f => !f.SinPresupuesto).ToList();
-        _presupuestoVsRealChartPresupuesto = conPresupuesto.Select(f => new PuntoDato(f.Proveedor, f.Presupuesto!.Value)).ToList();
-        _presupuestoVsRealChartReal = conPresupuesto.Select(f => new PuntoDato(f.Proveedor, f.Real)).ToList();
+        _presupuestoVsReal = resultado.Filas;
+        _presupuestoVsRealChartPresupuesto = resultado.SeriePresupuesto;
+        _presupuestoVsRealChartReal = resultado.SerieReal;
     }
-
-    private record PuntoDato(string Etiqueta, decimal Valor);
-    private record ProveedorAlerta(string Nombre, int? DiasDesdeUltimaCompra);
-    private record PuntoDatoPpv(string Etiqueta, decimal Valor, decimal PorcentajeDesviacion);
-    private record InformeReparto(string Proveedor, string DiaRepartoEsperado, int TotalCompras, int ComprasEnDiaEsperado, decimal PorcentajeCumplimiento, bool Desviacion);
-    private record PresupuestoVsRealFila(string Proveedor, decimal? Presupuesto, decimal Real, decimal? PorcentajeDesviacion, bool SinPresupuesto);
-    private record LineaExcedenteStock(DateTime Fecha, string Producto, string Proveedor, int Cantidad, decimal Excedente);
 }
