@@ -26,7 +26,11 @@ scripts/backup-cafestock.sh [ruta_db] [carpeta_destino] [dias_a_conservar]
 
 Por defecto copia `~/.local/share/cafestock.db` a `~/cafestock-backups/` y conserva 30 días. Genera ficheros `cafestock-AAAAMMDD-HHMMSS.db.gz`.
 
-**Instala el cliente de SQLite** en la Pi: `sudo apt install sqlite3`. Con él la copia es consistente aunque alguien esté guardando justo en ese momento y se comprueba su integridad. Sin él, el script usa un `cp` simple y lo avisa en el log.
+**Necesita el cliente de SQLite** en la Pi: `sudo apt install sqlite3`. Sin él el script se niega a copiar y termina con error, a propósito.
+
+### Por qué no vale un simple `cp`
+
+La base de datos funciona en **modo WAL** (comprobado en la base de desarrollo de un PC con Windows; en la Pi compruébalo con `sqlite3 ~/.local/share/cafestock.db "PRAGMA journal_mode;"`, debe responder `wal`): junto a `cafestock.db` aparecen `cafestock.db-wal` y `cafestock.db-shm`, y los últimos cambios pueden estar solo en `-wal`. Copiar únicamente `cafestock.db` da una copia **anticuada o incoherente, sin ningún aviso**. `sqlite3 .backup` lee el conjunto completo y produce una copia consistente aunque alguien esté guardando justo en ese momento. Por la misma razón, **si copias la base a mano (por ejemplo al portátil), copia también los ficheros `-wal` y `-shm`, o mejor aún, usa una copia de este script**.
 
 ## Programarlo (cron)
 
@@ -73,8 +77,9 @@ rm /tmp/prueba.db
 
 1. Para la app: `sudo systemctl stop cafestock.service`.
 2. Guarda el fichero actual por si acaso: `mv ~/.local/share/cafestock.db ~/.local/share/cafestock.db.antes`.
-3. Descomprime la copia elegida en su sitio: `gunzip -c ~/cafestock-backups/cafestock-AAAAMMDD-HHMMSS.db.gz > ~/.local/share/cafestock.db`.
-4. Arranca: `sudo systemctl start cafestock.service`. Al arrancar, la app aplica sola las migraciones pendientes si la copia es de una versión anterior.
+3. **Borra los restos del modo WAL del fichero antiguo**: `rm -f ~/.local/share/cafestock.db-wal ~/.local/share/cafestock.db-shm`. Si se quedan, SQLite los aplica sobre la copia restaurada y mezcla datos de dos épocas distintas (es un problema real, no teórico).
+4. Descomprime la copia elegida en su sitio: `gunzip -c ~/cafestock-backups/cafestock-AAAAMMDD-HHMMSS.db.gz > ~/.local/share/cafestock.db`.
+5. Arranca: `sudo systemctl start cafestock.service`. Al arrancar, la app aplica sola las migraciones pendientes si la copia es de una versión anterior.
 
 ## Qué NO cubre
 

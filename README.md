@@ -84,7 +84,7 @@ Detalles de seguridad:
 
 ## Base de datos y migraciones
 
-SQLite, un único fichero. El esquema lo gestiona **EF Core Migrations**; `DatabaseInitializer` lo aplica al arrancar la app, antes de aceptar peticiones. Distingue tres casos:
+SQLite, un único fichero (en modo WAL: junto al `.db` aparecen `-wal` y `-shm`, ver [docs/BACKUP.md](docs/BACKUP.md)). El esquema lo gestiona **EF Core Migrations**; `DatabaseInitializer` lo aplica al arrancar la app, antes de aceptar peticiones. Distingue tres casos:
 
 1. **Base nueva:** aplica todas las migraciones.
 2. **Base antigua** (creada antes de existir las migraciones, sin tabla `__EFMigrationsHistory`): la actualiza por última vez con el código heredado (`AppDbContext.EsquemaHeredado.cs`) y marca `InitialCreate` como ya aplicada.
