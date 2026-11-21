@@ -34,6 +34,13 @@ public class ProveedorService : IProveedorService
         if (validacion.IsFailure)
             return validacion;
 
+        // Color interno: si no se ha elegido uno, se asigna el primero libre de la paleta.
+        if (!PaletaProveedores.EsHexValido(proveedor.Color))
+        {
+            var existentes = await _repository.GetAllAsync();
+            proveedor = proveedor with { Color = PaletaProveedores.Siguiente(existentes.Select(p => p.Color)) };
+        }
+
         var resultado = await _repository.CreateAsync(proveedor);
         if (resultado.IsSuccess)
             Log.Information("Proveedor creado: Id={Id}, Nombre={Nombre}", resultado.Value.Id, resultado.Value.Nombre);

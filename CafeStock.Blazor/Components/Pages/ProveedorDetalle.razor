@@ -49,8 +49,9 @@ else
                 <MudIcon Icon="@Icons.Material.Filled.LocalShipping" Style="font-size:2.5rem; color:#6D4C41;"/>
             </div>
         }
-        <div style="background-color:rgba(109,76,65,0.10); border-radius:12px; padding:8px 16px; display:inline-block;">
-            <MudText Typo="Typo.h4" Style="color:#3E2723; margin:0;">@_proveedor.Nombre</MudText>
+        @* El título va sobre el color interno del proveedor. *@
+        <div style="@PaletaProveedores.VariablesCss(_proveedor); background-color:var(--proveedor-color); border-radius:12px; padding:8px 20px; display:inline-block;">
+            <MudText Typo="Typo.h4" Style="color:var(--proveedor-texto); margin:0;">@_proveedor.Nombre</MudText>
         </div>
     </div>
 
@@ -286,9 +287,13 @@ else
     // acabe creando sin querer un presupuesto nuevo en vez de actualizar el que se quería.
     private int? _editandoPresupuestoId;
 
+    // Por defecto A–Z (ver OrdenAlfabetico); las cabeceras de la tabla permiten reordenar por stock o precio.
     private IEnumerable<Producto> _productosFiltrados =>
-        _productos.Where(p => string.IsNullOrWhiteSpace(_busquedaProductos) ||
-                               p.Nombre.Contains(_busquedaProductos, StringComparison.OrdinalIgnoreCase));
+        _productos
+            .Where(p => string.IsNullOrWhiteSpace(_busquedaProductos) ||
+                        p.Nombre.Contains(_busquedaProductos, StringComparison.OrdinalIgnoreCase))
+            .OrdenarAlfabeticamente(p => p.Nombre)
+            .ToList();
 
     // División puramente visual de la tabla de productos por tipo de unidad de
     // medida (ver CafeStock.Blazor.Services.UnidadMedidaExtensions). No tiene
@@ -315,11 +320,21 @@ else
 
     private RenderFragment<IEnumerable<Producto>> TablaProductos => productos =>
         @<MudTable Items="productos" Hover="true" Striped="true" Elevation="2">
+            @* Cabeceras pulsables: un toque ordena la tabla por esa columna (otro toque, al revés).
+               Nombre, stock actual, lo que falta (Necesario) y precio. *@
             <HeaderContent>
-                <MudTh Style="background-color:var(--mud-palette-primary); color:var(--mud-palette-primary-text);">Nombre</MudTh>
-                <MudTh Style="background-color:var(--mud-palette-primary); color:var(--mud-palette-primary-text);">Actual</MudTh>
-                <MudTh Style="background-color:var(--mud-palette-primary); color:var(--mud-palette-primary-text);">Necesario</MudTh>
-                <MudTh Style="background-color:var(--mud-palette-primary); color:var(--mud-palette-primary-text);">Precio</MudTh>
+                <MudTh Style="background-color:var(--mud-palette-primary); color:var(--mud-palette-primary-text);">
+                    <MudTableSortLabel SortBy="@(new Func<Producto, object>(p => OrdenAlfabetico.Clave(p.Nombre)))" Style="color:inherit;">Nombre</MudTableSortLabel>
+                </MudTh>
+                <MudTh Style="background-color:var(--mud-palette-primary); color:var(--mud-palette-primary-text);">
+                    <MudTableSortLabel SortBy="@(new Func<Producto, object>(p => p.StockActual))" Style="color:inherit;">Actual</MudTableSortLabel>
+                </MudTh>
+                <MudTh Style="background-color:var(--mud-palette-primary); color:var(--mud-palette-primary-text);">
+                    <MudTableSortLabel SortBy="@(new Func<Producto, object>(p => p.CantidadAComprar))" Style="color:inherit;">Necesario</MudTableSortLabel>
+                </MudTh>
+                <MudTh Style="background-color:var(--mud-palette-primary); color:var(--mud-palette-primary-text);">
+                    <MudTableSortLabel SortBy="@(new Func<Producto, object>(p => p.PrecioUnitario))" Style="color:inherit;">Precio</MudTableSortLabel>
+                </MudTh>
             </HeaderContent>
             <RowTemplate>
                 <MudTd DataLabel="Nombre">@context.Nombre</MudTd>

@@ -35,6 +35,17 @@
                   Variant="Variant.Outlined"
                   Class="mb-4"/>
 
+    @* Color interno: solo identifica al proveedor en la app (etiquetas, accesos directos y avisos).
+       Si es nuevo se asigna uno automáticamente al guardar. *@
+    <div class="d-flex align-center mb-4" style="gap:12px;">
+        <input type="color" value="@(_color)" @onchange="@(e => _color = e.Value?.ToString() ?? _color)"
+               aria-label="Color interno del proveedor"
+               style="width:48px; height:48px; padding:2px; border:1px solid #C9B29A; border-radius:10px; background:#fff; cursor:pointer;"/>
+        <MudText Typo="Typo.body2" Style="color:#6D4C41;">
+            Color interno del proveedor@(_esNuevo ? " (propuesto automáticamente; puedes cambiarlo)" : string.Empty)
+        </MudText>
+    </div>
+
     <MudText Typo="Typo.subtitle2" Class="mb-2 mt-2" Style="color:#6D4C41; text-transform:uppercase; letter-spacing:0.5px; font-weight:600;">
         Contacto
     </MudText>
@@ -125,11 +136,21 @@
     private bool _esSupermercadoGenerico;
     private bool _agruparPorTipoUnidad;
     private bool _precioUnitarioAltaPrecision;
+
+    // En un proveedor nuevo arranca con el primer color libre de la paleta (editable); en edición, con
+    // el que ya tiene. Siempre se manda relleno: el servicio solo asigna uno si llegara vacío.
+    private string _color = string.Empty;
     private string? _error;
     private bool _esNuevo => Id is null;
 
     protected override async Task OnInitializedAsync()
     {
+        if (_esNuevo)
+        {
+            var existentes = await ProveedorService.GetAllAsync();
+            _color = PaletaProveedores.Siguiente(existentes.Select(p => p.Color));
+        }
+
         if (!_esNuevo)
         {
             var resultado = await ProveedorService.GetByIdAsync(Id!.Value);
@@ -147,6 +168,7 @@
                 _esSupermercadoGenerico = resultado.Value.EsSupermercadoGenerico;
                 _agruparPorTipoUnidad = resultado.Value.AgruparPorTipoUnidad;
                 _precioUnitarioAltaPrecision = resultado.Value.PrecioUnitarioAltaPrecision;
+                _color = PaletaProveedores.ColorDe(resultado.Value);
             }
             else
             {
@@ -171,7 +193,8 @@
             Notas = _notas,
             EsSupermercadoGenerico = _esSupermercadoGenerico,
             AgruparPorTipoUnidad = _agruparPorTipoUnidad,
-            PrecioUnitarioAltaPrecision = _precioUnitarioAltaPrecision
+            PrecioUnitarioAltaPrecision = _precioUnitarioAltaPrecision,
+            Color = _color
         };
 
         var resultado = _esNuevo

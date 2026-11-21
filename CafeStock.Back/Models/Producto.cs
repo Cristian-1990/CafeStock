@@ -91,4 +91,17 @@ public record Producto
     /// y solo editable desde el formulario de producto.
     /// </summary>
     public SeccionEspecial Seccion { get; set; }
+
+    // ---- Ficha de café (solo tiene sentido para productos con SeguimientoIndividual) ----
+    // Texto libre y opcional; se muestra en la pantalla Venta junto a la imagen del producto
+    // (ImagenUrl) para que quien vende pueda explicar el café al cliente. Vacío = no informado.
+    // Pensado a partir de la ficha de producto de un tostador de especialidad (país, región,
+    // finca, altitud, variedad, proceso y notas de cata).
+    public string Pais { get; set; } = string.Empty;
+    public string Region { get; set; } = string.Empty;
+    public string Finca { get; set; } = string.Empty;
+    public string Altitud { get; set; } = string.Empty;
+    public string Variedad { get; set; } = string.Empty;
+    public string Proceso { get; set; } = string.Empty;
+    public string NotasCata { get; set; } = string.Empty;
 };

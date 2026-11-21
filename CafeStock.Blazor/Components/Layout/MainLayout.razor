@@ -67,11 +67,19 @@
             </AuthorizeView>
             <AuthorizeView Policy="@Politicas.Encargado">
                 <MudNavLink Href="proveedores" Icon="@Icons.Material.Filled.LocalShipping">Proveedores</MudNavLink>
+            </AuthorizeView>
+            @* Stock va justo encima de Catálogo. *@
+            <AuthorizeView Policy="@Politicas.Trabajador">
+                <MudNavLink Href="productos" Icon="@Icons.Material.Filled.Inventory2">Stock</MudNavLink>
+            </AuthorizeView>
+            @* Venta va justo encima de Catálogo. *@
+            <AuthorizeView Policy="@Politicas.Trabajador">
+                <MudNavLink Href="vender" Icon="@CustomIcons.CoffeeBean">Venta</MudNavLink>
+            </AuthorizeView>
+            <AuthorizeView Policy="@Politicas.Encargado">
                 <MudNavLink Href="lista-detallada" Icon="@Icons.Material.Filled.MenuBook">Catálogo</MudNavLink>
             </AuthorizeView>
             <AuthorizeView Policy="@Politicas.Trabajador">
-                <MudNavLink Href="productos" Icon="@Icons.Material.Filled.Inventory2">Stock</MudNavLink>
-                <MudNavLink Href="vender" Icon="@CustomIcons.CoffeeBean">Venta</MudNavLink>
                 <MudNavLink Href="lista-compra" Icon="@CustomIcons.DeliveryBox">Recepcionar</MudNavLink>
             </AuthorizeView>
             <AuthorizeView Policy="@Politicas.Encargado">

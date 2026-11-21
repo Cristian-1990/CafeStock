@@ -61,9 +61,40 @@ else
         }
     </div>
 
+    @* Orden: por defecto alfabético; también se puede agrupar por proveedor, con el que tiene menos
+       productos primero o con el que tiene más. Siempre visible: elegir un proveedor concreto no lo
+       quita ni lo cambia (con un solo proveedor no hay nada que agrupar y se ve A–Z, pero la elección
+       se conserva para cuando se vuelva a "Todos"). Va en la URL (?orden=) para recuperarlo con "atrás". *@
+    <div class="catalogo-orden" role="group" aria-label="Ordenar el catálogo">
+        <span class="catalogo-orden-etiqueta">Ordenar</span>
+        @foreach (var (valor, texto) in OpcionesOrden)
+        {
+            <MudChip T="string" Color="@(_orden == valor ? Color.Primary : Color.Default)"
+                     Variant="@(_orden == valor ? Variant.Filled : Variant.Outlined)"
+                     OnClick="@(() => CambiarOrden(valor))">
+                @texto
+            </MudChip>
+        }
+    </div>
+    @if (_explicacionOrden is { } explicacion)
+    {
+        <p class="catalogo-orden-explicacion" role="status">@explicacion</p>
+    }
+
     @if (!_productosFiltrados.Any())
     {
         <MudAlert Severity="Severity.Info">No hay productos que coincidan con estos filtros.</MudAlert>
+    }
+    else if (_agruparPorProveedor)
+    {
+        @foreach (var grupo in _gruposPorProveedor)
+        {
+            <h2 class="catalogo-grupo-titulo">
+                <span class="etiqueta-proveedor catalogo-grupo-nombre" style="@PaletaProveedores.VariablesCss(grupo.Color)">@grupo.Nombre</span>
+                <span class="catalogo-grupo-cuenta">@grupo.Productos.Count @(grupo.Productos.Count == 1 ? "producto" : "productos")</span>
+            </h2>
+            @TarjetasProductos(grupo.Productos)
+        }
     }
     else if (!_mostrarSeccionesUnidad)
     {
@@ -94,6 +125,7 @@ else
     // "atrás" desde la ficha de un producto se recupere tal cual estaba.
     [Parameter, SupplyParameterFromQuery(Name = "proveedor")] public int? ProveedorQuery { get; set; }
     [Parameter, SupplyParameterFromQuery(Name = "q")] public string? BusquedaQuery { get; set; }
+    [Parameter, SupplyParameterFromQuery(Name = "orden")] public string? OrdenQuery { get; set; }
 
     private IEnumerable<Producto> _productos = [];
     private IEnumerable<Proveedor> _proveedores = [];
@@ -103,10 +135,101 @@ else
     private string _busqueda = string.Empty;
     private bool _restaurarPosicion;
 
-    private IEnumerable<Producto> _productosFiltrados =>
-        _productos
-            .Where(p => string.IsNullOrWhiteSpace(_busqueda) || p.Nombre.Contains(_busqueda, StringComparison.OrdinalIgnoreCase))
-            .Where(p => _proveedorSeleccionado is null || p.ProveedorId == _proveedorSeleccionado);
+    private enum OrdenCatalogo { Alfabetico, ProveedorMenosProductos, ProveedorMasProductos }
+
+    private static readonly (OrdenCatalogo Valor, string Texto)[] OpcionesOrden =
+    [
+        (OrdenCatalogo.Alfabetico, "A–Z"),
+        (OrdenCatalogo.ProveedorMenosProductos, "Menos productos"),
+        (OrdenCatalogo.ProveedorMasProductos, "Más productos"),
+    ];
+
+    private OrdenCatalogo _orden = OrdenCatalogo.Alfabetico;
+
+    // Valor del orden en la URL (?orden=). A–Z es el de por defecto y no se escribe.
+    private static string? OrdenAQuery(OrdenCatalogo orden) => orden switch
+    {
+        OrdenCatalogo.ProveedorMenosProductos => "menos",
+        OrdenCatalogo.ProveedorMasProductos => "mas",
+        _ => null
+    };
+
+    private static OrdenCatalogo OrdenDesdeQuery(string? valor) => valor switch
+    {
+        "menos" => OrdenCatalogo.ProveedorMenosProductos,
+        "mas" => OrdenCatalogo.ProveedorMasProductos,
+        _ => OrdenCatalogo.Alfabetico
+    };
+
+    private void CambiarOrden(OrdenCatalogo orden)
+    {
+        _orden = orden;
+        ActualizarUrl();
+    }
+    private Dictionary<int, string> _coloresProveedor = [];
+
+    // Alfabético (sin distinguir tildes ni mayúsculas, ver OrdenAlfabetico). Con un proveedor concreto
+    // elegido, "Menos productos" / "Más productos" ordenan SUS productos por stock (el que menos queda
+    // primero, o el que más): con un solo proveedor no hay grupos que ordenar y, si no, el filtro no
+    // haría nada. Con "Todos", esas mismas opciones ordenan los proveedores por su nº de productos.
+    private IEnumerable<Producto> _productosFiltrados
+    {
+        get
+        {
+            var filtrados = _productos
+                .Where(p => string.IsNullOrWhiteSpace(_busqueda) || p.Nombre.Contains(_busqueda, StringComparison.OrdinalIgnoreCase))
+                .Where(p => _proveedorSeleccionado is null || p.ProveedorId == _proveedorSeleccionado)
+                .ToList();
+
+            if (_proveedorSeleccionado is not null && _orden != OrdenCatalogo.Alfabetico)
+            {
+                return (_orden == OrdenCatalogo.ProveedorMenosProductos
+                        ? filtrados.OrderBy(p => p.StockActual)
+                        : filtrados.OrderByDescending(p => p.StockActual))
+                    .LuegoAlfabeticamente(p => p.Nombre)
+                    .ToList();
+            }
+
+            return filtrados.OrdenarAlfabeticamente(p => p.Nombre).ToList();
+        }
+    }
+
+    // Frase bajo el selector que dice qué está haciendo el orden elegido ahora mismo.
+    private string? _explicacionOrden => _orden switch
+    {
+        OrdenCatalogo.Alfabetico => null,
+        OrdenCatalogo.ProveedorMenosProductos when _proveedorSeleccionado is null => "Proveedores agrupados: primero el que tiene menos productos.",
+        OrdenCatalogo.ProveedorMasProductos when _proveedorSeleccionado is null => "Proveedores agrupados: primero el que tiene más productos.",
+        OrdenCatalogo.ProveedorMenosProductos => "Productos de este proveedor: primero los que menos stock tienen.",
+        _ => "Productos de este proveedor: primero los que más stock tienen."
+    };
+
+    private bool _agruparPorProveedor => _proveedorSeleccionado is null && _orden != OrdenCatalogo.Alfabetico;
+
+    private record GrupoProveedor(string Nombre, string Color, List<Producto> Productos);
+
+    // Un grupo por proveedor (más uno para "Sin proveedor"), ordenados por su número de productos
+    // —ya filtrados por la búsqueda— y, a igualdad, por nombre. Dentro de cada grupo, A–Z.
+    private List<GrupoProveedor> _gruposPorProveedor
+    {
+        get
+        {
+            var productos = _productosFiltrados.ToList();
+            var grupos = productos
+                .GroupBy(p => p.ProveedorId)
+                .Select(g => new GrupoProveedor(
+                    g.Key is int id && _proveedoresPorId.TryGetValue(id, out var nombre) ? nombre : "Sin proveedor",
+                    g.Key is int idColor && _coloresProveedor.TryGetValue(idColor, out var color) ? color : "#6D4C41",
+                    g.ToList()))
+                .ToList();
+
+            return (_orden == OrdenCatalogo.ProveedorMasProductos
+                    ? grupos.OrderByDescending(g => g.Productos.Count)
+                    : grupos.OrderBy(g => g.Productos.Count))
+                .LuegoAlfabeticamente(g => g.Nombre)
+                .ToList();
+        }
+    }
 
     // División puramente visual de las tarjetas por tipo de unidad de medida
     // (ver CafeStock.Blazor.Services.UnidadMedidaExtensions), solo cuando el
@@ -124,9 +247,9 @@ else
         @<div class="rejilla-productos">
             @foreach (var producto in productos)
             {
-                @* Solo presentación: el nivel del medidor sale de StockActual/StockMaximo ya existentes. *@
-                var nivelPct = producto.StockMaximo > 0 ? Math.Min(100, producto.StockActual * 100 / producto.StockMaximo) : 0;
-                var nivelClase = producto.CantidadAComprar <= 0 ? "lleno" : nivelPct <= 25 ? "bajo" : "medio";
+                @* Solo presentación: el nivel del medidor sale de StockActual/StockMaximo (ver NivelStock). *@
+                var nivelPct = NivelStock.Porcentaje(producto.StockActual, producto.StockMaximo);
+                var nivelClase = NivelStock.Clase(producto.StockActual, producto.StockMaximo);
 
                 @* Un <button> da foco y teclado gratis; la tarjeta entera es la zona táctil. *@
                 <button type="button" class="tarjeta-producto" id="@($"prod-{producto.Id}")"
@@ -148,11 +271,12 @@ else
                     <span class="tarjeta-cuerpo">
                         @if (producto.ProveedorId is not null && _proveedoresPorId.TryGetValue(producto.ProveedorId.Value, out var nombreProveedor))
                         {
-                            <span class="tarjeta-proveedor">@nombreProveedor</span>
+                            <span class="tarjeta-proveedor etiqueta-proveedor"
+                                  style="@PaletaProveedores.VariablesCss(_coloresProveedor.GetValueOrDefault(producto.ProveedorId.Value))">@nombreProveedor</span>
                         }
                         <span class="tarjeta-nombre">@producto.Nombre</span>
                         <span class="tarjeta-stock">
-                            <span class="medidor medidor--@nivelClase" role="img"
+                            <span class="medidor @nivelClase" role="img"
                                   aria-label="Stock @producto.StockActual de @producto.StockMaximo">
                                 <span class="medidor-relleno" style="width:@(nivelPct)%"></span>
                             </span>
@@ -167,11 +291,13 @@ else
     {
         _proveedores = await ProveedorService.GetAllAsync();
         _proveedoresPorId = _proveedores.ToDictionary(p => p.Id, p => p.Nombre);
+        _coloresProveedor = _proveedores.ToDictionary(p => p.Id, p => PaletaProveedores.ColorDe(p));
         _productos = await ProductoService.GetAllAsync();
 
         // Estado inicial del filtro tomado de la URL (incluye la vuelta con "atrás").
         _proveedorSeleccionado = ProveedorQuery;
         _busqueda = BusquedaQuery ?? string.Empty;
+        _orden = OrdenDesdeQuery(OrdenQuery);
         _restaurarPosicion = true;
 
         _cargando = false;
@@ -201,6 +327,7 @@ else
         {
             ["proveedor"] = _proveedorSeleccionado,
             ["q"] = string.IsNullOrWhiteSpace(_busqueda) ? null : _busqueda,
+            ["orden"] = OrdenAQuery(_orden),
         };
         Navigation.NavigateTo(Navigation.GetUriWithQueryParameters(parametros), forceLoad: false, replace: true);
     }
