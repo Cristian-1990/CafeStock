@@ -128,15 +128,104 @@ h1:focus {
 }
 
 /* ---------- Pantallas de acceso (Login y Configuración inicial) ---------- */
+/* Fondo: espresso oscuro con un mosaico de granos de café (images/login-granos.svg) y un resplandor
+   cálido de terracota y dorado, como la luz de una barra de cafetería. */
 .acceso-fondo {
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 16px;
-    background:
-        radial-gradient(90% 70% at 12% 0%, rgba(168, 72, 31, 0.18) 0%, rgba(168, 72, 31, 0) 60%),
-        linear-gradient(160deg, var(--bg-page) 0%, #EADBC8 100%);
+    padding: 24px 16px;
+    background-color: #2A1814;
+    background-image:
+        radial-gradient(70% 60% at 85% 100%, rgba(193, 120, 23, 0.30) 0%, rgba(193, 120, 23, 0) 65%),
+        radial-gradient(60% 55% at 10% 0%, rgba(168, 72, 31, 0.35) 0%, rgba(168, 72, 31, 0) 65%),
+        url("images/login-granos.svg"),
+        linear-gradient(160deg, #3E2723 0%, #2A1814 100%);
+    background-size: auto, auto, 320px 320px, auto;
+    background-repeat: no-repeat, no-repeat, repeat, no-repeat;
+}
+
+/* Escena: [marca | formulario] en pantalla ancha; solo el formulario en estrecha. */
+.acceso-escena {
+    width: 100%;
+    max-width: 1000px;
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: center;
+    gap: 32px;
+}
+
+.acceso-columna {
+    display: flex;
+    justify-content: center;
+}
+
+.acceso-hero {
+    display: none;
+    color: var(--text-on-dark);
+}
+
+@media (min-width: 900px) {
+    .acceso-escena {
+        grid-template-columns: 1.05fr 0.95fr;
+    }
+
+    .acceso-hero {
+        display: block;
+    }
+}
+
+.acceso-hero-eyebrow {
+    margin: 0 0 10px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: #F0C9A8;
+}
+
+.acceso-hero-lema {
+    margin: 0 0 14px;
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 3.4vw, 2.9rem);
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+}
+
+.acceso-hero-texto {
+    max-width: 30ch;
+    margin: 0;
+    font-size: 1.05rem;
+    line-height: 1.5;
+    color: #EAD9C6;
+}
+
+.acceso-hero-leon {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    margin-top: 12px;
+}
+
+.acceso-hero-leon img {
+    position: relative;
+    height: min(46vh, 400px);
+    width: auto;
+    filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.45));
+}
+
+/* Halo cálido detrás del león: la "crema" del café. */
+.acceso-halo {
+    position: absolute;
+    bottom: 4%;
+    left: 50%;
+    width: 360px;
+    height: 360px;
+    transform: translateX(-50%);
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(240, 201, 168, 0.42) 0%, rgba(193, 120, 23, 0.18) 45%, rgba(193, 120, 23, 0) 70%);
 }
 
 .acceso-tarjeta {
@@ -146,7 +235,7 @@ h1:focus {
     background-color: var(--bg-surface);
     border: 1px solid rgba(109, 76, 65, 0.15);
     border-radius: 22px;
-    box-shadow: var(--shadow-card-hover);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.40), 0 2px 6px rgba(0, 0, 0, 0.20);
     text-align: center;
 }
 

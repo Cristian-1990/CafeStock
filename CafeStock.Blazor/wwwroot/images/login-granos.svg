@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="320" viewBox="0 0 320 320">
+  <!-- Mosaico de granos de café para el fondo de la pantalla de acceso. Se repite sin costuras
+       (los granos del borde se dibujan también al otro lado). Marrones suaves y poco contraste:
+       decoran, no compiten con el formulario. -->
+  <defs>
+    <g id="grano">
+      <ellipse rx="15" ry="23" fill="#7A5546"/>
+      <ellipse rx="15" ry="23" fill="none" stroke="#2A1814" stroke-opacity="0.35" stroke-width="1.5"/>
+      <path d="M0,-21 C9,-9 -9,9 0,21" fill="none" stroke="#2A1814" stroke-opacity="0.65" stroke-width="3" stroke-linecap="round"/>
+    </g>
+  </defs>
+  <g opacity="0.28">
+    <use href="#grano" transform="translate(40,50) rotate(25) scale(1.1)"/>
+    <use href="#grano" transform="translate(150,30) rotate(-40) scale(0.8)"/>
+    <use href="#grano" transform="translate(255,85) rotate(70) scale(1)"/>
+    <use href="#grano" transform="translate(95,140) rotate(-15) scale(0.9)"/>
+    <use href="#grano" transform="translate(205,170) rotate(48) scale(1.2)"/>
+    <use href="#grano" transform="translate(300,200) rotate(-60) scale(0.85)"/>
+    <use href="#grano" transform="translate(30,215) rotate(80) scale(0.95)"/>
+    <use href="#grano" transform="translate(120,270) rotate(-30) scale(1.1)"/>
+    <use href="#grano" transform="translate(240,285) rotate(15) scale(0.8)"/>
+    <!-- repetidos al otro lado para que el mosaico no tenga costuras -->
+    <use href="#grano" transform="translate(360,50) rotate(25) scale(1.1)"/>
+    <use href="#grano" transform="translate(-65,85) rotate(70) scale(1)"/>
+    <use href="#grano" transform="translate(340,200) rotate(-60) scale(0.85)"/>
+    <use href="#grano" transform="translate(-20,200) rotate(-60) scale(0.85)"/>
+    <use href="#grano" transform="translate(40,370) rotate(25) scale(1.1)"/>
+    <use href="#grano" transform="translate(150,350) rotate(-40) scale(0.8)"/>
+    <use href="#grano" transform="translate(30,-105) rotate(80) scale(0.95)"/>
+    <use href="#grano" transform="translate(120,-50) rotate(-30) scale(1.1)"/>
+    <use href="#grano" transform="translate(240,-35) rotate(15) scale(0.8)"/>
+  </g>
+</svg>
