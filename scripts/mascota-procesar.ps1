@@ -65,23 +65,23 @@ public static class MascotaFondo
                 {
                     double a = (umbralFondo - verdor) / (double)(umbralFondo - umbralBorde);
                     px[i + 3] = (byte)(a * 255);
-                    px[i + 1] = (byte)Math.Min(g, Math.Max(r, b));   // quita el verde que se mezcla en el borde
+                    px[i + 1] = (byte)Math.Min(g, (int)(Math.Max(r, b) * 0.85));   // quita el verde que se mezcla en el borde
                 }
                 else if (verdor > 0)
                 {
-                    px[i + 1] = (byte)Math.Min(g, Math.Max(r, b));
+                    px[i + 1] = (byte)Math.Min(g, (int)(Math.Max(r, b) * 0.85));
                 }
             }
         }
 
-        // Borde: se come el primer anillo (verde residual), el segundo queda a medio alfa y en los 3 px
-        // junto al fondo se limita el verde (g <= 0.82 del mayor entre rojo y azul): el pelo dorado
+        // Borde: se come el primer anillo (verde residual), el segundo queda a medio alfa y en los 5 px
+        // junto al fondo se limita el verde (g <= 0.85 del mayor entre rojo y azul): el pelo dorado
         // tiene g menor que r, asi que no se altera nada real.
         byte[] alfa = new byte[w * h];
         for (int y = 0; y < h; y++) for (int x = 0; x < w; x++) alfa[y * w + x] = px[y * stride + x * 4 + 3];
         int[] dist = new int[w * h];
         for (int k = 0; k < dist.Length; k++) dist[k] = alfa[k] == 0 ? 0 : 99;
-        for (int pasada = 1; pasada <= 3; pasada++)
+        for (int pasada = 1; pasada <= 5; pasada++)
         {
             int[] sig = (int[])dist.Clone();
             for (int y = 1; y < h - 1; y++)
@@ -98,9 +98,9 @@ public static class MascotaFondo
                 int k = y * w + x, i = y * stride + x * 4;
                 if (dist[k] == 1) px[i + 3] = 0;
                 else if (dist[k] == 2) px[i + 3] = (byte)(alfa[k] / 2);
-                if (dist[k] >= 1 && dist[k] <= 3 && px[i + 3] > 0)
+                if (dist[k] >= 1 && dist[k] <= 5 && px[i + 3] > 0)
                 {
-                    int tope = (int)(Math.Max(px[i + 2], px[i]) * 0.82);
+                    int tope = (int)(Math.Max(px[i + 2], px[i]) * 0.85);
                     if (px[i + 1] > tope) px[i + 1] = (byte)tope;
                 }
             }
