@@ -24,7 +24,10 @@ param(
     [int]$AltoFigura = 712,      # alto del leon, como mascot-saludo.png (710)
     [int]$PieY = 752,            # donde terminan los pies, como mascot-saludo.png
     [int]$UmbralFondo = 100,     # "verdor" a partir del cual un pixel es fondo
-    [int]$UmbralBorde = 25       # por debajo de esto el pixel es opaco; entre ambos, semitransparente
+    [int]$UmbralBorde = 25,      # por debajo de esto el pixel es opaco; entre ambos, semitransparente
+    # Rectangulos "x,y,ancho,alto" en coordenadas de la imagen ORIGINAL (opcionales):
+    [string[]]$Proteger = @(),   # no se toca: sirve para detalles verdes legitimos (p. ej. un tick verde en la tableta)
+    [string[]]$LimpiarOliva = @() # borra el relleno oliva/dorado que la IA deja en huecos estrechos (entre cola y pierna)
 )
 
 $ErrorActionPreference = 'Stop'
@@ -39,7 +42,14 @@ using System.Runtime.InteropServices;
 public static class MascotaFondo
 {
     // Devuelve la imagen con el verde convertido en transparencia.
-    public static Bitmap QuitarVerde(Bitmap origen, int umbralBorde, int umbralFondo)
+    static bool Dentro(int[][] zonas, int x, int y)
+    {
+        foreach (int[] z in zonas)
+            if (x >= z[0] && y >= z[1] && x < z[0] + z[2] && y < z[1] + z[3]) return true;
+        return false;
+    }
+
+    public static Bitmap QuitarVerde(Bitmap origen, int umbralBorde, int umbralFondo, int[][] proteger, int[][] oliva)
     {
         int w = origen.Width, h = origen.Height;
         Bitmap bmp = new Bitmap(w, h, PixelFormat.Format32bppArgb);
@@ -57,7 +67,12 @@ public static class MascotaFondo
                 int i = y * stride + x * 4;
                 int b = px[i], g = px[i + 1], r = px[i + 2];
                 int verdor = g - Math.Max(r, b);          // cuanto mas verde que rojo/azul
-                if (verdor >= umbralFondo)
+                if (Dentro(proteger, x, y)) continue;      // detalle verde legitimo: intacto
+                if (Dentro(oliva, x, y) && g >= 0.8 * r)   // relleno oliva: el pelaje real tiene g bastante menor que r
+                {
+                    px[i] = 0; px[i + 1] = 0; px[i + 2] = 0; px[i + 3] = 0;
+                }
+                else if (verdor >= umbralFondo)
                 {
                     px[i] = 0; px[i + 1] = 0; px[i + 2] = 0; px[i + 3] = 0;
                 }
@@ -133,7 +148,12 @@ public static class MascotaFondo
 if (-not (Test-Path -LiteralPath $Entrada)) { throw "No existe la imagen de entrada: $Entrada" }
 
 $origen = New-Object System.Drawing.Bitmap -ArgumentList $Entrada
-$sinFondo = [MascotaFondo]::QuitarVerde($origen, $UmbralBorde, $UmbralFondo)
+function ConvertTo-Zonas([string[]]$lista) {
+    $zonas = New-Object 'System.Collections.Generic.List[int[]]'
+    foreach ($t in $lista) { $zonas.Add([int[]]($t -split ',' | ForEach-Object { [int]$_ })) }
+    return , $zonas.ToArray()
+}
+$sinFondo = [MascotaFondo]::QuitarVerde($origen, $UmbralBorde, $UmbralFondo, (ConvertTo-Zonas $Proteger), (ConvertTo-Zonas $LimpiarOliva))
 $caja = [MascotaFondo]::CajaFigura($sinFondo, 40)
 if ($caja.Width -lt 50 -or $caja.Height -lt 50) { throw "No se encontro la figura: revisa que el fondo sea verde liso (#00FF00)." }
 
