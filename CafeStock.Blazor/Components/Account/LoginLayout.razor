@@ -1,6 +1,16 @@
 @inherits LayoutComponentBase
 
-@* Pantalla de acceso: sin menú lateral ni barra superior, solo la tarjeta centrada. *@
+@* Pantalla de acceso: sin menú lateral ni barra superior. Fondo: foto de una barra de café de
+   especialidad (images/login-fondo.jpg) con la tarjeta del formulario encima, y en pantalla ancha un
+   lema en la esquina superior izquierda. El lema es decorativo (aria-hidden). Login, Primer acceso
+   y Acceso denegado comparten este marco. *@
 <div class="acceso-fondo">
-    @Body
+    <section class="acceso-hero" aria-hidden="true">
+        <p class="acceso-hero-eyebrow">Café de especialidad</p>
+        <p class="acceso-hero-lema">El stock de tu cafetería,<br/>siempre a punto.</p>
+    </section>
+
+    <div class="acceso-columna">
+        @Body
+    </div>
 </div>
