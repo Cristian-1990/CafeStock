@@ -1,23 +1,16 @@
 @inherits LayoutComponentBase
 
-@* Pantalla de acceso: sin menú lateral ni barra superior. Fondo espresso con granos de café, y en
-   pantalla ancha una escena de marca (el león barista y un lema) a un lado del formulario. La escena
-   es decorativa (aria-hidden): el formulario es lo único que importa para lectores de pantalla.
-   Login, Primer acceso y Acceso denegado comparten este marco. *@
+@* Pantalla de acceso: sin menú lateral ni barra superior. Fondo: foto de una barra de café de
+   especialidad (images/login-fondo.jpg) con la tarjeta del formulario encima, y en pantalla ancha un
+   lema en la esquina superior izquierda. El lema es decorativo (aria-hidden). Login, Primer acceso
+   y Acceso denegado comparten este marco. *@
 <div class="acceso-fondo">
-    <div class="acceso-escena">
-        <section class="acceso-hero" aria-hidden="true">
-            <p class="acceso-hero-eyebrow">Café de especialidad</p>
-            <p class="acceso-hero-lema">El stock de tu cafetería, siempre a punto.</p>
-            <p class="acceso-hero-texto">Reposición, proveedores y ventas en un solo sitio, para que solo te preocupes del café.</p>
-            <div class="acceso-hero-leon">
-                <span class="acceso-halo"></span>
-                <img src="images/mascot/mascot-saludo.png" alt=""/>
-            </div>
-        </section>
+    <section class="acceso-hero" aria-hidden="true">
+        <p class="acceso-hero-eyebrow">Café de especialidad</p>
+        <p class="acceso-hero-lema">El stock de tu cafetería,<br/>siempre a punto.</p>
+    </section>
 
-        <div class="acceso-columna">
-            @Body
-        </div>
+    <div class="acceso-columna">
+        @Body
     </div>
 </div>
