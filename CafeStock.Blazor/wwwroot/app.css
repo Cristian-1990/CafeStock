@@ -155,3 +155,65 @@ h1:focus {
     background-color: #FBE9E4;
     border-radius: 8px;
 }
+
+/* =====================================================================
+   SISTEMA DE DISEÑO — CafeStock (café de especialidad)
+   Variables globales: crema cálido, espresso y terracota. Los marrones y el crema son los
+   de siempre (CLAUDE.md); el terracota es el acento nuevo. Contraste comprobado sobre
+   --bg-page (>= 4.5:1 para texto): muted 6,6:1, terracota 5,1:1, verde 5,5:1.
+   Los componentes usan estas variables, no colores sueltos.
+   ===================================================================== */
+:root {
+    /* Fondos */
+    --bg-page: #F5EFE6;          /* crema cálido (nunca blanco puro) */
+    --bg-sunken: #EFE6DA;       /* crema más oscuro: fondo de la app y zonas hundidas */
+    --bg-surface: #FFFBF5;      /* tarjetas */
+    --bg-espresso: #3E2723;     /* bandas oscuras y acciones principales */
+    --bg-espresso-soft: #5A3A2E;
+
+    /* Texto */
+    --text-primary: #2C2C2A;
+    --text-espresso: #3E2723;
+    --text-muted: #6D4C41;
+    --text-on-dark: #FFF8EE;
+
+    /* Acentos */
+    --accent-terracota: #A8481F;       /* acento nuevo: reponer, llamadas a la acción */
+    --accent-terracota-soft: #F3D9CB;
+    --accent-gold: #C17817;            /* el acento de siempre: bordes y detalles, no texto */
+    --accent-green: #3F6B2E;           /* stock completo */
+    --accent-green-soft: #DCE9D2;
+
+    /* Forma, sombra y tipografía */
+    --radius-card: 18px;
+    --radius-pill: 9999px;
+    --shadow-card: 0 1px 2px rgba(62, 39, 35, 0.08), 0 8px 24px rgba(62, 39, 35, 0.10);
+    --shadow-card-hover: 0 2px 4px rgba(62, 39, 35, 0.10), 0 14px 32px rgba(62, 39, 35, 0.16);
+    --touch-min: 44px;
+    --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+}
+
+/* Títulos con carácter (serif cálida); el cuerpo y los números siguen en sans. */
+.mud-typography-h3, .mud-typography-h4, .mud-typography-h5 {
+    font-family: var(--font-display) !important;
+    letter-spacing: -0.01em;
+}
+
+/* Cifras alineadas (precios, stock): que los dígitos ocupen todos lo mismo. */
+.tabular, .mud-table-cell, .mud-typography-body2 {
+    font-variant-numeric: tabular-nums;
+}
+
+/* Foco visible para quien navega con teclado; el defecto del navegador queda poco visible. */
+a:focus-visible, button:focus-visible, [role="button"]:focus-visible {
+    outline: 3px solid var(--accent-gold);
+    outline-offset: 2px;
+}
+
+/* Respeta a quien pide menos movimiento. */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+    }
+}
