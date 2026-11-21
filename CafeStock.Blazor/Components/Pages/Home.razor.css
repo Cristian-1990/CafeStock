@@ -375,3 +375,35 @@
         min-height: 0;
     }
 }
+
+/* TEMPORAL: comparación de los dos leones en Inicio (ver Home.razor). */
+.home-leones {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 28px;
+}
+
+.home-leon {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.home-leon figcaption {
+    margin-top: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+/* Con dos leones el bocadillo no cabe a la izquierda: va encima, centrado. */
+.home-presentation--comparar .home-welcome-bubble {
+    position: static;
+    max-width: min(420px, 90vw);
+    margin-bottom: 24px;
+}

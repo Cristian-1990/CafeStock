@@ -95,15 +95,28 @@
 
     @if (MascotSettings.Enabled)
     {
-        <div class="home-presentation">
+        @* TEMPORAL — comparación de leones: el de referencia (saluda) y el nuevo del Catálogo, uno al
+           lado del otro, para juzgar si el nuevo es idéntico. Volver a un solo <img> cuando se decida. *@
+        <div class="home-presentation home-presentation--comparar">
             <div class="home-welcome-bubble">
                 <MudText Typo="Typo.body2">
                     ¡Bienvenido a CafeStock! Desde aquí gestionas proveedores, tu catálogo de productos, la reposición de stock y las ventas. Vamos paso a paso.
                 </MudText>
             </div>
-            <img src="images/mascot/mascot-saludo.png"
-                 alt="Mascota CafeStock"
-                 class="mascot-home-image"/>
+            <div class="home-leones">
+                <figure class="home-leon">
+                    <img src="images/mascot/mascot-saludo.png"
+                         alt="Mascota CafeStock"
+                         class="mascot-home-image"/>
+                    <figcaption>Referencia (Inicio)</figcaption>
+                </figure>
+                <figure class="home-leon">
+                    <img src="images/mascot/mascot-producto.png"
+                         alt="León nuevo del Catálogo"
+                         class="mascot-home-image"/>
+                    <figcaption>Nuevo (Catálogo)</figcaption>
+                </figure>
+            </div>
         </div>
     }
     @* El bocadillo va primero en el marcado a propósito: en desktop se saca del flujo con
