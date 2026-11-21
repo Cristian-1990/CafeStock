@@ -26,7 +26,10 @@
        solo height fijo, width:auto. 400px de alto da ~243px de ancho
        (400 x 0.606), sigue cabiendo en los 320px del drawer — punto de
        partida a reajustar tras verlo en el navegador, no un número cerrado. */
-    height: 400px;
+    /* Altura adaptable: 400 px como máximo, pero nunca más de un tercio de la ventana (34vh). Con el
+       menú nuevo (filas de 44 px) un león fijo de 400 px empujaba la mascota fuera de la vista y
+       obligaba a desplazar el menú para verla entera. */
+    height: clamp(170px, 34vh, 400px);
     width: auto;
     max-width: 100%;
     object-fit: contain;
