@@ -161,6 +161,8 @@
 
     private string _nombre = string.Empty;
     private int _stockActual;
+    // Stock que tenía el producto al abrir el formulario: permite no pisar ventas hechas mientras tanto (ver Producto.StockActualAlLeer).
+    private int _stockActualAlAbrir;
     private int _stockMaximo;
     private decimal _precioUnitario;
     private int? _pasillo;
@@ -211,6 +213,7 @@
             {
                 _nombre = resultado.Value.Nombre;
                 _stockActual = resultado.Value.StockActual;
+                _stockActualAlAbrir = resultado.Value.StockActual;
                 _stockMaximo = resultado.Value.StockMaximo;
                 _precioUnitario = resultado.Value.PrecioUnitario;
                 _pasillo = resultado.Value.Pasillo;
@@ -238,6 +241,7 @@
             Id = Id ?? 0,
             Nombre = _nombre,
             StockActual = _stockActual,
+            StockActualAlLeer = _esNuevo ? null : _stockActualAlAbrir,
             StockMaximo = _stockMaximo,
             PrecioUnitario = _precioUnitario,
             Pasillo = _pasillo,

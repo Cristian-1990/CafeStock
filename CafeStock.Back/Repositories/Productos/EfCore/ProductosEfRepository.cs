@@ -73,28 +73,42 @@ public class ProductosEfRepository : IProductoRepository
     public async Task<Result<Producto, DomainError>> UpdateAsync(int id, Producto producto)
     {
         await InitializeAsync();
-        using var context = CreateContext();
-        var entity = await context.Productos.FindAsync(id);
-        if (entity is null)
-            return Result.Failure<Producto, DomainError>(ProductoErrors.NotFound(id));
         try
         {
-            entity.Nombre = producto.Nombre;
-            entity.StockActual = producto.StockActual;
-            entity.StockMaximo = producto.StockMaximo;
-            entity.Unidad = producto.Unidad;
-            entity.Descripcion = producto.Descripcion;
-            entity.ImagenUrl = producto.ImagenUrl;
-            entity.ProveedorId = producto.ProveedorId;
-            entity.PrecioUnitario = producto.PrecioUnitario;
-            entity.AplicaConciliacionTpv = producto.AplicaConciliacionTpv;
-            entity.UnidadesPorPack = producto.UnidadesPorPack;
-            entity.Pasillo = producto.Pasillo;
-            entity.OrdenEnPasillo = producto.OrdenEnPasillo;
-            entity.EsFrontalPasillo = producto.EsFrontalPasillo;
-            entity.Seccion = producto.Seccion;
-            await context.SaveChangesAsync();
-            return Result.Success<Producto, DomainError>(entity.ToProducto());
+            // Concurrencia optimista: ver ReintentoConcurrencia y el token en AppDbContext.
+            return await ReintentoConcurrencia.EjecutarAsync(async () =>
+            {
+                using var context = CreateContext();
+                var entity = await context.Productos.FindAsync(id);
+                if (entity is null)
+                    return Result.Failure<Producto, DomainError>(ProductoErrors.NotFound(id));
+
+                entity.Nombre = producto.Nombre;
+
+                // El formulario de edición trae el stock que tenía al abrirse (StockActualAlLeer).
+                // Si el usuario NO lo tocó, no se escribe: así editar el nombre o el precio no
+                // pisa las ventas o recepciones hechas mientras el formulario estaba abierto.
+                // Si lo cambió a propósito (corregir un recuento), sí se aplica. Sin
+                // StockActualAlLeer (null) se conserva el comportamiento de siempre: se escribe.
+                var stockSinTocar = producto.StockActualAlLeer is int leido && producto.StockActual == leido;
+                if (!stockSinTocar)
+                    entity.StockActual = producto.StockActual;
+
+                entity.StockMaximo = producto.StockMaximo;
+                entity.Unidad = producto.Unidad;
+                entity.Descripcion = producto.Descripcion;
+                entity.ImagenUrl = producto.ImagenUrl;
+                entity.ProveedorId = producto.ProveedorId;
+                entity.PrecioUnitario = producto.PrecioUnitario;
+                entity.AplicaConciliacionTpv = producto.AplicaConciliacionTpv;
+                entity.UnidadesPorPack = producto.UnidadesPorPack;
+                entity.Pasillo = producto.Pasillo;
+                entity.OrdenEnPasillo = producto.OrdenEnPasillo;
+                entity.EsFrontalPasillo = producto.EsFrontalPasillo;
+                entity.Seccion = producto.Seccion;
+                await context.SaveChangesAsync();
+                return Result.Success<Producto, DomainError>(entity.ToProducto());
+            });
         }
         catch (Exception ex)
         {

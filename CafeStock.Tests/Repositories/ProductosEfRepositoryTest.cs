@@ -325,4 +325,56 @@ public class ProductosEfRepositoryTest
         resultados.Count(r => r.IsSuccess).Should().Be(5);
         (await _repository.GetByIdAsync(id)).Value.StockActual.Should().Be(0);
     }
+
+    [Test]
+    public async Task UpdateAsync_StockSinTocar_NoPisaLasVentasHechasConElFormularioAbierto()
+    {
+        // Arrange: el formulario se abre con stock 10 y, mientras tanto, otra tablet descuenta 3.
+        var creado = await _repository.CreateAsync(new Producto { Nombre = "Leche", StockActual = 10, StockMaximo = 20, PrecioUnitario = 1m });
+        var id = creado.Value.Id;
+        await _repository.AjustarStockActualAsync(id, -3);
+
+        // Act: se guarda un cambio de precio y de nombre, sin haber tocado el stock (10 == lo leído).
+        var resultado = await _repository.UpdateAsync(id, creado.Value with
+        {
+            Nombre = "Leche entera", PrecioUnitario = 2m, StockActual = 10, StockActualAlLeer = 10
+        });
+
+        // Assert: el nombre y el precio cambian, pero el stock real (7) se conserva.
+        resultado.IsSuccess.Should().BeTrue();
+        var guardado = (await _repository.GetByIdAsync(id)).Value;
+        guardado.Nombre.Should().Be("Leche entera");
+        guardado.PrecioUnitario.Should().Be(2m);
+        guardado.StockActual.Should().Be(7);
+    }
+
+    [Test]
+    public async Task UpdateAsync_StockCambiadoAPropositoPorElUsuario_SiSeAplica()
+    {
+        // Arrange: corregir un recuento: el formulario se abrió con 10 y el usuario escribe 15.
+        var creado = await _repository.CreateAsync(new Producto { Nombre = "Leche", StockActual = 10, StockMaximo = 20 });
+        var id = creado.Value.Id;
+        await _repository.AjustarStockActualAsync(id, -3); // mientras tanto, una venta
+
+        // Act
+        await _repository.UpdateAsync(id, creado.Value with { StockActual = 15, StockActualAlLeer = 10 });
+
+        // Assert: lo que el usuario escribió a propósito manda, aunque hubiera cambios intermedios.
+        (await _repository.GetByIdAsync(id)).Value.StockActual.Should().Be(15);
+    }
+
+    [Test]
+    public async Task UpdateAsync_SinStockActualAlLeer_EscribeElStockComoSiempre()
+    {
+        // Arrange: quien edita sin informar el stock leído (p. ej. código anterior) conserva el comportamiento de siempre.
+        var creado = await _repository.CreateAsync(new Producto { Nombre = "Leche", StockActual = 10, StockMaximo = 20 });
+        var id = creado.Value.Id;
+        await _repository.AjustarStockActualAsync(id, -3);
+
+        // Act
+        await _repository.UpdateAsync(id, creado.Value with { Nombre = "Leche entera", StockActual = 10 });
+
+        // Assert
+        (await _repository.GetByIdAsync(id)).Value.StockActual.Should().Be(10);
+    }
 }
