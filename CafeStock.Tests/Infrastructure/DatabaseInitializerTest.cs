@@ -127,10 +127,8 @@ public class DatabaseInitializerTest
         // Arrange
         await CrearBaseHeredadaAsync(async context =>
         {
-            context.Proveedores.Add(new ProveedorEntity { Nombre = "Alcampo" });
-            await context.SaveChangesAsync();
-            context.Productos.Add(new ProductoEntity { Nombre = "Harina", StockActual = 3, StockMaximo = 9, ProveedorId = 1 });
-            await context.SaveChangesAsync();
+            await SembrarProveedorAsync(context, "Alcampo");
+            await SembrarProductoAsync(context, "Harina", stockActual: 3, stockMaximo: 9, unidad: UnidadMedida.SinEspecificar, proveedorId: 1);
         });
         (await ListarTablasAsync()).Should().NotContain("__EFMigrationsHistory");
 
@@ -153,8 +151,7 @@ public class DatabaseInitializerTest
         // Arrange: base de antes de que existieran varias columnas, con un proveedor ya creado
         await CrearBaseHeredadaAsync(async context =>
         {
-            context.Proveedores.Add(new ProveedorEntity { Nombre = "Alcampo" });
-            await context.SaveChangesAsync();
+            await SembrarProveedorAsync(context, "Alcampo");
             await EjecutarAsync(context, "ALTER TABLE Proveedores DROP COLUMN PrecioUnitarioAltaPrecision");
             await EjecutarAsync(context, "ALTER TABLE Productos DROP COLUMN Seccion");
             await EjecutarAsync(context, "ALTER TABLE Compras DROP COLUMN Notas");
@@ -176,8 +173,7 @@ public class DatabaseInitializerTest
         // Arrange
         await CrearBaseHeredadaAsync(async context =>
         {
-            context.Proveedores.Add(new ProveedorEntity { Nombre = "Puchero" });
-            await context.SaveChangesAsync();
+            await SembrarProveedorAsync(context, "Puchero");
         });
 
         // Act
@@ -194,8 +190,7 @@ public class DatabaseInitializerTest
         // Arrange
         await CrearBaseHeredadaAsync(async context =>
         {
-            context.Proveedores.Add(new ProveedorEntity { Nombre = "Alcampo" });
-            await context.SaveChangesAsync();
+            await SembrarProveedorAsync(context, "Alcampo");
         });
 
         // Act
@@ -213,8 +208,7 @@ public class DatabaseInitializerTest
         // Arrange
         await CrearBaseHeredadaAsync(async context =>
         {
-            context.Proveedores.Add(new ProveedorEntity { Nombre = nombre });
-            await context.SaveChangesAsync();
+            await SembrarProveedorAsync(context, nombre);
         });
 
         // Act
@@ -231,8 +225,7 @@ public class DatabaseInitializerTest
         // Arrange
         await CrearBaseHeredadaAsync(async context =>
         {
-            context.Proveedores.Add(new ProveedorEntity { Nombre = "Alcampo" });
-            await context.SaveChangesAsync();
+            await SembrarProveedorAsync(context, "Alcampo");
         });
 
         // Act
@@ -249,12 +242,9 @@ public class DatabaseInitializerTest
         // Arrange: los dos cafés de Puchero tal y como estaban guardados (mismo nombre, distinta unidad)
         await CrearBaseHeredadaAsync(async context =>
         {
-            var puchero = new ProveedorEntity { Nombre = "Puchero" };
-            context.Proveedores.Add(puchero);
-            await context.SaveChangesAsync();
-            context.Productos.Add(new ProductoEntity { Nombre = "Brasil", Unidad = UnidadMedida.Kg, StockActual = 12, StockMaximo = 12, ProveedorId = puchero.Id });
-            context.Productos.Add(new ProductoEntity { Nombre = "Brasil", Unidad = UnidadMedida.Unidades, StockActual = 4, StockMaximo = 4, ProveedorId = puchero.Id });
-            await context.SaveChangesAsync();
+            await SembrarProveedorAsync(context, "Puchero"); // primer proveedor: Id = 1
+            await SembrarProductoAsync(context, "Brasil", stockActual: 12, stockMaximo: 12, unidad: UnidadMedida.Kg, proveedorId: 1);
+            await SembrarProductoAsync(context, "Brasil", stockActual: 4, stockMaximo: 4, unidad: UnidadMedida.Unidades, proveedorId: 1);
         });
 
         // Act
@@ -276,8 +266,7 @@ public class DatabaseInitializerTest
         // Arrange: un producto que por casualidad se llama "Brasil" pero no es de Puchero
         await CrearBaseHeredadaAsync(async context =>
         {
-            context.Productos.Add(new ProductoEntity { Nombre = "Brasil", StockActual = 1, StockMaximo = 1 });
-            await context.SaveChangesAsync();
+            await SembrarProductoAsync(context, "Brasil", stockActual: 1, stockMaximo: 1, unidad: UnidadMedida.SinEspecificar, proveedorId: null);
         });
 
         // Act
@@ -305,6 +294,23 @@ public class DatabaseInitializerTest
         await EjecutarAsync(context, "DROP TABLE IF EXISTS __EFMigrationsLock");
         await sembrar(context);
     }
+
+    // Siembra con SQL crudo y SOLO con las columnas del esquema de InitialCreate: la base heredada
+    // simula el esquema antiguo, y una inserción con las entidades actuales fallaría en cuanto una
+    // migración posterior añada columnas ("table X has no column named Y").
+    private static Task SembrarProveedorAsync(AppDbContext context, string nombre) =>
+        EjecutarAsync(context,
+            "INSERT INTO Proveedores (Nombre, ImagenUrl, Telefono, PersonaContacto, Email, DiaReparto, Notas, Direccion, NifCif, " +
+            "EsSupermercadoGenerico, AgruparPorTipoUnidad, PrecioUnitarioAltaPrecision) " +
+            $"VALUES ('{nombre.Replace("'", "''")}', '', '', '', '', '', '', '', '', 0, 0, 0)");
+
+    private static Task SembrarProductoAsync(
+        AppDbContext context, string nombre, int stockActual, int stockMaximo, UnidadMedida unidad, int? proveedorId) =>
+        EjecutarAsync(context,
+            "INSERT INTO Productos (Nombre, StockActual, StockMaximo, Unidad, Descripcion, ImagenUrl, ProveedorId, PrecioUnitario, " +
+            "SeguimientoIndividual, AplicaConciliacionTpv, UnidadesPorPack, Pasillo, OrdenEnPasillo, EsFrontalPasillo, Seccion) " +
+            $"VALUES ('{nombre.Replace("'", "''")}', {stockActual}, {stockMaximo}, {(int)unidad}, '', '', " +
+            $"{(proveedorId is null ? "NULL" : proveedorId.ToString())}, '0', 0, 0, NULL, NULL, 0, 0, 0)");
 
     private static async Task EjecutarAsync(AppDbContext context, string sql)
     {
