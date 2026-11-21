@@ -3,6 +3,9 @@
 @inject IProductoService ProductoService
 @inject IProveedorService ProveedorService
 @inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject CafeStock.Blazor.Services.PdfService PdfService
+@inject CafeStock.Blazor.Services.EmailService EmailService
 
 <PageTitle>Realizar stock</PageTitle>
 
@@ -78,6 +81,24 @@ else
         <MudText Typo="Typo.h5" Style="color:#3E2723; margin:0;">@_nombreGrupoSeleccionado</MudText>
     </div>
 
+    @* Supermercados (Alcampo...): por defecto A–Z; el orden por pasillo sigue el recorrido de la tienda. *@
+    @if (_grupoSeleccionado?.EsSupermercadoGenerico == true)
+    {
+        <div class="d-flex flex-wrap align-center gap-2 mb-4">
+            <MudText Typo="Typo.overline" Style="color:#6D4C41;">Orden</MudText>
+            <MudChip T="string" Color="@(_ordenPasillo ? Color.Default : Color.Primary)"
+                     Variant="@(_ordenPasillo ? Variant.Outlined : Variant.Filled)"
+                     OnClick="@(() => _ordenPasillo = false)">
+                A–Z
+            </MudChip>
+            <MudChip T="string" Color="@(_ordenPasillo ? Color.Primary : Color.Default)"
+                     Variant="@(_ordenPasillo ? Variant.Filled : Variant.Outlined)"
+                     OnClick="@(() => _ordenPasillo = true)">
+                Por pasillo
+            </MudChip>
+        </div>
+    }
+
     @if (!_productosDelGrupo.Any())
     {
         <MudAlert Severity="Severity.Info">Este grupo no tiene productos.</MudAlert>
@@ -134,10 +155,20 @@ else
         @* Hueco para que la última fila no quede tapada por el botón fijo. *@
         <div style="height:96px;"></div>
 
-        @* Barra fija: el botón "Actualizar todo" acompaña siempre al scroll. *@
+        @* Barra fija: el botón "Actualizar todo" acompaña siempre al scroll, y a su lado "Generar pedido"
+           (antes vivía en la pantalla Stock). Solo se activa con todo guardado, para que el pedido salga
+           con las cantidades ya confirmadas, y pide confirmación antes de enviar el email. *@
         <div style="position:fixed; left:0; right:0; bottom:0; z-index:1000;
-                    display:flex; justify-content:center; padding:16px;
+                    display:flex; justify-content:center; flex-wrap:wrap; gap:12px; padding:16px;
                     pointer-events:none;">
+            <MudButton Variant="Variant.Filled"
+                       Size="Size.Large"
+                       StartIcon="@Icons.Material.Filled.Storefront"
+                       Style="@($"pointer-events:auto; box-shadow:0 6px 20px rgba(62,39,35,0.35); {(PuedeGenerarPedido ? "background-color:#A8481F; color:#fff;" : "background-color:#EDE4D6; color:#8D7B6E;")}")"
+                       Disabled="@(!PuedeGenerarPedido)"
+                       OnClick="GenerarPedidoAsync">
+                @(_generandoPedido ? "Generando..." : $"Generar pedido ({_productosAPedir.Count})")
+            </MudButton>
             <MudButton Variant="Variant.Filled"
                        Size="Size.Large"
                        StartIcon="@Icons.Material.Filled.DoneAll"
@@ -171,18 +202,42 @@ else
     private string _nombreGrupoSeleccionado =>
         _sinProveedorSeleccionado ? "Sin proveedor asignado" : _grupoSeleccionado?.Nombre ?? string.Empty;
 
+    // Permite llegar con el proveedor ya elegido (logos de la pantalla Stock y botón de Inicio).
+    [SupplyParameterFromQuery(Name = "proveedorId")]
+    [Parameter]
+    public int? ProveedorIdInicial { get; set; }
+
+    private bool _ordenPasillo;
+    private bool _generandoPedido;
+
+    // Siempre A–Z (ver OrdenAlfabetico), salvo "Por pasillo" en un supermercado: pasillo (los sin
+    // pasillo al final), posición dentro del pasillo y nombre. Ninguno de los dos órdenes depende
+    // de la cantidad que se está tecleando, así que la lista no salta mientras se cuenta.
     private IEnumerable<Producto> _productosDelGrupo
     {
         get
         {
+            List<Producto> lista;
             if (_sinProveedorSeleccionado)
-                return _productos.Where(p => p.ProveedorId is null).ToList();
-            if (_grupoSeleccionado is null)
+                lista = _productos.Where(p => p.ProveedorId is null).ToList();
+            else if (_grupoSeleccionado is null)
                 return [];
-            var proveedorId = _grupoSeleccionado.Id;
-            return _productos.Where(p => p.ProveedorId == proveedorId).ToList();
+            else
+            {
+                var proveedorId = _grupoSeleccionado.Id;
+                lista = _productos.Where(p => p.ProveedorId == proveedorId).ToList();
+            }
+
+            return _ordenPasillo && _grupoSeleccionado?.EsSupermercadoGenerico == true
+                ? lista.OrderBy(p => p.Pasillo ?? int.MaxValue).ThenBy(p => p.OrdenEnPasillo).LuegoAlfabeticamente(p => p.Nombre).ToList()
+                : lista.OrdenarAlfabeticamente(p => p.Nombre).ToList();
         }
     }
+
+    // Lo que hay que pedir de este grupo: los productos por debajo de su máximo.
+    private List<Producto> _productosAPedir => _productosDelGrupo.Where(p => p.CantidadAComprar > 0).ToList();
+
+    private bool PuedeGenerarPedido => !_generandoPedido && !_guardandoTodo && _pendientesEnGrupo == 0 && _productosAPedir.Count > 0;
 
     private int _pendientesEnGrupo => _productosDelGrupo.Count(p => EstadoDe(p) == EstadoFila.Pendiente);
 
@@ -198,7 +253,44 @@ else
             _valorGuardado[p.Id] = p.StockActual;
             _estadoFila[p.Id] = EstadoFila.SinCambios;
         }
+
+        if (ProveedorIdInicial is int id)
+        {
+            var proveedor = _proveedores.FirstOrDefault(p => p.Id == id);
+            if (proveedor is not null) SeleccionarProveedor(proveedor);
+        }
+
         _cargando = false;
+    }
+
+    private async Task GenerarPedidoAsync()
+    {
+        var aPedir = _productosAPedir;
+        if (aPedir.Count == 0) return;
+
+        // Pregunta de seguridad: enviar el pedido manda un email real al encargado.
+        var confirmado = await DialogService.ShowMessageBoxAsync(
+            "Generar pedido",
+            $"Se enviará por email el pedido de {_nombreGrupoSeleccionado} ({aPedir.Count} producto{(aPedir.Count == 1 ? "" : "s")} por reponer). ¿Quieres enviarlo?",
+            yesText: "Sí, enviar",
+            cancelText: "Cancelar");
+        if (confirmado != true) return;
+
+        _generandoPedido = true;
+        try
+        {
+            var pdf = PdfService.GenerarInformePedido(aPedir, _proveedores);
+            await EmailService.EnviarInformePedidoAsync(pdf);
+            Snackbar.Add($"Pedido de {_nombreGrupoSeleccionado} enviado por email", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _generandoPedido = false;
+        }
     }
 
     private EstadoFila EstadoDe(Producto p) =>

@@ -3,9 +3,6 @@
 @inject IProductoService ProductoService
 @inject IProveedorService ProveedorService
 @inject NavigationManager Navigation
-@inject ISnackbar Snackbar
-@inject CafeStock.Blazor.Services.PdfService PdfService
-@inject CafeStock.Blazor.Services.EmailService EmailService
 
 <PageTitle>Stock</PageTitle>
 
@@ -20,17 +17,41 @@
                Href="/stock/realizar">
         Realizar stock
     </MudButton>
-    @if (_productosParaComprar.Any())
-    {
-        <MudButton Variant="Variant.Outlined"
-                   Color="Color.Primary"
-                   StartIcon="@Icons.Material.Filled.Storefront"
-                   OnClick="GenerarPedido"
-                   Disabled="_generandoPedido">
-            @(_generandoPedido ? "Generando..." : "Generar pedido")
-        </MudButton>
-    }
 </div>
+
+@* Acceso directo a hacer el stock de cada proveedor: un toque en su logo abre Realizar stock ya
+   con ese proveedor elegido. El número indica cuántos productos suyos hay por reponer. *@
+@if (!_cargando && _proveedores.Any())
+{
+    <section class="stock-proveedores" aria-labelledby="stock-proveedores-titulo">
+        <h2 id="stock-proveedores-titulo" class="stock-proveedores-titulo">Hacer stock de…</h2>
+        <div class="stock-proveedores-lista">
+            @foreach (var proveedor in _proveedoresOrdenados)
+            {
+                var porReponer = _porReponerPorProveedor.GetValueOrDefault(proveedor.Id);
+                <a class="logo-proveedor" href="/stock/realizar?proveedorId=@proveedor.Id"
+                   style="--proveedor-color:@PaletaProveedores.ColorDe(proveedor)"
+                   aria-label="Hacer stock de @proveedor.Nombre">
+                    <span class="logo-proveedor-imagen">
+                        @if (!string.IsNullOrWhiteSpace(proveedor.ImagenUrl))
+                        {
+                            <img src="@proveedor.ImagenUrl" alt="" loading="lazy" decoding="async"/>
+                        }
+                        else
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.LocalShipping" Class="logo-proveedor-icono"/>
+                        }
+                        @if (porReponer > 0)
+                        {
+                            <span class="logo-proveedor-cuenta">@porReponer</span>
+                        }
+                    </span>
+                    <span class="logo-proveedor-nombre">@proveedor.Nombre</span>
+                </a>
+            }
+        </div>
+    </section>
+}
 
 <div class="d-flex justify-center mb-4">
     <MudPaper Elevation="3" Style="border-radius:9999px; max-width:400px; width:100%; padding:2px 20px;">
@@ -51,12 +72,12 @@
              OnClick="@(() => { _proveedorSeleccionado = null; _todosSeleccionado = true; })">
         Todos
     </MudChip>
-    @foreach (var proveedor in _proveedores)
+    @foreach (var proveedor in _proveedoresOrdenados)
     {
         <MudChip T="string" Color="@(_proveedorSeleccionado == proveedor.Id ? Color.Primary : Color.Default)"
                  Variant="@(_proveedorSeleccionado == proveedor.Id ? Variant.Filled : Variant.Outlined)"
                  OnClick="@(() => { _proveedorSeleccionado = proveedor.Id; _todosSeleccionado = false; })">
-            @proveedor.Nombre
+            <span class="punto-proveedor" style="background-color:@PaletaProveedores.ColorDe(proveedor)"></span>@proveedor.Nombre
         </MudChip>
     }
 </div>
@@ -80,6 +101,25 @@
         }
         <MudText Typo="Typo.h6" Style="color:#3E2723;">@_proveedorSeleccionadoObj.Nombre</MudText>
     </div>
+
+    @* Supermercados (Alcampo...): por defecto A–Z; el orden por pasillo, que sigue el recorrido de la
+       tienda, queda a un toque. *@
+    @if (_proveedorSeleccionadoObj.EsSupermercadoGenerico)
+    {
+        <div class="d-flex flex-wrap align-center gap-2 mb-4">
+            <MudText Typo="Typo.overline" Style="color:#6D4C41;">Orden</MudText>
+            <MudChip T="string" Color="@(_ordenPasillo ? Color.Default : Color.Primary)"
+                     Variant="@(_ordenPasillo ? Variant.Outlined : Variant.Filled)"
+                     OnClick="@(() => _ordenPasillo = false)">
+                A–Z
+            </MudChip>
+            <MudChip T="string" Color="@(_ordenPasillo ? Color.Primary : Color.Default)"
+                     Variant="@(_ordenPasillo ? Variant.Filled : Variant.Outlined)"
+                     OnClick="@(() => _ordenPasillo = true)">
+                Por pasillo
+            </MudChip>
+        </div>
+    }
 }
 
 @if (_cargando)
@@ -99,6 +139,7 @@ else
     <MudTable Items="_productosFiltrados" Hover="true" Striped="true" Elevation="2">
         <HeaderContent>
             <MudTh>Nombre</MudTh>
+            <MudTh>Nivel</MudTh>
             <MudTh>Actual</MudTh>
             <MudTh>Necesario</MudTh>
             <MudTh>Máximo</MudTh>
@@ -106,6 +147,12 @@ else
         </HeaderContent>
         <RowTemplate>
             <MudTd DataLabel="Nombre">@context.Nombre</MudTd>
+            <MudTd DataLabel="Nivel">
+                <span class="medidor @NivelStock.Clase(context.StockActual, context.StockMaximo)" style="display:inline-block; width:90px; vertical-align:middle;"
+                      role="img" aria-label="Stock @context.StockActual de @context.StockMaximo">
+                    <span class="medidor-relleno" style="width:@(NivelStock.Porcentaje(context.StockActual, context.StockMaximo))%"></span>
+                </span>
+            </MudTd>
             <MudTd DataLabel="Actual">@context.StockActual</MudTd>
             <MudTd DataLabel="Necesario">
                 <MudText Style="@($"color:{(context.CantidadAComprar > 0 ? "#993C1D" : "#3B6D11")}; font-weight:500;")">
@@ -127,12 +174,13 @@ else
 
     private IEnumerable<Producto> _productos = [];
     private IEnumerable<Proveedor> _proveedores = [];
-    private IEnumerable<Producto> _productosParaComprar = [];
+    private List<Proveedor> _proveedoresOrdenados = [];
+    private Dictionary<int, int> _porReponerPorProveedor = [];
     private bool _cargando = true;
-    private bool _generandoPedido;
     private string _busqueda = string.Empty;
     private int? _proveedorSeleccionado;
     private bool _todosSeleccionado;
+    private bool _ordenPasillo;
 
     private Proveedor? _proveedorSeleccionadoObj =>
         _proveedores.FirstOrDefault(p => p.Id == _proveedorSeleccionado);
@@ -148,18 +196,39 @@ else
             ? "F4"
             : "F2";
 
-    private IEnumerable<Producto> _productosFiltrados =>
-        !_filtroActivo
-            ? []
-            : _productos
+    // Siempre A–Z (ver OrdenAlfabetico), salvo que se pida el orden por pasillo en un supermercado:
+    // entonces por pasillo (los sin pasillo al final), posición dentro del pasillo y nombre.
+    private IEnumerable<Producto> _productosFiltrados
+    {
+        get
+        {
+            if (!_filtroActivo) return [];
+
+            var filtrados = _productos
                 .Where(p => string.IsNullOrWhiteSpace(_busqueda) || p.Nombre.Contains(_busqueda, StringComparison.OrdinalIgnoreCase))
-                .Where(p => _proveedorSeleccionado is null || p.ProveedorId == _proveedorSeleccionado);
+                .Where(p => _proveedorSeleccionado is null || p.ProveedorId == _proveedorSeleccionado)
+                .ToList();
+
+            var porPasillo = _ordenPasillo && _proveedorSeleccionadoObj?.EsSupermercadoGenerico == true;
+            return porPasillo
+                ? filtrados
+                    .OrderBy(p => p.Pasillo ?? int.MaxValue)
+                    .ThenBy(p => p.OrdenEnPasillo)
+                    .LuegoAlfabeticamente(p => p.Nombre)
+                    .ToList()
+                : filtrados.OrdenarAlfabeticamente(p => p.Nombre).ToList();
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
         _proveedores = await ProveedorService.GetAllAsync();
+        _proveedoresOrdenados = _proveedores.OrdenarAlfabeticamente(p => p.Nombre).ToList();
         _productos = await ProductoService.GetAllAsync();
-        _productosParaComprar = await ProductoService.GetProductosBajoMinimoAsync();
+        _porReponerPorProveedor = _productos
+            .Where(p => p.ProveedorId is not null && p.CantidadAComprar > 0)
+            .GroupBy(p => p.ProveedorId!.Value)
+            .ToDictionary(g => g.Key, g => g.Count());
 
         if (ProveedorIdInicial is not null)
         {
@@ -168,24 +237,4 @@ else
 
         _cargando = false;
     }
-
-    private async Task GenerarPedido()
-    {
-        _generandoPedido = true;
-        try
-        {
-            var pdf = PdfService.GenerarInformePedido(_productosParaComprar, _proveedores);
-            await EmailService.EnviarInformePedidoAsync(pdf);
-            Snackbar.Add("Pedido agrupado por proveedor enviado por email", Severity.Success);
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add(ex.Message, Severity.Error);
-        }
-        finally
-        {
-            _generandoPedido = false;
-        }
-    }
-
 }

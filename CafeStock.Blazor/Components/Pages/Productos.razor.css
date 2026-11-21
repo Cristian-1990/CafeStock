@@ -1,0 +1,120 @@
+/* =====================================================================
+   STOCK — accesos directos por proveedor ("Hacer stock de…") y punto de color en los filtros.
+   ===================================================================== */
+
+.stock-proveedores {
+    margin-bottom: 24px;
+}
+
+.stock-proveedores-titulo {
+    margin: 0 0 10px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.stock-proveedores-lista {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+
+/* Cada proveedor: su logo en una tarjeta con borde de su color. Toda la tarjeta es la zona táctil. */
+.logo-proveedor {
+    width: 108px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 8px 12px;
+    text-decoration: none;
+    color: var(--text-espresso);
+    background-color: var(--bg-surface);
+    border: 2px solid var(--proveedor-color, var(--text-muted));
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.logo-proveedor:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-card-hover);
+}
+
+.logo-proveedor:active {
+    transform: translateY(0);
+}
+
+.logo-proveedor-imagen {
+    position: relative;
+    width: 84px;
+    height: 84px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background-color: #FFFFFF;
+    border-radius: 12px;
+}
+
+.logo-proveedor-imagen img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+}
+
+.logo-proveedor-imagen ::deep .logo-proveedor-icono {
+    width: 40px;
+    height: 40px;
+    color: var(--proveedor-color, var(--text-muted));
+}
+
+/* Nº de productos por reponer de ese proveedor. */
+.logo-proveedor-cuenta {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    min-width: 22px;
+    padding: 1px 6px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    line-height: 1.5;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    color: #FFFFFF;
+    background-color: var(--accent-terracota);
+    border-radius: var(--radius-pill);
+}
+
+.logo-proveedor-nombre {
+    max-width: 100%;
+    font-size: 0.85rem;
+    font-weight: 600;
+    line-height: 1.2;
+    text-align: center;
+    overflow-wrap: anywhere;
+}
+
+/* Punto de color del proveedor dentro de los chips de filtro. */
+::deep .punto-proveedor {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    margin-right: 8px;
+    border-radius: 50%;
+    flex: none;
+}
+
+@media (max-width: 480px) {
+    .stock-proveedores-lista {
+        gap: 10px;
+    }
+
+    .logo-proveedor {
+        width: calc(33.333% - 7px);
+        min-width: 96px;
+    }
+}
