@@ -241,10 +241,28 @@ a:focus-visible, button:focus-visible, [role="button"]:focus-visible {
    (Componentes de MudBlazor: se ajustan aquí, en la capa global.)
    ===================================================================== */
 .mud-appbar {
-    /* background-color (y no el atajo background): en modo pruebas la cabecera lleva un rojo en línea
-       (MainLayout.razor) que debe seguir mandando para no confundir pruebas con producción. */
     background-color: var(--bg-espresso);
     box-shadow: 0 2px 12px rgba(62, 39, 35, 0.25);
+}
+
+/* Modo pruebas (Development): misma barra espresso, con una franja y una pastilla terracota. Se ve de
+   lejos, pero dentro de la paleta (antes era toda la barra en rojo). */
+.mud-appbar.appbar--pruebas {
+    border-bottom: 4px solid var(--accent-terracota);
+}
+
+.pastilla-pruebas {
+    flex: none;
+    margin-left: 14px;
+    padding: 4px 14px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: #FFFFFF;
+    background-color: var(--accent-terracota);
+    border-radius: var(--radius-pill);
 }
 
 /* Menú lateral: superficie crema en vez del beige liso, con filas en píldora. */

@@ -7,22 +7,27 @@
 <MudSnackbarProvider/>
 
 <MudLayout>
-    @* Aviso bien visible en Development (dotnet run, ver Program.cs) — usa cafestock-test.db,
-       NUNCA la base de datos real, pero conviene que no se confunda a simple vista con la app
-       de producción (mismo aspecto salvo por esto) cuando ambas corren a la vez en la Pi. *@
-    <MudAppBar Elevation="1" Style="@(WebHostEnvironment.IsDevelopment() ? "background-color:#B71C1C;" : null)">
+    @* Aviso de modo pruebas en Development (dotnet run, ver Program.cs) — usa cafestock-test.db,
+       NUNCA la base de datos real, pero no debe confundirse a simple vista con la app de
+       producción cuando ambas corren a la vez en la Pi. Antes era toda la barra en rojo, que
+       desentonaba con el diseño; ahora la barra es la misma y el aviso son una pastilla terracota
+       junto al nombre y una franja terracota bajo la barra: se sigue viendo de lejos, pero
+       dentro de la paleta. *@
+    <MudAppBar Elevation="1" Class="@(WebHostEnvironment.IsDevelopment() ? "appbar--pruebas" : null)">
         <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Class="d-md-none mr-2"
                        aria-label="Abrir menú" OnClick="@(() => _menuAbierto = !_menuAbierto)"/>
         <img src="LogoCafeteria.png" alt="Logo" class="d-none d-sm-inline" style="height:40px; margin-right:12px; background-color:white; border-radius:50%; padding:2px;"/>
         <MudText Typo="Typo.h5" Style="color:#FFFFFF; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
             CafeStock
-            @if (WebHostEnvironment.IsDevelopment())
-            {
-                @* Texto corto en pantallas estrechas: el largo partía la cabecera en varias líneas. *@
-                <span class="d-none d-sm-inline">— MODO PRUEBAS (datos no reales)</span>
-                <span class="d-sm-none">· PRUEBAS</span>
-            }
         </MudText>
+        @if (WebHostEnvironment.IsDevelopment())
+        {
+            @* Texto corto en pantallas estrechas: el largo partía la cabecera en varias líneas. *@
+            <span class="pastilla-pruebas" role="status">
+                <span class="d-none d-sm-inline">Modo pruebas · datos no reales</span>
+                <span class="d-sm-none">Pruebas</span>
+            </span>
+        }
         <MudSpacer/>
         <AuthorizeView>
             <Authorized>
