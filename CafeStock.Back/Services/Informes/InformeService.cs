@@ -338,4 +338,192 @@ public class InformeService : IInformeService
             conPresupuesto.Select(f => new PuntoDato(f.Proveedor, f.Presupuesto!.Value)).ToList(),
             conPresupuesto.Select(f => new PuntoDato(f.Proveedor, f.Real)).ToList());
     }
+
+    // ================================================================================
+    // RESUMEN
+    // ================================================================================
+
+    /// <summary>Un cambio de precio por debajo de este % no se avisa (el ruido de redondeos y céntimos).</summary>
+    public const decimal UmbralAvisoVariacionPrecio = 5m;
+
+    private static readonly string[] MesesCortos =
+        ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+
+    // ---- Evolución del gasto mes a mes ----
+
+    public List<PuntoDato> CalcularEvolucionGastoMensual(IEnumerable<Compra> compras, int meses = 12)
+    {
+        if (meses < 1) return [];
+
+        var lista = compras.ToList();
+        var ahora = Ahora;
+        var primerMes = new DateTime(ahora.Year, ahora.Month, 1).AddMonths(-(meses - 1));
+
+        var resultado = new List<PuntoDato>(meses);
+        for (var i = 0; i < meses; i++)
+        {
+            var inicio = primerMes.AddMonths(i);
+            var fin = inicio.AddMonths(1);
+            var gasto = lista.Where(c => c.Fecha >= inicio && c.Fecha < fin).Sum(ImporteDe);
+            // Texto escrito a mano (sin CultureInfo): en la Pi la globalización puede no tener es-ES.
+            resultado.Add(new PuntoDato($"{MesesCortos[inicio.Month - 1]} {inicio:yy}", gasto));
+        }
+        return resultado;
+    }
+
+    // ---- Inventario ----
+
+    public decimal CalcularValorInventario(IEnumerable<Producto> productos) =>
+        productos.Sum(p => p.StockActual * p.PrecioUnitario);
+
+    // Misma definición que el "sin stock" de Inicio: tiene máximo y no queda nada.
+    public List<Producto> CalcularProductosAgotados(IEnumerable<Producto> productos) =>
+        productos.Where(p => p.StockMaximo > 0 && p.StockActual <= 0).ToList();
+
+    // ---- Variaciones de precio ----
+
+    public List<VariacionPrecio> CalcularVariacionesPrecio(IEnumerable<Compra> compras)
+    {
+        var resultado = new List<VariacionPrecio>();
+
+        var porProducto = compras
+            .SelectMany(c => c.Lineas.Select(l => (c.Fecha, Linea: l)))
+            .GroupBy(x => x.Linea.ProductoId);
+
+        foreach (var grupo in porProducto)
+        {
+            // De más antigua a más reciente; a igualdad de fecha, el orden de las líneas.
+            var ordenadas = grupo.OrderBy(x => x.Fecha).ToList();
+            if (ordenadas.Count < 2) continue;
+
+            var actual = ordenadas[^1];
+            var anterior = ordenadas[^2];
+            if (anterior.Linea.PrecioUnitario <= 0 || actual.Linea.PrecioUnitario == anterior.Linea.PrecioUnitario) continue;
+
+            var diferencia = actual.Linea.PrecioUnitario - anterior.Linea.PrecioUnitario;
+            resultado.Add(new VariacionPrecio(
+                grupo.Key,
+                actual.Linea.ProductoNombre ?? anterior.Linea.ProductoNombre ?? $"Producto #{grupo.Key}",
+                anterior.Linea.PrecioUnitario,
+                actual.Linea.PrecioUnitario,
+                diferencia / anterior.Linea.PrecioUnitario * 100,
+                diferencia * actual.Linea.Cantidad,
+                actual.Fecha));
+        }
+
+        return resultado
+            .OrderByDescending(v => Math.Abs(v.PorcentajeVariacion))
+            .ThenBy(v => v.Producto, StringComparer.Ordinal)
+            .ToList();
+    }
+
+    // ---- Cifras del Resumen ----
+
+    public ResumenInforme CalcularResumen(
+        IEnumerable<Compra> compras, IEnumerable<Presupuesto> presupuestos,
+        IEnumerable<Proveedor> proveedores, IEnumerable<Producto> productos)
+    {
+        var listaCompras = compras.ToList();
+        var listaProductos = productos.ToList();
+        var gasto = CalcularGastoMesActual(listaCompras);
+        var (presupuestoMes, consumido) = PresupuestoDelMesActual(listaCompras, presupuestos);
+
+        return new ResumenInforme(
+            gasto.GastoMesActual,
+            gasto.VariacionPorcentual,
+            presupuestoMes,
+            consumido,
+            CalcularValorInventario(listaProductos),
+            CalcularProductosAgotados(listaProductos).Count,
+            CalcularProveedoresSinCompraReciente(listaCompras, proveedores).Count);
+    }
+
+    /// <summary>
+    /// Presupuesto total asignado este mes y % consumido. Para que la comparación sea justa solo se
+    /// cuenta el gasto de los proveedores que TIENEN presupuesto este mes (un proveedor sin presupuesto
+    /// no tiene nada contra lo que medirse). Null si no hay ningún presupuesto asignado.
+    /// </summary>
+    private (decimal? Presupuesto, decimal? PorcentajeConsumido) PresupuestoDelMesActual(
+        List<Compra> compras, IEnumerable<Presupuesto> presupuestos)
+    {
+        var ahora = Ahora;
+        var delMes = presupuestos.Where(p => p.Anio == ahora.Year && p.Mes == ahora.Month).ToList();
+        var total = delMes.Sum(p => p.ImporteAsignado);
+        if (delMes.Count == 0 || total <= 0) return (null, null);
+
+        var idsConPresupuesto = delMes.Select(p => p.ProveedorId).ToHashSet();
+        var gastoPresupuestado = compras
+            .Where(c => c.Fecha.Year == ahora.Year && c.Fecha.Month == ahora.Month
+                        && c.ProveedorId is int id && idsConPresupuesto.Contains(id))
+            .Sum(ImporteDe);
+
+        return (total, gastoPresupuestado / total * 100);
+    }
+
+    // ---- Avisos ----
+
+    private static string Eur(decimal valor) => valor.ToString("F2", CultureInfo.InvariantCulture).Replace('.', ',') + " €";
+
+    private static string Pct(decimal valor) => Math.Abs(valor).ToString("F0", CultureInfo.InvariantCulture) + " %";
+
+    public List<AvisoInforme> CalcularAvisos(
+        IEnumerable<Compra> compras, IEnumerable<Presupuesto> presupuestos,
+        IEnumerable<Proveedor> proveedores, IEnumerable<Producto> productos, int maximo = 5)
+    {
+        var listaCompras = compras.ToList();
+        var listaProveedores = proveedores.ToList();
+        var avisos = new List<AvisoInforme>();
+        var ahora = Ahora;
+
+        // 1) Presupuesto superado este mes (lo más grave: dinero ya gastado de más).
+        var nombres = listaProveedores.ToDictionary(p => p.Id, p => p.Nombre);
+        foreach (var p in presupuestos.Where(p => p.Anio == ahora.Year && p.Mes == ahora.Month && p.ImporteAsignado > 0))
+        {
+            var gasto = listaCompras
+                .Where(c => c.ProveedorId == p.ProveedorId && c.Fecha.Year == ahora.Year && c.Fecha.Month == ahora.Month)
+                .Sum(ImporteDe);
+            if (gasto <= p.ImporteAsignado) continue;
+
+            var nombre = nombres.TryGetValue(p.ProveedorId, out var n) ? n : $"Proveedor #{p.ProveedorId}";
+            avisos.Add(new AvisoInforme(NivelAviso.Alerta,
+                $"{nombre} ha superado su presupuesto de este mes",
+                $"{Eur(gasto)} gastados de {Eur(p.ImporteAsignado)} (+{Pct((gasto - p.ImporteAsignado) / p.ImporteAsignado * 100)})"));
+        }
+
+        // 2) Subidas de precio relevantes (≥ 5 %), las dos mayores.
+        foreach (var v in CalcularVariacionesPrecio(listaCompras)
+                     .Where(v => v.PorcentajeVariacion >= UmbralAvisoVariacionPrecio)
+                     .Take(2))
+        {
+            avisos.Add(new AvisoInforme(NivelAviso.Atencion,
+                $"{v.Producto} ha subido de precio un {Pct(v.PorcentajeVariacion)}",
+                $"De {Eur(v.PrecioAnterior)} a {Eur(v.PrecioActual)} por unidad; en la última compra supuso {Eur(v.ImpactoEuros)} de más"));
+        }
+
+        // 3) Proveedores sin compra reciente (los dos que más llevan).
+        foreach (var a in CalcularProveedoresSinCompraReciente(listaCompras, listaProveedores).Take(2))
+        {
+            avisos.Add(new AvisoInforme(NivelAviso.Atencion,
+                $"{a.Nombre} lleva tiempo sin compra",
+                a.DiasDesdeUltimaCompra is int dias ? $"Última compra hace {dias} días" : "Todavía no hay ninguna compra registrada"));
+        }
+
+        // 4) Productos agotados.
+        var agotados = CalcularProductosAgotados(productos);
+        if (agotados.Count > 0)
+        {
+            avisos.Add(new AvisoInforme(NivelAviso.Info,
+                agotados.Count == 1 ? "1 producto sin stock" : $"{agotados.Count} productos sin stock",
+                string.Join(", ", agotados.Take(4).Select(p => p.Nombre)) + (agotados.Count > 4 ? "…" : string.Empty)));
+        }
+
+        // De más a menos grave, conservando el orden en que se han ido añadiendo dentro de cada nivel.
+        return avisos
+            .Select((a, i) => (Aviso: a, Orden: i))
+            .OrderByDescending(x => x.Aviso.Nivel)
+            .ThenBy(x => x.Orden)
+            .Select(x => x.Aviso)
+            .Take(maximo)
+            .ToList();
+    }
 }

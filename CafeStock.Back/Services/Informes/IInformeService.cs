@@ -32,4 +32,30 @@ public interface IInformeService
     List<InformeReparto> CalcularFrecuenciaRepartoVsEsperado(IEnumerable<Compra> compras, IEnumerable<Proveedor> proveedores);
     PresupuestoVsRealResultado CalcularPresupuestoVsReal(
         IEnumerable<Compra> compras, IEnumerable<Presupuesto> presupuestos, int mes, int anio);
+
+    // ---- Resumen ----
+
+    /// <summary>Gasto de cada uno de los últimos <paramref name="meses"/> meses naturales (con los meses sin gasto a 0).</summary>
+    List<PuntoDato> CalcularEvolucionGastoMensual(IEnumerable<Compra> compras, int meses = 12);
+
+    /// <summary>Valor del inventario: Σ stock actual × precio de referencia (la misma fórmula que el snapshot diario).</summary>
+    decimal CalcularValorInventario(IEnumerable<Producto> productos);
+
+    /// <summary>Productos con máximo definido y sin existencias.</summary>
+    List<Producto> CalcularProductosAgotados(IEnumerable<Producto> productos);
+
+    /// <summary>
+    /// Productos cuyo precio de la última compra difiere del de la compra anterior, de mayor a menor
+    /// variación absoluta. Solo cuentan los productos con al menos dos compras.
+    /// </summary>
+    List<VariacionPrecio> CalcularVariacionesPrecio(IEnumerable<Compra> compras);
+
+    ResumenInforme CalcularResumen(
+        IEnumerable<Compra> compras, IEnumerable<Presupuesto> presupuestos,
+        IEnumerable<Proveedor> proveedores, IEnumerable<Producto> productos);
+
+    /// <summary>Avisos accionables, de más a menos graves, como mucho <paramref name="maximo"/>.</summary>
+    List<AvisoInforme> CalcularAvisos(
+        IEnumerable<Compra> compras, IEnumerable<Presupuesto> presupuestos,
+        IEnumerable<Proveedor> proveedores, IEnumerable<Producto> productos, int maximo = 5);
 }
