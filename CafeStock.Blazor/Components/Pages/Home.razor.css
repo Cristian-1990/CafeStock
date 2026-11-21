@@ -85,7 +85,7 @@
 }
 
 /* =====================================================================
-   VISTA PRINCIPAL — rediseño (tarjetas de acceso táctiles y cabecera con carácter).
+   VISTA PRINCIPAL — resumen del día, lo más urgente y accesos rápidos.
    Los estilos de la mascota de arriba no se tocan.
    ===================================================================== */
 .home {
@@ -97,10 +97,12 @@
     align-items: stretch;
 }
 
-/* Cabecera: banda espresso con el logo, el nombre y una línea de producto. */
-.home-hero {
+/* Banda espresso: saludo a la izquierda y tres cifras a la derecha. */
+.home-resumen {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
+    justify-content: space-between;
     gap: 24px;
     padding: 28px 32px;
     border-radius: var(--radius-card);
@@ -111,18 +113,9 @@
     box-shadow: var(--shadow-card);
 }
 
-.home-logo {
-    flex: none;
-    height: 104px;
-    width: 104px;
-    object-fit: cover;
-    border-radius: 50%;
-    background-color: #FFFFFF;
-    border: 3px solid var(--accent-gold);
-}
-
-.home-hero-texto {
+.home-saludo {
     min-width: 0;
+    flex: 1 1 280px;
 }
 
 .home-eyebrow {
@@ -137,9 +130,9 @@
 .home-titulo {
     margin: 0;
     font-family: var(--font-display);
-    font-size: clamp(2.2rem, 5vw, 3.2rem);
+    font-size: clamp(1.9rem, 4.2vw, 2.7rem);
     font-weight: 600;
-    line-height: 1.05;
+    line-height: 1.1;
     letter-spacing: -0.02em;
 }
 
@@ -149,12 +142,144 @@
     color: #EAD9C6;
 }
 
+/* Cifras: cada una es un enlace a la lista de stock. */
+.home-cifras {
+    display: flex;
+    gap: 12px;
+}
+
+.cifra {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 92px;
+    min-height: var(--touch-min);
+    padding: 12px 16px;
+    text-decoration: none;
+    color: var(--text-on-dark);
+    background-color: rgba(255, 248, 238, 0.10);
+    border: 1px solid rgba(255, 248, 238, 0.18);
+    border-radius: 16px;
+    transition: background-color 0.18s ease, transform 0.18s ease;
+}
+
+.cifra:hover {
+    background-color: rgba(255, 248, 238, 0.18);
+    transform: translateY(-2px);
+}
+
+.cifra-numero {
+    font-family: var(--font-display);
+    font-size: 2.2rem;
+    font-weight: 600;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+.cifra-texto {
+    margin-top: 4px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #EAD9C6;
+}
+
+.cifra--reponer .cifra-numero {
+    color: #FFB48A;
+}
+
+.cifra--agotado .cifra-numero {
+    color: #FF9C86;
+}
+
+.cifra--completo .cifra-numero {
+    color: #BFE3A8;
+}
+
+/* Lo más urgente: los productos más vacíos, con lo que falta. */
+.home-urgente {
+    margin-top: 20px;
+    padding: 18px 22px;
+    background-color: var(--bg-surface);
+    border: 1px solid rgba(109, 76, 65, 0.16);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+}
+
+.home-urgente-cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.home-urgente-titulo {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--text-espresso);
+}
+
+.home-urgente-enlace {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--accent-terracota);
+    text-decoration: none;
+}
+
+.home-urgente-enlace:hover {
+    text-decoration: underline;
+}
+
+.home-urgente-lista {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.home-urgente-lista li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: var(--touch-min);
+    padding: 6px 0;
+    border-top: 1px solid rgba(109, 76, 65, 0.12);
+}
+
+.urgente-nombre {
+    flex: 1;
+    min-width: 0;
+    font-weight: 600;
+    color: var(--text-espresso);
+}
+
+.urgente-stock {
+    font-size: 0.9rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted);
+}
+
+.urgente-repon {
+    flex: none;
+    padding: 2px 12px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #FFFFFF;
+    background-color: var(--accent-terracota);
+    border-radius: var(--radius-pill);
+}
+
 /* Accesos rápidos: rejilla fluida de tarjetas grandes. */
 .home-acciones {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: 16px;
-    margin-top: 24px;
+    margin-top: 20px;
 }
 
 .accion {
@@ -201,7 +326,7 @@
     color: var(--text-muted);
 }
 
-/* La acción principal del turno destaca: espresso con el icono en dorado. */
+/* La acción principal del turno destaca: espresso con el icono en dorado claro. */
 .accion--principal {
     color: var(--text-on-dark);
     background: linear-gradient(135deg, var(--bg-espresso) 0%, var(--bg-espresso-soft) 100%);
@@ -228,15 +353,18 @@
 }
 
 @media (max-width: 600px) {
-    .home-hero {
-        flex-direction: column;
-        text-align: center;
-        padding: 24px 20px;
+    .home-resumen {
+        padding: 22px 20px;
     }
 
-    .home-logo {
-        height: 88px;
-        width: 88px;
+    .home-cifras {
+        width: 100%;
+    }
+
+    .cifra {
+        flex: 1;
+        min-width: 0;
+        padding: 10px 8px;
     }
 
     .home-acciones {

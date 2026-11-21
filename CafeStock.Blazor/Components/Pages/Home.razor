@@ -2,25 +2,67 @@
 @attribute [Authorize(Policy = Politicas.Trabajador)]
 @implements IDisposable
 @inject MascotSettingsService MascotSettings
+@inject IProductoService ProductoService
 
 <PageTitle>CafeStock</PageTitle>
 
 <div class="home">
-    <section class="home-hero">
-        <img src="LogoCafeteria.png" alt="" class="home-logo"/>
-        <div class="home-hero-texto">
-            <p class="home-eyebrow">Café de especialidad</p>
-            <h1 class="home-titulo">CafeStock</h1>
-            <p class="home-subtitulo">Stock, proveedores y compras de la cafetería, de un vistazo.</p>
+    @* Resumen del día: en vez de repetir el logo y el nombre (ya están en la cabecera), la banda de
+       arriba saluda y da lo que importa al empezar el turno: cuánto hay que reponer. *@
+    <section class="home-resumen" aria-label="Resumen del stock">
+        <div class="home-saludo">
+            <p class="home-eyebrow">@FechaHoy</p>
+            <h1 class="home-titulo">
+                <AuthorizeView>
+                    <Authorized>@Saludo, @context.User.Identity?.Name</Authorized>
+                    <NotAuthorized>@Saludo</NotAuthorized>
+                </AuthorizeView>
+            </h1>
+            <p class="home-subtitulo">@FraseResumen</p>
+        </div>
+
+        <div class="home-cifras">
+            <a class="cifra cifra--reponer" href="/productos">
+                <span class="cifra-numero">@_porReponer</span>
+                <span class="cifra-texto">por reponer</span>
+            </a>
+            <a class="cifra cifra--agotado" href="/productos">
+                <span class="cifra-numero">@_sinStock</span>
+                <span class="cifra-texto">sin stock</span>
+            </a>
+            <a class="cifra cifra--completo" href="/productos">
+                <span class="cifra-numero">@_completos</span>
+                <span class="cifra-texto">completos</span>
+            </a>
         </div>
     </section>
 
-    @* Accesos rápidos: tarjetas grandes y táctiles (mín. 44 px) en vez de botones sueltos.
-       Cada una lleva a una página que ya existía; las de Encargado se esconden al Trabajador
-       (la protección real es el [Authorize] de cada página). *@
+    @if (_urgentes.Count > 0)
+    {
+        <section class="home-urgente" aria-labelledby="urgente-titulo">
+            <div class="home-urgente-cabecera">
+                <h2 id="urgente-titulo" class="home-urgente-titulo">Lo más urgente</h2>
+                <a class="home-urgente-enlace" href="/productos">Ver todo el stock</a>
+            </div>
+            <ul class="home-urgente-lista">
+                @foreach (var producto in _urgentes)
+                {
+                    <li>
+                        <span class="urgente-nombre">@producto.Nombre</span>
+                        <span class="urgente-stock">@producto.StockActual / @producto.StockMaximo</span>
+                        <span class="urgente-repon">Repón @producto.CantidadAComprar</span>
+                    </li>
+                }
+            </ul>
+        </section>
+    }
+
+    @* Accesos rápidos: tarjetas grandes y táctiles (mín. 44 px). Cada una lleva a una página que
+       ya existía; Proveedores se esconde al Trabajador (la protección real es el [Authorize] de
+       cada página). *@
     <nav class="home-acciones" aria-label="Accesos rápidos">
         <a class="accion accion--principal" href="/productos">
-            <MudIcon Icon="@CustomIcons.CoffeeBag" Class="accion-icono"/>
+            <MudIcon Icon="@Icons.Material.Filled.Inventory2" Class="accion-icono"/>
             <span class="accion-titulo">Stock</span>
             <span class="accion-texto">Qué hay, qué falta y el recuento</span>
         </a>
@@ -71,6 +113,60 @@
 </div>
 
 @code {
+    private static readonly string[] DiasSemana = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+    private static readonly string[] Meses =
+        ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+
+    // Resumen del stock para la banda superior: solo lectura de lo que ya devuelve ProductoService.
+    private int _porReponer;
+    private int _sinStock;
+    private int _completos;
+    private List<Producto> _urgentes = [];
+
+    // Texto escrito a mano (sin CultureInfo): en la Pi la globalización puede no tener es-ES.
+    private static string FechaHoy
+    {
+        get
+        {
+            var hoy = DateTime.Now;
+            return $"{DiasSemana[(int)hoy.DayOfWeek]} {hoy.Day} de {Meses[hoy.Month - 1]}";
+        }
+    }
+
+    private static string Saludo
+    {
+        get
+        {
+            var hora = DateTime.Now.Hour;
+            if (hora >= 21) return "Buenas noches";
+            if (hora >= 13) return "Buenas tardes";
+            return "Buenos días";
+        }
+    }
+
+    private string FraseResumen => _porReponer switch
+    {
+        0 => "Todo el stock está completo. ¡Buen turno!",
+        1 => "Hay 1 producto por reponer.",
+        _ => $"Hay {_porReponer} productos por reponer."
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        var productos = (await ProductoService.GetAllAsync()).ToList();
+        _porReponer = productos.Count(p => p.CantidadAComprar > 0);
+        _sinStock = productos.Count(p => p.StockMaximo > 0 && p.StockActual <= 0);
+        _completos = productos.Count(p => p.CantidadAComprar <= 0);
+
+        // Los más vacíos primero (proporción de stock sobre el máximo); a igualdad, los que más faltan.
+        _urgentes = productos
+            .Where(p => p.CantidadAComprar > 0)
+            .OrderBy(p => p.StockMaximo > 0 ? (double)p.StockActual / p.StockMaximo : 1)
+            .ThenByDescending(p => p.CantidadAComprar)
+            .Take(5)
+            .ToList();
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
