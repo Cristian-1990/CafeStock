@@ -271,6 +271,15 @@ h1:focus {
     --accent-green: #3F6B2E;           /* stock completo */
     --accent-green-soft: #DCE9D2;
 
+    /* Barras de progreso de stock (ver NivelStock): del verde llamativo (50 % o más) bajando por
+       colores cálidos hasta el rojo del último tramo. Pedidos expresamente, no salen de la paleta
+       corporativa. */
+    --nivel-5: #2DB84C;   /* 50-100 % */
+    --nivel-4: #F2C200;   /* 38-49 % */
+    --nivel-3: #F59B00;   /* 25-37 % */
+    --nivel-2: #EE6C1A;   /* 13-24 % */
+    --nivel-1: #D62828;   /* 0-12 % */
+
     /* Forma, sombra y tipografía */
     --radius-card: 18px;
     --radius-pill: 9999px;
@@ -279,6 +288,36 @@ h1:focus {
     --touch-min: 44px;
     --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
 }
+
+/* Medidor de stock (catálogo, tabla de Stock, Inicio): el relleno es el % sobre el máximo y su color
+   sale del tramo (clase n1..n5, ver NivelStock). El color no es lo único que informa: siempre va con
+   las cifras. Global porque lo usan varias pantallas. */
+.medidor {
+    position: relative;
+    flex: 1;
+    min-width: 48px;
+    height: 10px;
+    overflow: hidden;
+    background-color: var(--bg-sunken);
+    border-radius: var(--radius-pill);
+}
+
+.medidor-relleno {
+    display: block;
+    height: 100%;
+    border-radius: var(--radius-pill);
+    transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.medidor.n5 .medidor-relleno { background-color: var(--nivel-5); }
+.medidor.n4 .medidor-relleno { background-color: var(--nivel-4); }
+.medidor.n3 .medidor-relleno { background-color: var(--nivel-3); }
+.medidor.n2 .medidor-relleno { background-color: var(--nivel-2); }
+.medidor.n1 .medidor-relleno { background-color: var(--nivel-1); }
+
+/* Con stock a cero el relleno no se ve: el fondo de la barra se tiñe de rojo claro para que siga
+   avisando. */
+.medidor.n1 { background-color: rgba(214, 40, 40, 0.20); }
 
 /* Títulos con carácter (serif cálida); el cuerpo y los números siguen en sans. */
 .mud-typography-h3, .mud-typography-h4, .mud-typography-h5 {

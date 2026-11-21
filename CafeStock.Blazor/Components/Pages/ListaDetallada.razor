@@ -61,9 +61,37 @@ else
         }
     </div>
 
+    @* Orden: por defecto alfabético; también se puede agrupar por proveedor de menos a más productos o
+       de más a menos. Con un proveedor concreto elegido solo cabe el alfabético, así que se esconde. *@
+    @if (_proveedorSeleccionado is null)
+    {
+        <div class="catalogo-orden" role="group" aria-label="Ordenar el catálogo">
+            <span class="catalogo-orden-etiqueta">Ordenar</span>
+            @foreach (var (valor, texto) in OpcionesOrden)
+            {
+                <MudChip T="string" Color="@(_orden == valor ? Color.Primary : Color.Default)"
+                         Variant="@(_orden == valor ? Variant.Filled : Variant.Outlined)"
+                         OnClick="@(() => _orden = valor)">
+                    @texto
+                </MudChip>
+            }
+        </div>
+    }
+
     @if (!_productosFiltrados.Any())
     {
         <MudAlert Severity="Severity.Info">No hay productos que coincidan con estos filtros.</MudAlert>
+    }
+    else if (_agruparPorProveedor)
+    {
+        @foreach (var grupo in _gruposPorProveedor)
+        {
+            <h2 class="catalogo-grupo-titulo" style="--proveedor-color:@grupo.Color">
+                <span class="catalogo-grupo-punto"></span>@grupo.Nombre
+                <span class="catalogo-grupo-cuenta">@grupo.Productos.Count @(grupo.Productos.Count == 1 ? "producto" : "productos")</span>
+            </h2>
+            @TarjetasProductos(grupo.Productos)
+        }
     }
     else if (!_mostrarSeccionesUnidad)
     {
@@ -103,10 +131,52 @@ else
     private string _busqueda = string.Empty;
     private bool _restaurarPosicion;
 
+    private enum OrdenCatalogo { Alfabetico, ProveedorMenosProductos, ProveedorMasProductos }
+
+    private static readonly (OrdenCatalogo Valor, string Texto)[] OpcionesOrden =
+    [
+        (OrdenCatalogo.Alfabetico, "A–Z"),
+        (OrdenCatalogo.ProveedorMenosProductos, "Proveedor: menos productos primero"),
+        (OrdenCatalogo.ProveedorMasProductos, "Proveedor: más productos primero"),
+    ];
+
+    private OrdenCatalogo _orden = OrdenCatalogo.Alfabetico;
+    private Dictionary<int, string> _coloresProveedor = [];
+
+    // Siempre alfabético (sin distinguir tildes ni mayúsculas, ver OrdenAlfabetico).
     private IEnumerable<Producto> _productosFiltrados =>
         _productos
             .Where(p => string.IsNullOrWhiteSpace(_busqueda) || p.Nombre.Contains(_busqueda, StringComparison.OrdinalIgnoreCase))
-            .Where(p => _proveedorSeleccionado is null || p.ProveedorId == _proveedorSeleccionado);
+            .Where(p => _proveedorSeleccionado is null || p.ProveedorId == _proveedorSeleccionado)
+            .OrdenarAlfabeticamente(p => p.Nombre)
+            .ToList();
+
+    private bool _agruparPorProveedor => _proveedorSeleccionado is null && _orden != OrdenCatalogo.Alfabetico;
+
+    private record GrupoProveedor(string Nombre, string Color, List<Producto> Productos);
+
+    // Un grupo por proveedor (más uno para "Sin proveedor"), ordenados por su número de productos
+    // —ya filtrados por la búsqueda— y, a igualdad, por nombre. Dentro de cada grupo, A–Z.
+    private List<GrupoProveedor> _gruposPorProveedor
+    {
+        get
+        {
+            var productos = _productosFiltrados.ToList();
+            var grupos = productos
+                .GroupBy(p => p.ProveedorId)
+                .Select(g => new GrupoProveedor(
+                    g.Key is int id && _proveedoresPorId.TryGetValue(id, out var nombre) ? nombre : "Sin proveedor",
+                    g.Key is int idColor && _coloresProveedor.TryGetValue(idColor, out var color) ? color : "#6D4C41",
+                    g.ToList()))
+                .ToList();
+
+            return (_orden == OrdenCatalogo.ProveedorMasProductos
+                    ? grupos.OrderByDescending(g => g.Productos.Count)
+                    : grupos.OrderBy(g => g.Productos.Count))
+                .LuegoAlfabeticamente(g => g.Nombre)
+                .ToList();
+        }
+    }
 
     // División puramente visual de las tarjetas por tipo de unidad de medida
     // (ver CafeStock.Blazor.Services.UnidadMedidaExtensions), solo cuando el
@@ -124,9 +194,9 @@ else
         @<div class="rejilla-productos">
             @foreach (var producto in productos)
             {
-                @* Solo presentación: el nivel del medidor sale de StockActual/StockMaximo ya existentes. *@
-                var nivelPct = producto.StockMaximo > 0 ? Math.Min(100, producto.StockActual * 100 / producto.StockMaximo) : 0;
-                var nivelClase = producto.CantidadAComprar <= 0 ? "lleno" : nivelPct <= 25 ? "bajo" : "medio";
+                @* Solo presentación: el nivel del medidor sale de StockActual/StockMaximo (ver NivelStock). *@
+                var nivelPct = NivelStock.Porcentaje(producto.StockActual, producto.StockMaximo);
+                var nivelClase = NivelStock.Clase(producto.StockActual, producto.StockMaximo);
 
                 @* Un <button> da foco y teclado gratis; la tarjeta entera es la zona táctil. *@
                 <button type="button" class="tarjeta-producto" id="@($"prod-{producto.Id}")"
@@ -148,11 +218,12 @@ else
                     <span class="tarjeta-cuerpo">
                         @if (producto.ProveedorId is not null && _proveedoresPorId.TryGetValue(producto.ProveedorId.Value, out var nombreProveedor))
                         {
-                            <span class="tarjeta-proveedor">@nombreProveedor</span>
+                            <span class="tarjeta-proveedor"
+                                  style="--proveedor-color:@(_coloresProveedor.GetValueOrDefault(producto.ProveedorId.Value, "#6D4C41"))">@nombreProveedor</span>
                         }
                         <span class="tarjeta-nombre">@producto.Nombre</span>
                         <span class="tarjeta-stock">
-                            <span class="medidor medidor--@nivelClase" role="img"
+                            <span class="medidor @nivelClase" role="img"
                                   aria-label="Stock @producto.StockActual de @producto.StockMaximo">
                                 <span class="medidor-relleno" style="width:@(nivelPct)%"></span>
                             </span>
@@ -167,6 +238,7 @@ else
     {
         _proveedores = await ProveedorService.GetAllAsync();
         _proveedoresPorId = _proveedores.ToDictionary(p => p.Id, p => p.Nombre);
+        _coloresProveedor = _proveedores.ToDictionary(p => p.Id, p => PaletaProveedores.ColorDe(p));
         _productos = await ProductoService.GetAllAsync();
 
         // Estado inicial del filtro tomado de la URL (incluye la vuelta con "atrás").
