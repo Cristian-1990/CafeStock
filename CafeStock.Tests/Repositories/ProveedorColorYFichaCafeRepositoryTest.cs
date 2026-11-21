@@ -141,6 +141,48 @@ public class ProveedorColorYFichaCafeRepositoryTest
     }
 
     [Test]
+    public async Task Migracion_ColoresDeMarca_FijaAtrian_Delifrance_Mahou_Pascual_YMeritem()
+    {
+        await using (var contexto = new AppDbContext(_connectionString))
+        {
+            var anterior = contexto.Database.GetMigrations().Single(m => m.EndsWith("AddIdentity"));
+            await contexto.GetService<IMigrator>().MigrateAsync(anterior);
+        }
+
+        await using (var conexion = new SqliteConnection(_connectionString))
+        {
+            await conexion.OpenAsync();
+            foreach (var nombre in new[] { "Atrian", "Délifrance", "Mahou", "Pascual ", "Meritem", "Puchero", "Otro" })
+            {
+                await using var comando = conexion.CreateCommand();
+                comando.CommandText =
+                    "INSERT INTO Proveedores (Nombre, ImagenUrl, Telefono, PersonaContacto, Email, DiaReparto, Notas, Direccion, NifCif, " +
+                    $"EsSupermercadoGenerico, AgruparPorTipoUnidad, PrecioUnitarioAltaPrecision) VALUES ('{nombre}', '', '', '', '', '', '', '', '', 0, 0, 0)";
+                await comando.ExecuteNonQueryAsync();
+            }
+        }
+
+        await using (var contexto = new AppDbContext(_connectionString))
+            await contexto.Database.MigrateAsync();
+
+        var c = (await new ProveedoresEfRepository(_connectionString).GetAllAsync())
+            .ToDictionary(p => p.Nombre.Trim(), p => p.Color);
+
+        c["Atrian"].Should().Be("#5C3317");
+        c["Délifrance"].Should().Be("#1D3C87");
+        c["Mahou"].Should().Be("#B8732F");
+        c["Pascual"].Should().Be("#1C7ED6");
+        c["Meritem"].Should().Be("#F2711C");
+        c["Puchero"].Should().Be("#8B4513", "el marrón de Puchero no cambia");
+        PaletaProveedores.Colores.Should().Contain(c["Otro"], "un proveedor sin color de marca conserva su tono de la paleta");
+
+        // Los tres marrones se distinguen: Atrian más oscuro que Puchero, Mahou más claro.
+        static int Brillo(string hex) => Convert.ToInt32(hex.Substring(1, 2), 16) + Convert.ToInt32(hex.Substring(3, 2), 16) + Convert.ToInt32(hex.Substring(5, 2), 16);
+        Brillo(c["Atrian"]).Should().BeLessThan(Brillo(c["Puchero"]));
+        Brillo(c["Mahou"]).Should().BeGreaterThan(Brillo(c["Puchero"]));
+    }
+
+    [Test]
     public async Task Migracion_Recolorea_Puchero_CocaCola_YAlcampo_ConSusColoresDeMarca()
     {
         await using (var contexto = new AppDbContext(_connectionString))
@@ -152,7 +194,7 @@ public class ProveedorColorYFichaCafeRepositoryTest
         await using (var conexion = new SqliteConnection(_connectionString))
         {
             await conexion.OpenAsync();
-            foreach (var nombre in new[] { "Alcampo", "Puchero ", "Coca-Cola", "Mahou" })
+            foreach (var nombre in new[] { "Alcampo", "Puchero ", "Coca-Cola", "Verdura" })
             {
                 await using var comando = conexion.CreateCommand();
                 comando.CommandText =
@@ -171,7 +213,7 @@ public class ProveedorColorYFichaCafeRepositoryTest
         porNombre["Puchero"].Should().Be("#8B4513");     // marrón
         porNombre["Coca-Cola"].Should().Be("#F40009");   // rojo intenso
         porNombre["Alcampo"].Should().Be("#D9534F");     // rojo más suave
-        PaletaProveedores.Colores.Should().Contain(porNombre["Mahou"], "el resto recibe un tono de la paleta viva");
+        PaletaProveedores.Colores.Should().Contain(porNombre["Verdura"], "el resto recibe un tono de la paleta viva");
         porNombre.Values.Should().OnlyHaveUniqueItems();
     }
 }
