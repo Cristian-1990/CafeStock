@@ -2,72 +2,169 @@
 @attribute [Authorize(Policy = Politicas.Trabajador)]
 @implements IDisposable
 @inject MascotSettingsService MascotSettings
+@inject IProductoService ProductoService
 
 <PageTitle>CafeStock</PageTitle>
 
-<MudContainer Class="d-flex flex-column align-center justify-center" Style="min-height:70vh;">
-    <img src="LogoCafeteria.png" alt="Logo" style="height:180px; margin-bottom:24px;"/>
-    <MudText Typo="Typo.h3" Align="Align.Center" Style="color:#3E2723;" Class="mb-2">
-        CafeStock
-    </MudText>
-    <MudText Typo="Typo.subtitle1" Align="Align.Center" Style="color:#6D4C41;">
-        Sistema de gestión de stock de la cafetería
-    </MudText>
-
-    <div class="d-flex gap-3 mt-6">
-        <MudButton Variant="Variant.Filled"
-                   Color="Color.Primary"
-                   Size="Size.Large"
-                   StartIcon="@Icons.Material.Filled.Inventory2"
-                   Href="/productos">
-            Ver productos
-        </MudButton>
-        <AuthorizeView Policy="@Politicas.Encargado">
-            <MudButton Variant="Variant.Outlined"
-                       Color="Color.Secondary"
-                       Size="Size.Large"
-                       StartIcon="@Icons.Material.Filled.LocalShipping"
-                       Href="/proveedores">
-                Ver proveedores
-            </MudButton>
-        </AuthorizeView>
-        <MudButton Variant="Variant.Outlined"
-                   Color="Color.Primary"
-                   Size="Size.Large"
-                   StartIcon="@Icons.Material.Filled.Checklist"
-                   Href="/stock/realizar">
-            Realizar stock
-        </MudButton>
-    </div>
-
-    <MudButton Variant="Variant.Text"
-               Color="Color.Secondary"
-               StartIcon="@(MascotSettings.Enabled ? Icons.Material.Filled.ToggleOn : Icons.Material.Filled.ToggleOff)"
-               OnClick="ToggleMascotAsync"
-               Class="mt-6">
-        @(MascotSettings.Enabled ? "Desactivar mascota guía" : "Activar mascota guía")
-    </MudButton>
-
+<div class="home">
+    @* La mascota va ARRIBA del todo, como en el resto de pantallas (ver AppMascot). *@
     @if (MascotSettings.Enabled)
     {
+        @* El león nuevo (el de la bolsa, ya con el diseño definitivo) se queda en Inicio. Cuando haya un
+           "saludo" nuevo con este mismo diseño, bastará con cambiar el nombre del fichero. *@
         <div class="home-presentation">
-            <div class="home-welcome-bubble">
+            @* El bocadillo va primero en el marcado a propósito: en desktop se saca del flujo con
+               position:absolute (no importa el orden), pero en pantalla estrecha (position:static, ver
+               media query) necesita aparecer ANTES que el león para mostrarse encima, no debajo. *@
+            <div class="home-welcome-bubble burbuja-mascota">
                 <MudText Typo="Typo.body2">
                     ¡Bienvenido a CafeStock! Desde aquí gestionas proveedores, tu catálogo de productos, la reposición de stock y las ventas. Vamos paso a paso.
                 </MudText>
             </div>
-            <img src="images/mascot/mascot-saludo.png"
+            <img src="images/mascot/mascot-producto.png"
                  alt="Mascota CafeStock"
                  class="mascot-home-image"/>
         </div>
     }
-    @* El bocadillo va primero en el marcado a propósito: en desktop se saca del flujo con
-       position:absolute (no importa el orden), pero en el fallback de tablet estrecha
-       (position:static, ver media query) necesita aparecer ANTES que el león en el
-       documento para que la pila vertical normal lo muestre arriba, no debajo. *@
-</MudContainer>
+
+    @* Botón activar/desactivar justo debajo de los pies del león (igual en todas las pantallas). *@
+    <MascotToggle/>
+
+    @* Resumen del día: en vez de repetir el logo y el nombre (ya están en la cabecera), la banda de
+       arriba saluda y da lo que importa al empezar el turno: cuánto hay que reponer. *@
+    <section class="home-resumen" aria-label="Resumen del stock">
+        <div class="home-saludo">
+            <p class="home-eyebrow">@FechaHoy</p>
+            <h1 class="home-titulo">
+                <AuthorizeView>
+                    <Authorized>@Saludo, @context.User.Identity?.Name</Authorized>
+                    <NotAuthorized>@Saludo</NotAuthorized>
+                </AuthorizeView>
+            </h1>
+            <p class="home-subtitulo">@FraseResumen</p>
+        </div>
+
+        <div class="home-cifras">
+            <a class="cifra cifra--reponer" href="/productos">
+                <span class="cifra-numero">@_porReponer</span>
+                <span class="cifra-texto">por reponer</span>
+            </a>
+            <a class="cifra cifra--agotado" href="/productos">
+                <span class="cifra-numero">@_sinStock</span>
+                <span class="cifra-texto">sin stock</span>
+            </a>
+            <a class="cifra cifra--completo" href="/productos">
+                <span class="cifra-numero">@_completos</span>
+                <span class="cifra-texto">completos</span>
+            </a>
+        </div>
+    </section>
+
+    @if (_urgentes.Count > 0)
+    {
+        <section class="home-urgente" aria-labelledby="urgente-titulo">
+            <div class="home-urgente-cabecera">
+                <h2 id="urgente-titulo" class="home-urgente-titulo">Lo más urgente</h2>
+                <a class="home-urgente-enlace" href="/productos">Ver todo el stock</a>
+            </div>
+            <ul class="home-urgente-lista">
+                @foreach (var producto in _urgentes)
+                {
+                    <li>
+                        <span class="urgente-nombre">@producto.Nombre</span>
+                        <span class="urgente-stock">@producto.StockActual / @producto.StockMaximo</span>
+                        <span class="urgente-repon">Repón @producto.CantidadAComprar</span>
+                    </li>
+                }
+            </ul>
+        </section>
+    }
+
+    @* Accesos rápidos: tarjetas grandes y táctiles (mín. 44 px). Cada una lleva a una página que
+       ya existía; Proveedores se esconde al Trabajador (la protección real es el [Authorize] de
+       cada página). *@
+    <nav class="home-acciones" aria-label="Accesos rápidos">
+        <a class="accion accion--principal" href="/productos">
+            <MudIcon Icon="@Icons.Material.Filled.Inventory2" Class="accion-icono"/>
+            <span class="accion-titulo">Stock</span>
+            <span class="accion-texto">Qué hay, qué falta y el recuento</span>
+        </a>
+        <AuthorizeView Policy="@Politicas.Encargado">
+            <a class="accion" href="/proveedores">
+                <MudIcon Icon="@Icons.Material.Filled.LocalShipping" Class="accion-icono"/>
+                <span class="accion-titulo">Proveedores</span>
+                <span class="accion-texto">Contacto y día de reparto</span>
+            </a>
+        </AuthorizeView>
+        <a class="accion" href="/vender">
+            <MudIcon Icon="@CustomIcons.CoffeeBean" Class="accion-icono"/>
+            <span class="accion-titulo">Venta de café</span>
+            <span class="accion-texto">Registra cada café vendido</span>
+        </a>
+        <a class="accion" href="/lista-compra">
+            <MudIcon Icon="@CustomIcons.DeliveryBox" Class="accion-icono"/>
+            <span class="accion-titulo">Recepcionar</span>
+            <span class="accion-texto">Confirma lo que ha llegado</span>
+        </a>
+    </nav>
+
+</div>
 
 @code {
+    private static readonly string[] DiasSemana = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+    private static readonly string[] Meses =
+        ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+
+    // Resumen del stock para la banda superior: solo lectura de lo que ya devuelve ProductoService.
+    private int _porReponer;
+    private int _sinStock;
+    private int _completos;
+    private List<Producto> _urgentes = [];
+
+    // Texto escrito a mano (sin CultureInfo): en la Pi la globalización puede no tener es-ES.
+    private static string FechaHoy
+    {
+        get
+        {
+            var hoy = DateTime.Now;
+            return $"{DiasSemana[(int)hoy.DayOfWeek]} {hoy.Day} de {Meses[hoy.Month - 1]}";
+        }
+    }
+
+    private static string Saludo
+    {
+        get
+        {
+            var hora = DateTime.Now.Hour;
+            if (hora >= 21) return "Buenas noches";
+            if (hora >= 13) return "Buenas tardes";
+            return "Buenos días";
+        }
+    }
+
+    private string FraseResumen => _porReponer switch
+    {
+        0 => "Todo el stock está completo. ¡Buen turno!",
+        1 => "Hay 1 producto por reponer.",
+        _ => $"Hay {_porReponer} productos por reponer."
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        var productos = (await ProductoService.GetAllAsync()).ToList();
+        _porReponer = productos.Count(p => p.CantidadAComprar > 0);
+        _sinStock = productos.Count(p => p.StockMaximo > 0 && p.StockActual <= 0);
+        _completos = productos.Count(p => p.CantidadAComprar <= 0);
+
+        // Los más vacíos primero (proporción de stock sobre el máximo); a igualdad, los que más faltan.
+        _urgentes = productos
+            .Where(p => p.CantidadAComprar > 0)
+            .OrderBy(p => p.StockMaximo > 0 ? (double)p.StockActual / p.StockMaximo : 1)
+            .ThenByDescending(p => p.CantidadAComprar)
+            .Take(5)
+            .ToList();
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -77,11 +174,6 @@
             MascotSettings.EnabledChanged += OnMascotEnabledChanged;
             StateHasChanged();
         }
-    }
-
-    private async Task ToggleMascotAsync()
-    {
-        await MascotSettings.SetEnabledAsync(!MascotSettings.Enabled);
     }
 
     private void OnMascotEnabledChanged(bool enabled) => InvokeAsync(StateHasChanged);

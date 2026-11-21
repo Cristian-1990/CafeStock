@@ -58,6 +58,75 @@ h1:focus {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+/* ---------- Bocadillo de la mascota (globo de cómic con cola hacia el león) ----------
+   Lo usan AppMascot (todas las pantallas) y Home. Cada uno pone su posición y su ancho; aquí
+   solo vive el aspecto: globo redondeado y una cola con borde dorado que apunta a la boca del león.
+   La cola son dos triángulos CSS superpuestos: el dorado (borde) y, encima, uno más pequeño del
+   color del fondo que tapa la unión con el borde del globo. En pantalla ancha el globo está a la
+   izquierda del león y la cola apunta a la derecha; por debajo de 1280 px el globo pasa encima del
+   león y la cola apunta hacia abajo. */
+.burbuja-mascota {
+    position: relative;
+    box-sizing: border-box;
+    padding: 18px 24px;
+    color: var(--text-espresso);
+    background-color: var(--bg-surface);
+    border: 3px solid var(--accent-gold);
+    border-radius: 30px;
+    box-shadow: 0 4px 14px rgba(62, 39, 35, 0.18);
+}
+
+.burbuja-mascota::before,
+.burbuja-mascota::after {
+    content: "";
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-color: transparent;
+}
+
+/* Cola dorada (borde) */
+.burbuja-mascota::before {
+    right: -26px;
+    top: var(--burbuja-cola-y, 34px);
+    border-width: 14px 0 14px 26px;
+    border-left-color: var(--accent-gold);
+}
+
+/* Cola interior (relleno) */
+.burbuja-mascota::after {
+    right: -18px;
+    top: calc(var(--burbuja-cola-y, 34px) + 3.5px);
+    border-width: 10.5px 0 10.5px 20px;
+    border-left-color: var(--bg-surface);
+}
+
+@media (max-width: 1280px) {
+    .burbuja-mascota::before,
+    .burbuja-mascota::after {
+        right: auto;
+        top: auto;
+        left: calc(50% - 14px);
+    }
+
+    .burbuja-mascota::before {
+        bottom: -26px;
+        border-width: 26px 14px 0 14px;
+        border-color: transparent;
+        border-top-color: var(--accent-gold);
+    }
+
+    .burbuja-mascota::after {
+        bottom: -18px;
+        left: calc(50% - 10.5px);
+        border-width: 20px 10.5px 0 10.5px;
+        border-color: transparent;
+        border-top-color: var(--bg-surface);
+    }
+}
+
 /* ---------- Pantallas de acceso (Login y Configuración inicial) ---------- */
 .acceso-fondo {
     min-height: 100vh;
@@ -65,93 +134,245 @@ h1:focus {
     align-items: center;
     justify-content: center;
     padding: 16px;
-    background-color: #F5EFE6;
+    background:
+        radial-gradient(90% 70% at 12% 0%, rgba(168, 72, 31, 0.18) 0%, rgba(168, 72, 31, 0) 60%),
+        linear-gradient(160deg, var(--bg-page) 0%, #EADBC8 100%);
 }
 
 .acceso-tarjeta {
     width: 100%;
-    max-width: 400px;
-    padding: 32px 28px;
-    background-color: #FFFBF5;
-    border-radius: 16px;
-    box-shadow: 0 4px 20px rgba(62, 39, 35, 0.15);
+    max-width: 420px;
+    padding: 36px 30px 30px;
+    background-color: var(--bg-surface);
+    border: 1px solid rgba(109, 76, 65, 0.15);
+    border-radius: 22px;
+    box-shadow: var(--shadow-card-hover);
     text-align: center;
 }
 
 .acceso-logo {
-    height: 72px;
-    width: 72px;
-    object-fit: contain;
+    height: 84px;
+    width: 84px;
+    object-fit: cover;
     background-color: #FFFFFF;
+    border: 3px solid var(--accent-gold);
     border-radius: 50%;
-    padding: 4px;
+}
+
+.acceso-eyebrow {
+    margin: 14px 0 0;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent-terracota);
 }
 
 .acceso-titulo {
-    margin: 12px 0 4px;
-    font-size: 1.6rem;
-    color: #3E2723;
+    margin: 2px 0 6px;
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--text-espresso);
 }
 
 .acceso-subtitulo {
-    margin: 0 0 20px;
-    color: #6D4C41;
+    margin: 0 0 22px;
     font-size: 0.95rem;
+    color: var(--text-muted);
 }
 
 .acceso-tarjeta form {
     display: flex;
     flex-direction: column;
-    text-align: left;
     gap: 6px;
+    text-align: left;
 }
 
 .acceso-tarjeta label {
-    margin-top: 8px;
+    margin-top: 10px;
     font-size: 0.85rem;
-    font-weight: 500;
-    color: #3E2723;
+    font-weight: 600;
+    color: var(--text-espresso);
 }
 
 .acceso-tarjeta input {
-    padding: 12px;
+    min-height: var(--touch-min);
+    padding: 10px 14px;
     font-size: 1rem;
-    border: 1px solid #B8956A;
-    border-radius: 8px;
     background-color: #FFFFFF;
+    border: 1px solid #C9B29A;
+    border-radius: 12px;
 }
 
 .acceso-tarjeta input:focus {
-    outline: 2px solid #C17817;
-    border-color: #C17817;
+    outline: 3px solid rgba(193, 120, 23, 0.35);
+    border-color: var(--accent-gold);
 }
 
 .acceso-tarjeta small {
-    color: #6D4C41;
+    color: var(--text-muted);
 }
 
 .acceso-tarjeta button {
-    margin-top: 18px;
+    min-height: 48px;
+    margin-top: 20px;
     padding: 12px;
     font-size: 1rem;
-    font-weight: 500;
-    color: #FFFFFF;
-    background-color: #6D4C41;
-    border: none;
-    border-radius: 8px;
+    font-weight: 600;
+    color: var(--text-on-dark);
     cursor: pointer;
+    background-color: var(--bg-espresso);
+    border: none;
+    border-radius: var(--radius-pill);
+    transition: background-color 0.18s ease;
 }
 
 .acceso-tarjeta button:hover {
-    background-color: #3E2723;
+    background-color: var(--accent-terracota);
 }
 
 .acceso-error {
     margin-bottom: 12px;
-    padding: 10px 12px;
-    text-align: left;
+    padding: 10px 14px;
     font-size: 0.9rem;
-    color: #993C1D;
-    background-color: #FBE9E4;
-    border-radius: 8px;
+    text-align: left;
+    color: #7A2E12;
+    background-color: var(--accent-terracota-soft);
+    border-radius: 12px;
 }
+
+/* =====================================================================
+   SISTEMA DE DISEÑO — CafeStock (café de especialidad)
+   Variables globales: crema cálido, espresso y terracota. Los marrones y el crema son los
+   de siempre (CLAUDE.md); el terracota es el acento nuevo. Contraste comprobado sobre
+   --bg-page (>= 4.5:1 para texto): muted 6,6:1, terracota 5,1:1, verde 5,5:1.
+   Los componentes usan estas variables, no colores sueltos.
+   ===================================================================== */
+:root {
+    /* Fondos */
+    --bg-page: #F5EFE6;          /* crema cálido (nunca blanco puro) */
+    --bg-sunken: #EFE6DA;       /* crema más oscuro: fondo de la app y zonas hundidas */
+    --bg-surface: #FFFBF5;      /* tarjetas */
+    --bg-espresso: #3E2723;     /* bandas oscuras y acciones principales */
+    --bg-espresso-soft: #5A3A2E;
+
+    /* Texto */
+    --text-primary: #2C2C2A;
+    --text-espresso: #3E2723;
+    --text-muted: #6D4C41;
+    --text-on-dark: #FFF8EE;
+
+    /* Acentos */
+    --accent-terracota: #A8481F;       /* acento nuevo: reponer, llamadas a la acción */
+    --accent-terracota-soft: #F3D9CB;
+    --accent-gold: #C17817;            /* el acento de siempre: bordes y detalles, no texto */
+    --accent-green: #3F6B2E;           /* stock completo */
+    --accent-green-soft: #DCE9D2;
+
+    /* Forma, sombra y tipografía */
+    --radius-card: 18px;
+    --radius-pill: 9999px;
+    --shadow-card: 0 1px 2px rgba(62, 39, 35, 0.08), 0 8px 24px rgba(62, 39, 35, 0.10);
+    --shadow-card-hover: 0 2px 4px rgba(62, 39, 35, 0.10), 0 14px 32px rgba(62, 39, 35, 0.16);
+    --touch-min: 44px;
+    --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+}
+
+/* Títulos con carácter (serif cálida); el cuerpo y los números siguen en sans. */
+.mud-typography-h3, .mud-typography-h4, .mud-typography-h5 {
+    font-family: var(--font-display) !important;
+    letter-spacing: -0.01em;
+}
+
+/* Cifras alineadas (precios, stock): que los dígitos ocupen todos lo mismo. */
+.tabular, .mud-table-cell, .mud-typography-body2 {
+    font-variant-numeric: tabular-nums;
+}
+
+/* Foco visible para quien navega con teclado; el defecto del navegador queda poco visible. */
+a:focus-visible, button:focus-visible, [role="button"]:focus-visible {
+    outline: 3px solid var(--accent-gold);
+    outline-offset: 2px;
+}
+
+/* Respeta a quien pide menos movimiento. */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+    }
+}
+
+/* =====================================================================
+   MARCO DE LA APP — cabecera y menú lateral con el sistema de diseño.
+   (Componentes de MudBlazor: se ajustan aquí, en la capa global.)
+   ===================================================================== */
+.mud-appbar {
+    background-color: var(--bg-espresso);
+    box-shadow: 0 2px 12px rgba(62, 39, 35, 0.25);
+}
+
+/* Modo pruebas (Development): misma barra espresso, con una franja y una pastilla terracota. Se ve de
+   lejos, pero dentro de la paleta (antes era toda la barra en rojo). */
+.mud-appbar.appbar--pruebas {
+    border-bottom: 4px solid var(--accent-terracota);
+}
+
+.pastilla-pruebas {
+    flex: none;
+    margin-left: 14px;
+    padding: 4px 14px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: #FFFFFF;
+    background-color: var(--accent-terracota);
+    border-radius: var(--radius-pill);
+}
+
+/* Menú lateral: superficie crema en vez del beige liso, con filas en píldora. */
+.mud-drawer {
+    --mud-palette-drawer-background: var(--bg-surface);
+    --mud-palette-drawer-text: var(--text-espresso);
+    --mud-palette-drawer-icon: var(--text-muted);
+    background-color: var(--bg-surface);
+    border-right: 1px solid rgba(109, 76, 65, 0.14);
+}
+
+.mud-drawer .mud-nav-link {
+    min-height: var(--touch-min);
+    margin: 2px 12px;
+    padding: 0 14px;
+    border-radius: 12px;
+    font-weight: 500;
+    color: var(--text-espresso);
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.mud-drawer .mud-nav-link:hover {
+    background-color: var(--bg-sunken);
+}
+
+.mud-drawer .mud-nav-link .mud-icon-root {
+    color: var(--text-muted);
+}
+
+/* Sección activa: fondo terracota suave y texto terracota oscuro (no solo color: también negrita). */
+.mud-drawer .mud-nav-link.active {
+    font-weight: 700;
+    color: #7A2E12;
+    background-color: var(--accent-terracota-soft);
+}
+
+.mud-drawer .mud-nav-link.active .mud-icon-root {
+    color: var(--accent-terracota);
+}
+
+.mud-drawer .mud-nav-menu {
+    padding-top: 10px;
+}
+
