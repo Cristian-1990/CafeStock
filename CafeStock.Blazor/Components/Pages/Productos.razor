@@ -10,15 +10,6 @@
     <MudText Typo="Typo.h4" Style="color:#3E2723; margin:0;">Stock</MudText>
 </div>
 
-<div class="d-flex gap-2 mb-4">
-    <MudButton Variant="Variant.Filled"
-               Color="Color.Primary"
-               StartIcon="@Icons.Material.Filled.Checklist"
-               Href="/stock/realizar">
-        Realizar stock
-    </MudButton>
-</div>
-
 @* Acceso directo a hacer el stock de cada proveedor: un toque en su logo abre Realizar stock ya
    con ese proveedor elegido. El número indica cuántos productos suyos hay por reponer. *@
 @if (!_cargando && _proveedores.Any())
