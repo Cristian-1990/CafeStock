@@ -124,6 +124,10 @@ namespace CafeStock.Back.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("Altitud")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<bool>("AplicaConciliacionTpv")
                         .HasColumnType("INTEGER");
 
@@ -134,6 +138,10 @@ namespace CafeStock.Back.Migrations
                     b.Property<bool>("EsFrontalPasillo")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("Finca")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("ImagenUrl")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -142,8 +150,16 @@ namespace CafeStock.Back.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("NotasCata")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("OrdenEnPasillo")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("Pais")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
                     b.Property<int?>("Pasillo")
                         .HasColumnType("INTEGER");
@@ -151,8 +167,16 @@ namespace CafeStock.Back.Migrations
                     b.Property<decimal>("PrecioUnitario")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Proceso")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<int?>("ProveedorId")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("Region")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("Seccion")
                         .HasColumnType("INTEGER");
@@ -173,6 +197,10 @@ namespace CafeStock.Back.Migrations
                     b.Property<int?>("UnidadesPorPack")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("Variedad")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ProveedorId");
@@ -188,6 +216,10 @@ namespace CafeStock.Back.Migrations
 
                     b.Property<bool>("AgruparPorTipoUnidad")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("Color")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("DiaReparto")
                         .IsRequired()
