@@ -93,6 +93,22 @@ public class ProveedorColorTest
     }
 
     [Test]
+    public void VariablesCss_DefineFondoYTextoLegible()
+    {
+        PaletaProveedores.VariablesCss(new Proveedor { Id = 1, Color = "#1C7ED6" })
+            .Should().Be("--proveedor-color:#1C7ED6;--proveedor-texto:#FFFFFF");
+        PaletaProveedores.VariablesCss("#F59F00")
+            .Should().Be("--proveedor-color:#F59F00;--proveedor-texto:#3E2723");
+    }
+
+    [Test]
+    public void VariablesCss_SinProveedorOConColorInvalido_UsaElMarronNeutro()
+    {
+        PaletaProveedores.VariablesCss((Proveedor?)null).Should().StartWith("--proveedor-color:#6D4C41;");
+        PaletaProveedores.VariablesCss("nada").Should().StartWith("--proveedor-color:#6D4C41;");
+    }
+
+    [Test]
     public void Paleta_NoIncluyeRojosNiMarrones_ReservadosParaProveedoresDeMarca()
     {
         PaletaProveedores.Colores.Should().NotContain(["#F40009", "#D9534F", "#8B4513"]);

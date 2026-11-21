@@ -289,6 +289,20 @@ h1:focus {
     --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
 }
 
+/* Nombre de proveedor sobre su color interno (Facturas, Catálogo, Proveedores). El elemento lleva
+   style="@PaletaProveedores.VariablesCss(...)", que define --proveedor-color (fondo) y
+   --proveedor-texto (blanco u oscuro, el de mayor contraste). */
+.etiqueta-proveedor {
+    display: inline-block;
+    max-width: 100%;
+    padding: 3px 14px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--proveedor-texto, #FFFFFF);
+    background-color: var(--proveedor-color, #6D4C41);
+    border-radius: var(--radius-pill);
+}
+
 /* Medidor de stock (catálogo, tabla de Stock, Inicio): el relleno es el % sobre el máximo y su color
    sale del tramo (clase n1..n5, ver NivelStock). El color no es lo único que informa: siempre va con
    las cifras. Global porque lo usan varias pantallas. */

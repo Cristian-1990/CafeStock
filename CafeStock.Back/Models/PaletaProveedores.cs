@@ -69,6 +69,19 @@ public static class PaletaProveedores
         return contrasteConBlanco >= contrasteConOscuro ? TextoClaro : TextoOscuro;
     }
 
+    /// <summary>
+    /// Variables CSS para pintar el nombre de un proveedor sobre su color (clase global
+    /// .etiqueta-proveedor en app.css): "--proveedor-color" (fondo) y "--proveedor-texto" (el de mayor
+    /// contraste). Se usa en el atributo style del elemento.
+    /// </summary>
+    public static string VariablesCss(Proveedor? proveedor) => VariablesCss(ColorDe(proveedor));
+
+    public static string VariablesCss(string? colorHex)
+    {
+        var color = EsHexValido(colorHex) ? colorHex!.Trim() : "#6D4C41";
+        return $"--proveedor-color:{color};--proveedor-texto:{TextoSobre(color)}";
+    }
+
     private static double LuminanciaRelativa(string hex)
     {
         static double Canal(string h, int inicio)

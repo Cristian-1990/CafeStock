@@ -61,22 +61,21 @@ else
         }
     </div>
 
-    @* Orden: por defecto alfabético; también se puede agrupar por proveedor de menos a más productos o
-       de más a menos. Con un proveedor concreto elegido solo cabe el alfabético, así que se esconde. *@
-    @if (_proveedorSeleccionado is null)
-    {
-        <div class="catalogo-orden" role="group" aria-label="Ordenar el catálogo">
-            <span class="catalogo-orden-etiqueta">Ordenar</span>
-            @foreach (var (valor, texto) in OpcionesOrden)
-            {
-                <MudChip T="string" Color="@(_orden == valor ? Color.Primary : Color.Default)"
-                         Variant="@(_orden == valor ? Variant.Filled : Variant.Outlined)"
-                         OnClick="@(() => _orden = valor)">
-                    @texto
-                </MudChip>
-            }
-        </div>
-    }
+    @* Orden: por defecto alfabético; también se puede agrupar por proveedor, con el que tiene menos
+       productos primero o con el que tiene más. Siempre visible: elegir un proveedor concreto no lo
+       quita ni lo cambia (con un solo proveedor no hay nada que agrupar y se ve A–Z, pero la elección
+       se conserva para cuando se vuelva a "Todos"). Va en la URL (?orden=) para recuperarlo con "atrás". *@
+    <div class="catalogo-orden" role="group" aria-label="Ordenar el catálogo">
+        <span class="catalogo-orden-etiqueta">Ordenar</span>
+        @foreach (var (valor, texto) in OpcionesOrden)
+        {
+            <MudChip T="string" Color="@(_orden == valor ? Color.Primary : Color.Default)"
+                     Variant="@(_orden == valor ? Variant.Filled : Variant.Outlined)"
+                     OnClick="@(() => CambiarOrden(valor))">
+                @texto
+            </MudChip>
+        }
+    </div>
 
     @if (!_productosFiltrados.Any())
     {
@@ -86,8 +85,8 @@ else
     {
         @foreach (var grupo in _gruposPorProveedor)
         {
-            <h2 class="catalogo-grupo-titulo" style="--proveedor-color:@grupo.Color">
-                <span class="catalogo-grupo-punto"></span>@grupo.Nombre
+            <h2 class="catalogo-grupo-titulo">
+                <span class="etiqueta-proveedor catalogo-grupo-nombre" style="@PaletaProveedores.VariablesCss(grupo.Color)">@grupo.Nombre</span>
                 <span class="catalogo-grupo-cuenta">@grupo.Productos.Count @(grupo.Productos.Count == 1 ? "producto" : "productos")</span>
             </h2>
             @TarjetasProductos(grupo.Productos)
@@ -122,6 +121,7 @@ else
     // "atrás" desde la ficha de un producto se recupere tal cual estaba.
     [Parameter, SupplyParameterFromQuery(Name = "proveedor")] public int? ProveedorQuery { get; set; }
     [Parameter, SupplyParameterFromQuery(Name = "q")] public string? BusquedaQuery { get; set; }
+    [Parameter, SupplyParameterFromQuery(Name = "orden")] public string? OrdenQuery { get; set; }
 
     private IEnumerable<Producto> _productos = [];
     private IEnumerable<Proveedor> _proveedores = [];
@@ -136,11 +136,32 @@ else
     private static readonly (OrdenCatalogo Valor, string Texto)[] OpcionesOrden =
     [
         (OrdenCatalogo.Alfabetico, "A–Z"),
-        (OrdenCatalogo.ProveedorMenosProductos, "Proveedor: menos productos primero"),
-        (OrdenCatalogo.ProveedorMasProductos, "Proveedor: más productos primero"),
+        (OrdenCatalogo.ProveedorMenosProductos, "Menos productos"),
+        (OrdenCatalogo.ProveedorMasProductos, "Más productos"),
     ];
 
     private OrdenCatalogo _orden = OrdenCatalogo.Alfabetico;
+
+    // Valor del orden en la URL (?orden=). A–Z es el de por defecto y no se escribe.
+    private static string? OrdenAQuery(OrdenCatalogo orden) => orden switch
+    {
+        OrdenCatalogo.ProveedorMenosProductos => "menos",
+        OrdenCatalogo.ProveedorMasProductos => "mas",
+        _ => null
+    };
+
+    private static OrdenCatalogo OrdenDesdeQuery(string? valor) => valor switch
+    {
+        "menos" => OrdenCatalogo.ProveedorMenosProductos,
+        "mas" => OrdenCatalogo.ProveedorMasProductos,
+        _ => OrdenCatalogo.Alfabetico
+    };
+
+    private void CambiarOrden(OrdenCatalogo orden)
+    {
+        _orden = orden;
+        ActualizarUrl();
+    }
     private Dictionary<int, string> _coloresProveedor = [];
 
     // Siempre alfabético (sin distinguir tildes ni mayúsculas, ver OrdenAlfabetico).
@@ -218,8 +239,8 @@ else
                     <span class="tarjeta-cuerpo">
                         @if (producto.ProveedorId is not null && _proveedoresPorId.TryGetValue(producto.ProveedorId.Value, out var nombreProveedor))
                         {
-                            <span class="tarjeta-proveedor"
-                                  style="--proveedor-color:@(_coloresProveedor.GetValueOrDefault(producto.ProveedorId.Value, "#6D4C41"))">@nombreProveedor</span>
+                            <span class="tarjeta-proveedor etiqueta-proveedor"
+                                  style="@PaletaProveedores.VariablesCss(_coloresProveedor.GetValueOrDefault(producto.ProveedorId.Value))">@nombreProveedor</span>
                         }
                         <span class="tarjeta-nombre">@producto.Nombre</span>
                         <span class="tarjeta-stock">
@@ -244,6 +265,7 @@ else
         // Estado inicial del filtro tomado de la URL (incluye la vuelta con "atrás").
         _proveedorSeleccionado = ProveedorQuery;
         _busqueda = BusquedaQuery ?? string.Empty;
+        _orden = OrdenDesdeQuery(OrdenQuery);
         _restaurarPosicion = true;
 
         _cargando = false;
@@ -273,6 +295,7 @@ else
         {
             ["proveedor"] = _proveedorSeleccionado,
             ["q"] = string.IsNullOrWhiteSpace(_busqueda) ? null : _busqueda,
+            ["orden"] = OrdenAQuery(_orden),
         };
         Navigation.NavigateTo(Navigation.GetUriWithQueryParameters(parametros), forceLoad: false, replace: true);
     }
