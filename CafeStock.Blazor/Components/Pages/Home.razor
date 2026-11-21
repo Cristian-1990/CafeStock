@@ -19,38 +19,28 @@
        Cada una lleva a una página que ya existía; las de Encargado se esconden al Trabajador
        (la protección real es el [Authorize] de cada página). *@
     <nav class="home-acciones" aria-label="Accesos rápidos">
-        <a class="accion accion--principal" href="/stock/realizar">
-            <MudIcon Icon="@Icons.Material.Filled.Checklist" Class="accion-icono"/>
-            <span class="accion-titulo">Realizar stock</span>
-            <span class="accion-texto">Cuenta lo que hay, proveedor a proveedor</span>
-        </a>
-        <a class="accion" href="/productos">
+        <a class="accion accion--principal" href="/productos">
             <MudIcon Icon="@Icons.Material.Filled.Inventory2" Class="accion-icono"/>
-            <span class="accion-titulo">Ver stock</span>
-            <span class="accion-texto">Qué hay y qué falta reponer</span>
-        </a>
-        <a class="accion" href="/lista-compra">
-            <MudIcon Icon="@Icons.Material.Filled.MoveToInbox" Class="accion-icono"/>
-            <span class="accion-titulo">Recepcionar</span>
-            <span class="accion-texto">Confirma lo que ha llegado</span>
-        </a>
-        <a class="accion" href="/vender">
-            <MudIcon Icon="@CustomIcons.CoffeeBean" Class="accion-icono"/>
-            <span class="accion-titulo">Venta de café</span>
-            <span class="accion-texto">Registra cada café vendido</span>
+            <span class="accion-titulo">Stock</span>
+            <span class="accion-texto">Qué hay, qué falta y el recuento</span>
         </a>
         <AuthorizeView Policy="@Politicas.Encargado">
-            <a class="accion" href="/lista-detallada">
-                <MudIcon Icon="@Icons.Material.Filled.ViewModule" Class="accion-icono"/>
-                <span class="accion-titulo">Catálogo</span>
-                <span class="accion-texto">Todos los productos, con su ficha</span>
-            </a>
             <a class="accion" href="/proveedores">
                 <MudIcon Icon="@Icons.Material.Filled.LocalShipping" Class="accion-icono"/>
                 <span class="accion-titulo">Proveedores</span>
                 <span class="accion-texto">Contacto y día de reparto</span>
             </a>
         </AuthorizeView>
+        <a class="accion" href="/vender">
+            <MudIcon Icon="@CustomIcons.CoffeeBean" Class="accion-icono"/>
+            <span class="accion-titulo">Venta de café</span>
+            <span class="accion-texto">Registra cada café vendido</span>
+        </a>
+        <a class="accion" href="/lista-compra">
+            <MudIcon Icon="@Icons.Material.Filled.MoveToInbox" Class="accion-icono"/>
+            <span class="accion-titulo">Recepcionar</span>
+            <span class="accion-texto">Confirma lo que ha llegado</span>
+        </a>
     </nav>
 
     <MudButton Variant="Variant.Text"
