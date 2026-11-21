@@ -76,6 +76,10 @@ else
             </MudChip>
         }
     </div>
+    @if (_explicacionOrden is { } explicacion)
+    {
+        <p class="catalogo-orden-explicacion" role="status">@explicacion</p>
+    }
 
     @if (!_productosFiltrados.Any())
     {
@@ -164,13 +168,41 @@ else
     }
     private Dictionary<int, string> _coloresProveedor = [];
 
-    // Siempre alfabético (sin distinguir tildes ni mayúsculas, ver OrdenAlfabetico).
-    private IEnumerable<Producto> _productosFiltrados =>
-        _productos
-            .Where(p => string.IsNullOrWhiteSpace(_busqueda) || p.Nombre.Contains(_busqueda, StringComparison.OrdinalIgnoreCase))
-            .Where(p => _proveedorSeleccionado is null || p.ProveedorId == _proveedorSeleccionado)
-            .OrdenarAlfabeticamente(p => p.Nombre)
-            .ToList();
+    // Alfabético (sin distinguir tildes ni mayúsculas, ver OrdenAlfabetico). Con un proveedor concreto
+    // elegido, "Menos productos" / "Más productos" ordenan SUS productos por stock (el que menos queda
+    // primero, o el que más): con un solo proveedor no hay grupos que ordenar y, si no, el filtro no
+    // haría nada. Con "Todos", esas mismas opciones ordenan los proveedores por su nº de productos.
+    private IEnumerable<Producto> _productosFiltrados
+    {
+        get
+        {
+            var filtrados = _productos
+                .Where(p => string.IsNullOrWhiteSpace(_busqueda) || p.Nombre.Contains(_busqueda, StringComparison.OrdinalIgnoreCase))
+                .Where(p => _proveedorSeleccionado is null || p.ProveedorId == _proveedorSeleccionado)
+                .ToList();
+
+            if (_proveedorSeleccionado is not null && _orden != OrdenCatalogo.Alfabetico)
+            {
+                return (_orden == OrdenCatalogo.ProveedorMenosProductos
+                        ? filtrados.OrderBy(p => p.StockActual)
+                        : filtrados.OrderByDescending(p => p.StockActual))
+                    .LuegoAlfabeticamente(p => p.Nombre)
+                    .ToList();
+            }
+
+            return filtrados.OrdenarAlfabeticamente(p => p.Nombre).ToList();
+        }
+    }
+
+    // Frase bajo el selector que dice qué está haciendo el orden elegido ahora mismo.
+    private string? _explicacionOrden => _orden switch
+    {
+        OrdenCatalogo.Alfabetico => null,
+        OrdenCatalogo.ProveedorMenosProductos when _proveedorSeleccionado is null => "Proveedores agrupados: primero el que tiene menos productos.",
+        OrdenCatalogo.ProveedorMasProductos when _proveedorSeleccionado is null => "Proveedores agrupados: primero el que tiene más productos.",
+        OrdenCatalogo.ProveedorMenosProductos => "Productos de este proveedor: primero los que menos stock tienen.",
+        _ => "Productos de este proveedor: primero los que más stock tienen."
+    };
 
     private bool _agruparPorProveedor => _proveedorSeleccionado is null && _orden != OrdenCatalogo.Alfabetico;
 
