@@ -58,6 +58,75 @@ h1:focus {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+/* ---------- Bocadillo de la mascota (globo de cómic con cola hacia el león) ----------
+   Lo usan AppMascot (todas las pantallas) y Home. Cada uno pone su posición y su ancho; aquí
+   solo vive el aspecto: globo redondeado y una cola con borde dorado que apunta a la boca del león.
+   La cola son dos triángulos CSS superpuestos: el dorado (borde) y, encima, uno más pequeño del
+   color del fondo que tapa la unión con el borde del globo. En pantalla ancha el globo está a la
+   izquierda del león y la cola apunta a la derecha; por debajo de 1280 px el globo pasa encima del
+   león y la cola apunta hacia abajo. */
+.burbuja-mascota {
+    position: relative;
+    box-sizing: border-box;
+    padding: 18px 24px;
+    color: var(--text-espresso);
+    background-color: var(--bg-surface);
+    border: 3px solid var(--accent-gold);
+    border-radius: 30px;
+    box-shadow: 0 4px 14px rgba(62, 39, 35, 0.18);
+}
+
+.burbuja-mascota::before,
+.burbuja-mascota::after {
+    content: "";
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-color: transparent;
+}
+
+/* Cola dorada (borde) */
+.burbuja-mascota::before {
+    right: -26px;
+    top: var(--burbuja-cola-y, 34px);
+    border-width: 14px 0 14px 26px;
+    border-left-color: var(--accent-gold);
+}
+
+/* Cola interior (relleno) */
+.burbuja-mascota::after {
+    right: -18px;
+    top: calc(var(--burbuja-cola-y, 34px) + 3.5px);
+    border-width: 10.5px 0 10.5px 20px;
+    border-left-color: var(--bg-surface);
+}
+
+@media (max-width: 1280px) {
+    .burbuja-mascota::before,
+    .burbuja-mascota::after {
+        right: auto;
+        top: auto;
+        left: calc(50% - 14px);
+    }
+
+    .burbuja-mascota::before {
+        bottom: -26px;
+        border-width: 26px 14px 0 14px;
+        border-color: transparent;
+        border-top-color: var(--accent-gold);
+    }
+
+    .burbuja-mascota::after {
+        bottom: -18px;
+        left: calc(50% - 10.5px);
+        border-width: 20px 10.5px 0 10.5px;
+        border-color: transparent;
+        border-top-color: var(--bg-surface);
+    }
+}
+
 /* ---------- Pantallas de acceso (Login y Configuración inicial) ---------- */
 .acceso-fondo {
     min-height: 100vh;

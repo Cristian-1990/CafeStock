@@ -1,18 +1,17 @@
 /* =====================================================================
-   MASCOTA DE CADA PÁGINA — debajo del contenido, centrada, con el bocadillo a su izquierda
-   (en pantallas anchas) o encima (en estrechas). Mismo planteamiento que el león de Inicio
-   (ver Home.razor.css). Antes vivía dentro del menú lateral; ahora el menú es solo navegación.
-   Se renderiza en MainLayout justo después de @Body.
+   MASCOTA DE CADA PÁGINA — ARRIBA del todo, centrada, con el bocadillo a su izquierda (en pantallas
+   anchas) o encima (en estrechas). Mismo planteamiento que el león de Inicio (ver Home.razor.css).
+   El aspecto del bocadillo (globo con cola) es global: .burbuja-mascota en wwwroot/app.css.
+   Se renderiza en MainLayout justo antes de @Body.
    ===================================================================== */
 .app-mascot {
     position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin: 48px auto 16px;
-    padding-bottom: 8px;
+    margin: 0 auto 8px;
     /* Ajustado al ancho del león (no a todo el contenido): el bocadillo se coloca con
-       right:calc(100% + 16px) respecto a este contenedor y, si ocupara todo el ancho, quedaría
+       right:calc(100% + 28px) respecto a este contenedor y, si ocupara todo el ancho, quedaría
        fuera de la pantalla por la izquierda. */
     width: fit-content;
 }
@@ -23,14 +22,15 @@
     cursor: pointer;
 }
 
-/* Mascota desactivada: queda solo el botón para volver a activarla, con menos aire. */
+/* Mascota desactivada: queda solo el botón para volver a activarla. */
 .app-mascot--apagada {
-    margin-top: 24px;
+    margin-bottom: 0;
 }
 
 .app-mascot-avatar {
-    /* Altura fija; el ancho sale solo de la proporción real del PNG (480x792, 0,606): no se deforma. */
-    height: 400px;
+    /* Altura fija; el ancho sale solo de la proporción real del PNG (480x792, 0,606): no se deforma.
+       Más pequeño que antes (400 px) porque ahora va arriba y no debe empujar el contenido demasiado. */
+    height: 300px;
     width: auto;
     max-width: 100%;
     object-fit: contain;
@@ -40,21 +40,16 @@
     clip-path: inset(2px);
 }
 
-/* Bocadillo a la izquierda y arriba del león, sin afectar al centrado del león (position:absolute).
-   La esquina inferior derecha sin redondear apunta hacia él. */
+/* Bocadillo a la izquierda del león, a la altura de la cabeza, sin afectar al centrado del león
+   (position:absolute). La cola (global) apunta a la boca. */
 .app-mascot-bubble {
     position: absolute;
-    right: calc(100% + 16px);
-    top: 56px;
+    right: calc(100% + 28px);
+    top: 4px;
     width: 340px;
     max-width: 340px;
-    box-sizing: border-box;
-    padding: 18px 22px;
-    color: var(--text-espresso);
-    background-color: var(--bg-surface);
-    border: 3px solid var(--accent-gold);
-    border-radius: 22px 22px 6px 22px;
-    box-shadow: 0 2px 10px rgba(62, 39, 35, 0.22);
+    /* Altura de la cola respecto al borde de arriba del globo, para que apunte a la cara del león. */
+    --burbuja-cola-y: 50px;
 }
 
 /* ::deep obligatorio: el <p> lo renderiza MudText (componente hijo), sin el atributo de scope de esta CSS aislada. */
@@ -64,18 +59,20 @@
 }
 
 /* Si a la izquierda del león no cabe el bocadillo (menú + león + bocadillo no entran), pasa encima y
-   centrado, y nunca se sale de la pantalla. */
+   centrado, con la cola hacia abajo, y nunca se sale de la pantalla. */
 @media (max-width: 1280px) {
     .app-mascot-bubble {
-        position: static;
+        position: relative;
+        right: auto;
+        top: auto;
         width: auto;
         max-width: min(420px, 92vw);
-        margin-bottom: 20px;
+        margin-bottom: 28px;
     }
 }
 
 @media (max-width: 600px) {
     .app-mascot-avatar {
-        height: 320px;
+        height: 260px;
     }
 }

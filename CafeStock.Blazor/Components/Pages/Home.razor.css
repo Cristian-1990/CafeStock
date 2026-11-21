@@ -28,7 +28,7 @@
    pérdida de nitidez. Punto de partida a reajustar tras verlo en el
    navegador, no un número cerrado. */
 .mascot-home-image {
-    height: 420px;
+    height: 300px;
     width: auto;
     object-fit: contain;
     display: block;
@@ -50,19 +50,15 @@
    la izquierda y hacia arriba del león (altura de la cabeza/melena), sin
    afectar el centrado del león porque queda fuera del flujo normal. */
 .home-welcome-bubble {
+    /* El aspecto (globo redondeado con cola hacia la boca del león) es el global .burbuja-mascota,
+       el mismo que en el resto de pantallas; aquí solo posición y ancho. */
     position: absolute;
-    right: calc(100% + 16px);
-    top: 60px;
+    right: calc(100% + 28px);
+    top: 4px;
     /* Ancho explícito: un elemento absoluto sin ancho se "encoge" al del contenedor (el del león). */
     width: 340px;
-    box-sizing: border-box;
-    background-color: #F5EFE6;
-    border: 3.6px solid #C17817;
-    border-radius: 24px 24px 7.2px 24px;
-    padding: 24px 28.8px;
-    color: #3E2723;
-    box-shadow: 0 2px 8px rgba(62, 39, 35, 0.25);
-    max-width: 360px;
+    max-width: 340px;
+    --burbuja-cola-y: 50px;
 }
 
 /* Tablet estrecha: a la izquierda del león ya no cabe sin desbordar la
@@ -72,10 +68,12 @@
    centrado igual que el león — nunca se corta ni se sale por la izquierda. */
 @media (max-width: 1280px) {
     .home-welcome-bubble {
-        position: static;
+        position: relative;
+        right: auto;
+        top: auto;
         width: auto;
-        max-width: min(360px, 90vw);
-        margin-bottom: 24px;
+        max-width: min(420px, 92vw);
+        margin-bottom: 28px;
     }
 }
 
@@ -83,8 +81,8 @@
    hijo), no lleva el atributo de scope de la CSS aislada de Home, así que
    hace falta ::deep para que el selector haga match. */
 .home-welcome-bubble ::deep .mud-typography-body2 {
-    /* -18% sobre 1.56rem a petición del usuario. */
-    font-size: 1.2792rem;
+    /* Mismo tamaño que el bocadillo de las demás pantallas (antes 1.28rem; ahora el león va arriba). */
+    font-size: 1.02rem;
     line-height: 1.5;
 }
 
@@ -345,11 +343,12 @@
     color: #F0C9A8;
 }
 
-/* El león de presentación queda debajo, con algo de aire. align-self:center hace que el contenedor
+/* El león de presentación va arriba del todo. align-self:center hace que el contenedor
    se ajuste al ancho del león (.home estira a sus hijos): así el bocadillo, que se coloca a la
    izquierda con right:calc(100% + 16px), queda junto al león y no fuera de la pantalla. */
 .home-presentation {
-    margin-top: 16px;
+    margin-top: 0;
+    margin-bottom: 0;
     align-self: center;
 }
 

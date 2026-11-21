@@ -2,7 +2,7 @@
 .mascota-toggle {
     display: flex;
     justify-content: center;
-    margin-top: 4px;
+    margin: 4px 0 12px;
 }
 
 .mascota-toggle ::deep .mud-button-root {
