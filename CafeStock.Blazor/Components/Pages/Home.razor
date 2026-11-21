@@ -3,6 +3,7 @@
 @implements IDisposable
 @inject MascotSettingsService MascotSettings
 @inject IProductoService ProductoService
+@inject IProveedorService ProveedorService
 
 <PageTitle>CafeStock</PageTitle>
 
@@ -60,7 +61,9 @@
         </div>
     </section>
 
-    @if (_urgentes.Count > 0)
+    @* Lo más urgente: los PROVEEDORES con productos por reponer (no los productos sueltos), los más
+       vacíos primero, cada uno con su barra de nivel y un botón directo a hacer su stock. *@
+    @if (_proveedoresUrgentes.Count > 0)
     {
         <section class="home-urgente" aria-labelledby="urgente-titulo">
             <div class="home-urgente-cabecera">
@@ -68,12 +71,36 @@
                 <a class="home-urgente-enlace" href="/productos">Ver todo el stock</a>
             </div>
             <ul class="home-urgente-lista">
-                @foreach (var producto in _urgentes)
+                @foreach (var urgente in _proveedoresUrgentes)
                 {
-                    <li>
-                        <span class="urgente-nombre">@producto.Nombre</span>
-                        <span class="urgente-stock">@producto.StockActual / @producto.StockMaximo</span>
-                        <span class="urgente-repon">Repón @producto.CantidadAComprar</span>
+                    <li style="--proveedor-color:@urgente.Color">
+                        <span class="urgente-logo">
+                            @if (!string.IsNullOrWhiteSpace(urgente.ImagenUrl))
+                            {
+                                <img src="@urgente.ImagenUrl" alt="" loading="lazy" decoding="async"/>
+                            }
+                            else
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.LocalShipping" Class="urgente-logo-icono"/>
+                            }
+                        </span>
+                        <span class="urgente-datos">
+                            <span class="urgente-nombre">@urgente.Nombre</span>
+                            <span class="urgente-detalle">
+                                @urgente.ProductosPorReponer @(urgente.ProductosPorReponer == 1 ? "producto por reponer" : "productos por reponer")
+                            </span>
+                            <span class="medidor @NivelStock.Clase(urgente.StockActual, urgente.StockMaximo)" role="img"
+                                  aria-label="Stock del proveedor: @urgente.StockActual de @urgente.StockMaximo">
+                                <span class="medidor-relleno" style="width:@(NivelStock.Porcentaje(urgente.StockActual, urgente.StockMaximo))%"></span>
+                            </span>
+                        </span>
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.Checklist"
+                                   Href="@urgente.EnlaceHacerStock"
+                                   Class="urgente-boton">
+                            Hacer stock
+                        </MudButton>
                     </li>
                 }
             </ul>
@@ -119,7 +146,13 @@
     private int _porReponer;
     private int _sinStock;
     private int _completos;
-    private List<Producto> _urgentes = [];
+
+    // Un proveedor con productos por reponer: su stock sumado (para su barra de nivel) y a dónde ir.
+    private record ProveedorUrgente(
+        string Nombre, string Color, string ImagenUrl, int ProductosPorReponer,
+        int StockActual, int StockMaximo, string EnlaceHacerStock);
+
+    private List<ProveedorUrgente> _proveedoresUrgentes = [];
 
     // Texto escrito a mano (sin CultureInfo): en la Pi la globalización puede no tener es-ES.
     private static string FechaHoy
@@ -156,12 +189,34 @@
         _sinStock = productos.Count(p => p.StockMaximo > 0 && p.StockActual <= 0);
         _completos = productos.Count(p => p.CantidadAComprar <= 0);
 
-        // Los más vacíos primero (proporción de stock sobre el máximo); a igualdad, los que más faltan.
-        _urgentes = productos
-            .Where(p => p.CantidadAComprar > 0)
-            .OrderBy(p => p.StockMaximo > 0 ? (double)p.StockActual / p.StockMaximo : 1)
-            .ThenByDescending(p => p.CantidadAComprar)
+        // Proveedores con algún producto por reponer. Orden: el más vacío primero (stock sumado de TODOS
+        // sus productos sobre su máximo sumado); a igualdad, el que tiene más productos por reponer.
+        var proveedores = (await ProveedorService.GetAllAsync()).ToDictionary(p => p.Id);
+        _proveedoresUrgentes = productos
+            .GroupBy(p => p.ProveedorId)
+            .Where(g => g.Any(p => p.CantidadAComprar > 0))
+            .Select(g =>
+            {
+                var proveedor = g.Key is int id && proveedores.TryGetValue(id, out var p) ? p : null;
+                return new
+                {
+                    Proveedor = proveedor,
+                    PorReponer = g.Count(p => p.CantidadAComprar > 0),
+                    Actual = g.Sum(p => p.StockActual),
+                    Maximo = g.Sum(p => p.StockMaximo),
+                    Enlace = g.Key is int idEnlace
+                        ? $"/stock/realizar?proveedorId={idEnlace}"
+                        : "/stock/realizar?sinProveedor=true"
+                };
+            })
+            .OrderBy(x => NivelStock.Porcentaje(x.Actual, x.Maximo))
+            .ThenByDescending(x => x.PorReponer)
             .Take(5)
+            .Select(x => new ProveedorUrgente(
+                x.Proveedor?.Nombre ?? "Sin proveedor asignado",
+                PaletaProveedores.ColorDe(x.Proveedor),
+                x.Proveedor?.ImagenUrl ?? string.Empty,
+                x.PorReponer, x.Actual, x.Maximo, x.Enlace))
             .ToList();
     }
 

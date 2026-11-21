@@ -207,6 +207,11 @@ else
     [Parameter]
     public int? ProveedorIdInicial { get; set; }
 
+    // Igual, para los productos sin proveedor (botón de Inicio).
+    [SupplyParameterFromQuery(Name = "sinProveedor")]
+    [Parameter]
+    public bool SinProveedorInicial { get; set; }
+
     private bool _ordenPasillo;
     private bool _generandoPedido;
 
@@ -258,6 +263,10 @@ else
         {
             var proveedor = _proveedores.FirstOrDefault(p => p.Id == id);
             if (proveedor is not null) SeleccionarProveedor(proveedor);
+        }
+        else if (SinProveedorInicial)
+        {
+            SeleccionarSinProveedor();
         }
 
         _cargando = false;
