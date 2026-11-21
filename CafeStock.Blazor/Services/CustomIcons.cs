@@ -10,17 +10,6 @@ namespace CafeStock.Blazor.Services;
 public static class CustomIcons
 {
     /// <summary>
-    /// Saco de café con un grano en el centro: "Stock" (lo que hay en el almacén).
-    /// </summary>
-    public const string CoffeeBag =
-        """
-        <path d="M7.5,2.5 L16.5,2.5 L19,6.5 L19,20 Q19,21.7 17.3,21.7 L6.7,21.7 Q5,21.7 5,20 L5,6.5 Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-        <path d="M5,6.5 L19,6.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        <ellipse cx="12" cy="14.6" rx="2.9" ry="4.1" fill="none" stroke="currentColor" stroke-width="1.8" transform="rotate(-30 12 14.6)"/>
-        <path d="M10.4,17 C11.7,15.2 11.3,14.1 13.6,12.2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-        """;
-
-    /// <summary>
     /// Caja abierta con una flecha que entra en ella: "Recepcionar" (lo que llega del proveedor).
     /// </summary>
     public const string DeliveryBox =
