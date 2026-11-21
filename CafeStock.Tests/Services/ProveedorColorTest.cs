@@ -73,6 +73,33 @@ public class ProveedorColorTest
         PaletaProveedores.ColorDe(null).Should().Be("#6D4C41");
     }
 
+    [TestCase("#FFFFFF", "#3E2723")]   // fondo blanco: texto oscuro
+    [TestCase("#F59F00", "#3E2723")]   // ámbar: claro, texto oscuro
+    [TestCase("#74B816", "#3E2723")]   // lima: texto oscuro
+    [TestCase("#1C7ED6", "#FFFFFF")]   // azul: texto blanco
+    [TestCase("#F40009", "#FFFFFF")]   // rojo intenso
+    [TestCase("#8B4513", "#FFFFFF")]   // marrón
+    [TestCase("#000000", "#FFFFFF")]
+    public void TextoSobre_ElijeElDeMayorContraste(string fondo, string esperado)
+    {
+        PaletaProveedores.TextoSobre(fondo).Should().Be(esperado);
+    }
+
+    [Test]
+    public void TextoSobre_ConColorInvalido_DevuelveBlanco()
+    {
+        PaletaProveedores.TextoSobre("rojo").Should().Be("#FFFFFF");
+        PaletaProveedores.TextoSobre(null).Should().Be("#FFFFFF");
+    }
+
+    [Test]
+    public void Paleta_NoIncluyeRojosNiMarrones_ReservadosParaProveedoresDeMarca()
+    {
+        PaletaProveedores.Colores.Should().NotContain(["#F40009", "#D9534F", "#8B4513"]);
+        PaletaProveedores.Colores.Should().OnlyHaveUniqueItems();
+        PaletaProveedores.Colores.Should().HaveCount(10);
+    }
+
     // ---------- ProveedorService.CreateAsync ----------
 
     private static (ProveedorService Servicio, Mock<IProveedorRepository> Repo) CrearServicio(IEnumerable<Proveedor> existentes)

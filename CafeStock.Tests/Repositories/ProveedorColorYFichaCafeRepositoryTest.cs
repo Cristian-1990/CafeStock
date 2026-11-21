@@ -139,4 +139,39 @@ public class ProveedorColorYFichaCafeRepositoryTest
         proveedores.Take(10).Select(p => p.Color).Should().BeEquivalentTo(PaletaProveedores.Colores);
         proveedores[10].Color.Should().Be(proveedores[0].Color, "con más de 10 proveedores la paleta se repite");
     }
+
+    [Test]
+    public async Task Migracion_Recolorea_Puchero_CocaCola_YAlcampo_ConSusColoresDeMarca()
+    {
+        await using (var contexto = new AppDbContext(_connectionString))
+        {
+            var anterior = contexto.Database.GetMigrations().Single(m => m.EndsWith("AddIdentity"));
+            await contexto.GetService<IMigrator>().MigrateAsync(anterior);
+        }
+
+        await using (var conexion = new SqliteConnection(_connectionString))
+        {
+            await conexion.OpenAsync();
+            foreach (var nombre in new[] { "Alcampo", "Puchero ", "Coca-Cola", "Mahou" })
+            {
+                await using var comando = conexion.CreateCommand();
+                comando.CommandText =
+                    "INSERT INTO Proveedores (Nombre, ImagenUrl, Telefono, PersonaContacto, Email, DiaReparto, Notas, Direccion, NifCif, " +
+                    $"EsSupermercadoGenerico, AgruparPorTipoUnidad, PrecioUnitarioAltaPrecision) VALUES ('{nombre}', '', '', '', '', '', '', '', '', 0, 0, 0)";
+                await comando.ExecuteNonQueryAsync();
+            }
+        }
+
+        await using (var contexto = new AppDbContext(_connectionString))
+            await contexto.Database.MigrateAsync();
+
+        var porNombre = (await new ProveedoresEfRepository(_connectionString).GetAllAsync())
+            .ToDictionary(p => p.Nombre.Trim(), p => p.Color);
+
+        porNombre["Puchero"].Should().Be("#8B4513");     // marrón
+        porNombre["Coca-Cola"].Should().Be("#F40009");   // rojo intenso
+        porNombre["Alcampo"].Should().Be("#D9534F");     // rojo más suave
+        PaletaProveedores.Colores.Should().Contain(porNombre["Mahou"], "el resto recibe un tono de la paleta viva");
+        porNombre.Values.Should().OnlyHaveUniqueItems();
+    }
 }
