@@ -1,0 +1,10 @@
+/* Centrado justo debajo de los pies del león, con zona táctil cómoda. */
+.mascota-toggle {
+    display: flex;
+    justify-content: center;
+    margin-top: 4px;
+}
+
+.mascota-toggle ::deep .mud-button-root {
+    min-height: var(--touch-min);
+}

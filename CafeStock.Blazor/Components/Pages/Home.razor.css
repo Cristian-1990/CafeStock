@@ -53,6 +53,9 @@
     position: absolute;
     right: calc(100% + 16px);
     top: 60px;
+    /* Ancho explícito: un elemento absoluto sin ancho se "encoge" al del contenedor (el del león). */
+    width: 340px;
+    box-sizing: border-box;
     background-color: #F5EFE6;
     border: 3.6px solid #C17817;
     border-radius: 24px 24px 7.2px 24px;
@@ -67,9 +70,10 @@
    En vez de eso, el bocadillo vuelve al flujo normal (position:static) y
    queda por delante del león en el marcado, así que cae arriba de él,
    centrado igual que el león — nunca se corta ni se sale por la izquierda. */
-@media (max-width: 900px) {
+@media (max-width: 1280px) {
     .home-welcome-bubble {
         position: static;
+        width: auto;
         max-width: min(360px, 90vw);
         margin-bottom: 24px;
     }
@@ -341,15 +345,12 @@
     color: #F0C9A8;
 }
 
-.home-mascota-toggle {
-    align-self: center;
-    margin-top: 24px;
-    min-height: var(--touch-min);
-}
-
-/* El león de presentación queda debajo, con algo de aire. */
+/* El león de presentación queda debajo, con algo de aire. align-self:center hace que el contenedor
+   se ajuste al ancho del león (.home estira a sus hijos): así el bocadillo, que se coloca a la
+   izquierda con right:calc(100% + 16px), queda junto al león y no fuera de la pantalla. */
 .home-presentation {
     margin-top: 16px;
+    align-self: center;
 }
 
 @media (max-width: 600px) {

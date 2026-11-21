@@ -11,7 +11,21 @@
     align-items: center;
     margin: 48px auto 16px;
     padding-bottom: 8px;
+    /* Ajustado al ancho del león (no a todo el contenido): el bocadillo se coloca con
+       right:calc(100% + 16px) respecto a este contenedor y, si ocupara todo el ancho, quedaría
+       fuera de la pantalla por la izquierda. */
+    width: fit-content;
+}
+
+/* Solo el león y el bocadillo se pueden tocar para cerrarlos; el botón de debajo no. */
+.app-mascot-avatar,
+.app-mascot-bubble {
     cursor: pointer;
+}
+
+/* Mascota desactivada: queda solo el botón para volver a activarla, con menos aire. */
+.app-mascot--apagada {
+    margin-top: 24px;
 }
 
 .app-mascot-avatar {
