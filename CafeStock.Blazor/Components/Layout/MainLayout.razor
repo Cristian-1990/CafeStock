@@ -1,5 +1,7 @@
 ﻿@inherits LayoutComponentBase
+@implements IDisposable
 @inject IWebHostEnvironment WebHostEnvironment
+@inject NavigationManager NavigationManager
 
 <MudThemeProvider Theme="_theme"/>
 <MudPopoverProvider/>
@@ -7,22 +9,31 @@
 <MudSnackbarProvider/>
 
 <MudLayout>
-    @* Aviso bien visible en Development (dotnet run, ver Program.cs) — usa cafestock-test.db,
-       NUNCA la base de datos real, pero conviene que no se confunda a simple vista con la app
-       de producción (mismo aspecto salvo por esto) cuando ambas corren a la vez en la Pi. *@
-    <MudAppBar Elevation="1" Style="@(WebHostEnvironment.IsDevelopment() ? "background-color:#B71C1C;" : null)">
-        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Class="d-md-none mr-2"
-                       aria-label="Abrir menú" OnClick="@(() => _menuAbierto = !_menuAbierto)"/>
+    @* Aviso de modo pruebas en Development (dotnet run, ver Program.cs) — usa cafestock-test.db,
+       NUNCA la base de datos real, pero no debe confundirse a simple vista con la app de
+       producción cuando ambas corren a la vez en la Pi. Antes era toda la barra en rojo, que
+       desentonaba con el diseño; ahora la barra es la misma y el aviso son una pastilla terracota
+       junto al nombre y una franja terracota bajo la barra: se sigue viendo de lejos, pero
+       dentro de la paleta. *@
+    <MudAppBar Elevation="1" Class="@(WebHostEnvironment.IsDevelopment() ? "appbar--pruebas" : null)">
+        @* Botón del menú SIEMPRE visible (también en pantalla ancha): el menú se cierra solo al elegir
+           una opción y este botón lo vuelve a abrir. *@
+        <MudIconButton Icon="@(_menuAbierto ? Icons.Material.Filled.MenuOpen : Icons.Material.Filled.Menu)"
+                       Color="Color.Inherit" Class="mr-2"
+                       aria-label="@(_menuAbierto ? "Cerrar menú" : "Abrir menú")"
+                       OnClick="@(() => _menuAbierto = !_menuAbierto)"/>
         <img src="LogoCafeteria.png" alt="Logo" class="d-none d-sm-inline" style="height:40px; margin-right:12px; background-color:white; border-radius:50%; padding:2px;"/>
         <MudText Typo="Typo.h5" Style="color:#FFFFFF; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
             CafeStock
-            @if (WebHostEnvironment.IsDevelopment())
-            {
-                @* Texto corto en pantallas estrechas: el largo partía la cabecera en varias líneas. *@
-                <span class="d-none d-sm-inline">— MODO PRUEBAS (datos no reales)</span>
-                <span class="d-sm-none">· PRUEBAS</span>
-            }
         </MudText>
+        @if (WebHostEnvironment.IsDevelopment())
+        {
+            @* Texto corto en pantallas estrechas: el largo partía la cabecera en varias líneas. *@
+            <span class="pastilla-pruebas" role="status">
+                <span class="d-none d-sm-inline">Modo pruebas · datos no reales</span>
+                <span class="d-sm-none">Pruebas</span>
+            </span>
+        }
         <MudSpacer/>
         <AuthorizeView>
             <Authorized>
@@ -42,12 +53,12 @@
         </AuthorizeView>
     </MudAppBar>
 
-    @* Width 320px (por defecto 240px): sitio para que AppMascot quepa dentro de la columna
-       de navegación sin invadir la zona de contenido — ver AppMascot.razor.css. *@
-    @* Responsive: fijo a la izquierda desde el breakpoint Md (≥960 px) y, en tablet vertical y
-       móvil, un panel que se abre con el botón de la cabecera y deja el contenido a ancho completo. *@
+    @* Responsive: en pantalla ancha (≥960 px) es una columna que empuja el contenido y en tablet
+       vertical/móvil un panel superpuesto. En ambos casos se abre y cierra con el botón de la
+       cabecera y se cierra solo al elegir una opción (ver AlCambiarDeRuta), dejando el contenido
+       a ancho completo. El menú es solo navegación: la mascota vive debajo del contenido. *@
     <MudDrawer @bind-Open="_menuAbierto" Elevation="2" Variant="@DrawerVariant.Responsive"
-               Breakpoint="Breakpoint.Md" Width="min(320px, 85vw)">
+               Breakpoint="Breakpoint.Md" Width="min(260px, 85vw)">
         <MudNavMenu>
             @* Cada enlace solo aparece si el rol del usuario puede entrar (ver Politicas). Ocultar el
                enlace es comodidad; la protección real está en el atributo [Authorize] de cada página. *@
@@ -56,12 +67,12 @@
             </AuthorizeView>
             <AuthorizeView Policy="@Politicas.Encargado">
                 <MudNavLink Href="proveedores" Icon="@Icons.Material.Filled.LocalShipping">Proveedores</MudNavLink>
-                <MudNavLink Href="lista-detallada" Icon="@Icons.Material.Filled.ViewModule">Productos</MudNavLink>
+                <MudNavLink Href="lista-detallada" Icon="@Icons.Material.Filled.MenuBook">Catálogo</MudNavLink>
             </AuthorizeView>
             <AuthorizeView Policy="@Politicas.Trabajador">
                 <MudNavLink Href="productos" Icon="@Icons.Material.Filled.Inventory2">Stock</MudNavLink>
                 <MudNavLink Href="vender" Icon="@CustomIcons.CoffeeBean">Venta</MudNavLink>
-                <MudNavLink Href="lista-compra" Icon="@Icons.Material.Filled.MoveToInbox">Recepcionar</MudNavLink>
+                <MudNavLink Href="lista-compra" Icon="@CustomIcons.DeliveryBox">Recepcionar</MudNavLink>
             </AuthorizeView>
             <AuthorizeView Policy="@Politicas.Encargado">
                 <MudNavLink Href="facturas" Icon="@Icons.Material.Filled.Receipt">Facturas</MudNavLink>
@@ -71,13 +82,12 @@
                 <MudNavLink Href="admin/usuarios" Icon="@Icons.Material.Filled.ManageAccounts">Usuarios</MudNavLink>
             </AuthorizeView>
         </MudNavMenu>
-        @* .mud-drawer-content ya es flex column a toda la altura del drawer — AppMascot se
-           ancla abajo con margin-top:auto en su propio contenedor, sin envoltorio extra. *@
-        <AppMascot/>
     </MudDrawer>
 
     <MudMainContent>
         <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+            @* La mascota va arriba del todo en cada página (y en Inicio, que lleva la suya). *@
+            <AppMascot/>
             @Body
         </MudContainer>
     </MudMainContent>
@@ -92,6 +102,32 @@
 @code {
     private readonly MudTheme _theme = TemaCafeStock.Tema;
 
-    // En pantallas anchas el menú siempre está a la vista; en estrechas empieza cerrado.
+    // El menú empieza abierto y se cierra al elegir una opción; el botón de la cabecera lo reabre.
     private bool _menuAbierto = true;
+
+    private string _rutaActual = "";
+
+    protected override void OnInitialized()
+    {
+        _rutaActual = RutaSinQuery(NavigationManager.Uri);
+        NavigationManager.LocationChanged += AlCambiarDeRuta;
+    }
+
+    // Solo se cierra si cambia la página (no si solo cambia una query o un fragmento dentro de ella).
+    private void AlCambiarDeRuta(object? sender, LocationChangedEventArgs e)
+    {
+        var nueva = RutaSinQuery(e.Location);
+        if (nueva == _rutaActual) return;
+
+        _rutaActual = nueva;
+        _menuAbierto = false;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private static string RutaSinQuery(string uri) => uri.Split('?')[0].Split('#')[0].TrimEnd('/');
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= AlCambiarDeRuta;
+    }
 }

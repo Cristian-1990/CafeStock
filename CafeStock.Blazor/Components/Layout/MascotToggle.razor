@@ -1,0 +1,31 @@
+@implements IDisposable
+@inject MascotSettingsService MascotSettings
+
+@* Botón único para activar/desactivar la mascota guía. Va justo debajo del león en TODAS las
+   pantallas (Inicio y el resto, ver AppMascot). Con la mascota desactivada se queda solo el botón
+   ("Activar"), para poder volver a encenderla desde la misma pantalla. El estado vive en
+   MascotSettingsService (localStorage), así que apagarla en una pantalla la apaga en todas. *@
+<div class="mascota-toggle" @onclick:stopPropagation="true">
+    <MudButton Variant="Variant.Text"
+               Color="Color.Secondary"
+               StartIcon="@(MascotSettings.Enabled ? Icons.Material.Filled.ToggleOn : Icons.Material.Filled.ToggleOff)"
+               OnClick="AlternarAsync">
+        @(MascotSettings.Enabled ? "Desactivar mascota guía" : "Activar mascota guía")
+    </MudButton>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        MascotSettings.EnabledChanged += OnEnabledChanged;
+    }
+
+    private async Task AlternarAsync() => await MascotSettings.SetEnabledAsync(!MascotSettings.Enabled);
+
+    private void OnEnabledChanged(bool enabled) => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        MascotSettings.EnabledChanged -= OnEnabledChanged;
+    }
+}

@@ -1,66 +1,78 @@
-/* Vive DENTRO de MudDrawer (ver MainLayout.razor), en flujo normal — ya no
-   position:fixed sobre el viewport (eso hacía que invadiera la zona de
-   contenido en vez de quedarse en la columna de navegación). El drawer mide
-   320px (MainLayout.razor) y su .mud-drawer-content ya es flex column a
-   toda la altura del drawer, así que basta con margin-top:auto aquí para
-   anclarse abajo, empujado por el MudNavMenu que va encima. Layout en
-   columna (bocadillo arriba, león debajo) en vez de fila: a 320px de ancho
-   no cabe la disposición horizontal anterior (avatar 262px + bocadillo al
-   lado ya sumaban 560px). padding propio a los lados para no pegarse al
-   borde del drawer, mismo criterio horizontal que .mud-nav-link (8px 16px). */
+/* =====================================================================
+   MASCOTA DE CADA PÁGINA — ARRIBA del todo, centrada, con el bocadillo a su izquierda (en pantallas
+   anchas) o encima (en estrechas). Mismo planteamiento que el león de Inicio (ver Home.razor.css).
+   El aspecto del bocadillo (globo con cola) es global: .burbuja-mascota en wwwroot/app.css.
+   Se renderiza en MainLayout justo antes de @Body.
+   ===================================================================== */
 .app-mascot {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
+    margin: 0 auto 8px;
+    /* Ajustado al ancho del león (no a todo el contenido): el bocadillo se coloca con
+       right:calc(100% + 28px) respecto a este contenedor y, si ocupara todo el ancho, quedaría
+       fuera de la pantalla por la izquierda. */
+    width: fit-content;
+}
+
+/* Solo el león y el bocadillo se pueden tocar para cerrarlos; el botón de debajo no. */
+.app-mascot-avatar,
+.app-mascot-bubble {
     cursor: pointer;
-    margin-top: auto;
-    padding: 16px;
-    box-sizing: border-box;
-    width: 100%;
+}
+
+/* Mascota desactivada: queda solo el botón para volver a activarla. */
+.app-mascot--apagada {
+    margin-bottom: 0;
 }
 
 .app-mascot-avatar {
-    /* Tamaño fijo por altura, ancho automático según el aspect ratio real de
-       cada PNG (cuerpo entero, 480x792, ratio 0.606) para no deformarlo —
-       solo height fijo, width:auto. 400px de alto da ~243px de ancho
-       (400 x 0.606), sigue cabiendo en los 320px del drawer — punto de
-       partida a reajustar tras verlo en el navegador, no un número cerrado. */
-    height: 400px;
+    /* Altura fija; el ancho sale solo de la proporción real del PNG (480x792, 0,606): no se deforma.
+       Más pequeño que antes (400 px) porque ahora va arriba y no debe empujar el contenido demasiado. */
+    height: 300px;
     width: auto;
     max-width: 100%;
     object-fit: contain;
     flex-shrink: 0;
-    filter: drop-shadow(0 2px 6px rgba(62, 39, 35, 0.35));
-    /* Recorta un borde casi-transparente que traen los PNG de origen —
-       comprobado en la ronda anterior (AppMascot de esquina), mismo recorte. */
+    filter: drop-shadow(0 2px 6px rgba(62, 39, 35, 0.30));
+    /* Recorta un borde casi transparente que traen los PNG de origen. */
     clip-path: inset(2px);
 }
 
-/* Bocadillo por ENCIMA del león ahora (antes a su izquierda) — la cola del
-   borde (esquina inferior derecha sin redondear) sigue apuntando hacia el
-   león, que ahora queda debajo en vez de a la derecha. Ocupa el ancho
-   disponible de la columna en vez de un max-width pensado para ir al lado
-   de un avatar de 288px — el texto envuelve en varias líneas si hace
-   falta, nunca se encoge la tipografía a algo ilegible. */
+/* Bocadillo a la izquierda del león, a la altura de la cabeza, sin afectar al centrado del león
+   (position:absolute). La cola (global) apunta a la boca. */
 .app-mascot-bubble {
-    background-color: #F5EFE6;
-    border: 2px solid #C17817;
-    border-radius: 14px 14px 4px 14px;
-    padding: 12px 14px;
-    color: #3E2723;
-    box-shadow: 0 2px 8px rgba(62, 39, 35, 0.25);
-    width: 100%;
-    box-sizing: border-box;
+    position: absolute;
+    right: calc(100% + 28px);
+    top: 4px;
+    width: 340px;
+    max-width: 340px;
+    /* Altura de la cola respecto al borde de arriba del globo, para que apunte a la cara del león. */
+    --burbuja-cola-y: 50px;
 }
 
-/* ::deep obligatorio: el <p> lo renderiza MudText (componente hijo), sin el
-   atributo de scope de esta CSS aislada. Tamaño pensado para el ancho de
-   columna (~288px útiles), no el 1.2792rem del widget de esquina anterior
-   (pensado para ir al lado de un avatar de 288px de alto) — a ese tamaño
-   aquí el bocadillo saldría desproporcionadamente alto. 0.8rem sigue siendo
-   perfectamente legible y dos-cuatro líneas de mensaje caben sin problema. */
+/* ::deep obligatorio: el <p> lo renderiza MudText (componente hijo), sin el atributo de scope de esta CSS aislada. */
 .app-mascot-bubble ::deep .mud-typography-body2 {
-    font-size: 0.8rem;
-    line-height: 1.4;
+    font-size: 1.02rem;
+    line-height: 1.5;
+}
+
+/* Si a la izquierda del león no cabe el bocadillo (menú + león + bocadillo no entran), pasa encima y
+   centrado, con la cola hacia abajo, y nunca se sale de la pantalla. */
+@media (max-width: 1280px) {
+    .app-mascot-bubble {
+        position: relative;
+        right: auto;
+        top: auto;
+        width: auto;
+        max-width: min(420px, 92vw);
+        margin-bottom: 28px;
+    }
+}
+
+@media (max-width: 600px) {
+    .app-mascot-avatar {
+        height: 260px;
+    }
 }

@@ -25,7 +25,7 @@ public class MascotMessageProvider : IMascotMessageProvider
         ["productos"] = (MascotPose.Caja,
             "Esta es tu lista de reposición: la columna 'Necesario' te dice qué falta comprar según el máximo de cada producto. Pulsa 'Generar pedido' para el PDF por proveedor."),
 
-        // Ruta real de la etiqueta de menú "Productos".
+        // Ruta real de la etiqueta de menú "Catálogo".
         ["lista-detallada"] = (MascotPose.Producto,
             "Este es tu catálogo: cada producto con su foto, proveedor y precio de referencia. Toca uno para ver o editar sus datos."),
 
