@@ -1,4 +1,5 @@
 @page "/facturas"
+@attribute [Authorize(Policy = Politicas.Encargado)]
 @inject CafeStock.Back.Services.Facturas.IFacturaService FacturaService
 @inject IProveedorService ProveedorService
 @inject NavigationManager Navigation

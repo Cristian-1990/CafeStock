@@ -1,4 +1,5 @@
 @page "/proveedores"
+@attribute [Authorize(Policy = Politicas.Encargado)]
 @inject IProveedorService ProveedorService
 @inject IProductoService ProductoService
 @inject NavigationManager Navigation

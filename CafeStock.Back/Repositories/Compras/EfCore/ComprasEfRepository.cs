@@ -1,4 +1,5 @@
 using CafeStock.Back.Entity;
+using CafeStock.Back.Infrastructure;
 using CafeStock.Back.Errors.Common;
 using CafeStock.Back.Errors.Compras;
 using CafeStock.Back.Mappers;
@@ -13,7 +14,6 @@ namespace CafeStock.Back.Repositories.Compras.EfCore;
 public class ComprasEfRepository : ICompraRepository
 {
     private readonly string _connectionString;
-    private bool _initialized;
 
     public ComprasEfRepository(string connection)
     {
@@ -22,22 +22,9 @@ public class ComprasEfRepository : ICompraRepository
 
     private AppDbContext CreateContext() => new AppDbContext(_connectionString);
 
-    private async Task InitializeAsync()
-    {
-        if (_initialized) return;
-        using var context = CreateContext();
-        await context.EnsureCreatedAsync();
-        await context.AsegurarTablasComprasAsync();
-        await context.AsegurarColumnaMetodoPagoAsync();
-        await context.AsegurarColumnaNumeroFacturaProveedorAsync();
-        await context.AsegurarColumnaFacturaAdjuntaUrlAsync();
-        await context.AsegurarColumnaNotasCompraAsync();
-        await context.AsegurarColumnaStockResultanteTrasRecepcionAsync();
-        await context.AsegurarColumnaStockMaximoEnMomentoAsync();
-        await context.AsegurarColumnaComprasExcepcionalesAsync();
-        await context.AsegurarColumnaImporteComprasExcepcionalesAsync();
-        _initialized = true;
-    }
+    // El esquema lo gestiona DatabaseInitializer (EF Core Migrations); es idempotente y se
+    // ejecuta una sola vez por base de datos aunque lo llamen los seis repositorios.
+    private Task InitializeAsync() => DatabaseInitializer.EnsureInitializedAsync(_connectionString);
 
     public async Task<IEnumerable<Compra>> GetAllAsync()
     {

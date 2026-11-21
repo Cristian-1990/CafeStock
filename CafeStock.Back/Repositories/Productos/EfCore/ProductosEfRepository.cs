@@ -1,5 +1,6 @@
 ﻿using CafeStock.Back.Entity;
 using CafeStock.Back.Errors.Common;
+using CafeStock.Back.Infrastructure;
 using CafeStock.Back.Errors.Productos;
 using CafeStock.Back.Models;
 using CafeStock.Back.Mappers;
@@ -13,7 +14,6 @@ namespace CafeStock.Back.Repositories.Productos.EfCore;
 public class ProductosEfRepository : IProductoRepository
 {
     private readonly string _connectionString;
-    private bool _initialized;
 
     public ProductosEfRepository(string connection)
     {
@@ -22,37 +22,9 @@ public class ProductosEfRepository : IProductoRepository
 
     private AppDbContext CreateContext() => new AppDbContext(_connectionString);
 
-    private async Task InitializeAsync()
-    {
-        if (_initialized) return;
-        using var context = CreateContext();
-        await context.EnsureCreatedAsync();
-        await context.AsegurarColumnaPrecioUnitarioAsync();
-        await context.AsegurarColumnaSeguimientoIndividualAsync();
-        // El ADD COLUMN va ANTES de AsegurarSeguimientoIndividualCafePucheroAsync a propósito:
-        // ese método hace una consulta EF sobre context.Productos, y como ProductoEntity ya
-        // tiene la propiedad AplicaConciliacionTpv, EF genera un SELECT que incluye esa
-        // columna — si la tabla real todavía no la tiene (falta ejecutar el ALTER TABLE),
-        // esa consulta revienta con "no such column" (comprobado: HTTP 500 real al arrancar
-        // con el orden invertido). Cualquier Asegurar...Async que solo haga ALTER
-        // TABLE/CREATE TABLE puede ir en cualquier orden entre sí, pero uno que además
-        // consulte la tabla vía EF (como este) necesita que el esquema ya esté al día antes.
-        await context.AsegurarColumnaAplicaConciliacionTpvAsync();
-        // Mismo motivo que AsegurarColumnaAplicaConciliacionTpvAsync: va antes de
-        // AsegurarSeguimientoIndividualCafePucheroAsync (que consulta Productos vía EF)
-        // porque ProductoEntity ya tiene la propiedad UnidadesPorPack.
-        await context.AsegurarColumnaUnidadesPorPackAsync();
-        // Mismo motivo: ProductoEntity ya tiene la propiedad Pasillo, así que esta también
-        // tiene que ir antes de AsegurarSeguimientoIndividualCafePucheroAsync.
-        await context.AsegurarColumnaPasilloAsync();
-        // Mismo motivo: ProductoEntity ya tiene OrdenEnPasillo/EsFrontalPasillo.
-        await context.AsegurarColumnaOrdenEnPasilloAsync();
-        await context.AsegurarColumnaEsFrontalPasilloAsync();
-        // Mismo motivo: ProductoEntity ya tiene la propiedad Seccion.
-        await context.AsegurarColumnaSeccionAsync();
-        await context.AsegurarSeguimientoIndividualCafePucheroAsync();
-        _initialized = true;
-    }
+    // El esquema lo gestiona DatabaseInitializer (EF Core Migrations); es idempotente y se
+    // ejecuta una sola vez por base de datos aunque lo llamen los seis repositorios.
+    private Task InitializeAsync() => DatabaseInitializer.EnsureInitializedAsync(_connectionString);
     
     
     
@@ -101,28 +73,42 @@ public class ProductosEfRepository : IProductoRepository
     public async Task<Result<Producto, DomainError>> UpdateAsync(int id, Producto producto)
     {
         await InitializeAsync();
-        using var context = CreateContext();
-        var entity = await context.Productos.FindAsync(id);
-        if (entity is null)
-            return Result.Failure<Producto, DomainError>(ProductoErrors.NotFound(id));
         try
         {
-            entity.Nombre = producto.Nombre;
-            entity.StockActual = producto.StockActual;
-            entity.StockMaximo = producto.StockMaximo;
-            entity.Unidad = producto.Unidad;
-            entity.Descripcion = producto.Descripcion;
-            entity.ImagenUrl = producto.ImagenUrl;
-            entity.ProveedorId = producto.ProveedorId;
-            entity.PrecioUnitario = producto.PrecioUnitario;
-            entity.AplicaConciliacionTpv = producto.AplicaConciliacionTpv;
-            entity.UnidadesPorPack = producto.UnidadesPorPack;
-            entity.Pasillo = producto.Pasillo;
-            entity.OrdenEnPasillo = producto.OrdenEnPasillo;
-            entity.EsFrontalPasillo = producto.EsFrontalPasillo;
-            entity.Seccion = producto.Seccion;
-            await context.SaveChangesAsync();
-            return Result.Success<Producto, DomainError>(entity.ToProducto());
+            // Concurrencia optimista: ver ReintentoConcurrencia y el token en AppDbContext.
+            return await ReintentoConcurrencia.EjecutarAsync(async () =>
+            {
+                using var context = CreateContext();
+                var entity = await context.Productos.FindAsync(id);
+                if (entity is null)
+                    return Result.Failure<Producto, DomainError>(ProductoErrors.NotFound(id));
+
+                entity.Nombre = producto.Nombre;
+
+                // El formulario de edición trae el stock que tenía al abrirse (StockActualAlLeer).
+                // Si el usuario NO lo tocó, no se escribe: así editar el nombre o el precio no
+                // pisa las ventas o recepciones hechas mientras el formulario estaba abierto.
+                // Si lo cambió a propósito (corregir un recuento), sí se aplica. Sin
+                // StockActualAlLeer (null) se conserva el comportamiento de siempre: se escribe.
+                var stockSinTocar = producto.StockActualAlLeer is int leido && producto.StockActual == leido;
+                if (!stockSinTocar)
+                    entity.StockActual = producto.StockActual;
+
+                entity.StockMaximo = producto.StockMaximo;
+                entity.Unidad = producto.Unidad;
+                entity.Descripcion = producto.Descripcion;
+                entity.ImagenUrl = producto.ImagenUrl;
+                entity.ProveedorId = producto.ProveedorId;
+                entity.PrecioUnitario = producto.PrecioUnitario;
+                entity.AplicaConciliacionTpv = producto.AplicaConciliacionTpv;
+                entity.UnidadesPorPack = producto.UnidadesPorPack;
+                entity.Pasillo = producto.Pasillo;
+                entity.OrdenEnPasillo = producto.OrdenEnPasillo;
+                entity.EsFrontalPasillo = producto.EsFrontalPasillo;
+                entity.Seccion = producto.Seccion;
+                await context.SaveChangesAsync();
+                return Result.Success<Producto, DomainError>(entity.ToProducto());
+            });
         }
         catch (Exception ex)
         {
@@ -156,15 +142,20 @@ public class ProductosEfRepository : IProductoRepository
     public async Task<Result<Producto, DomainError>> ConfirmarRecepcionAsync(int id, int cantidadRecibida)
     {
         await InitializeAsync();
-        using var context = CreateContext();
-        var entity = await context.Productos.FindAsync(id);
-        if (entity is null)
-            return Result.Failure<Producto, DomainError>(ProductoErrors.NotFound(id));
         try
         {
-            entity.StockActual += cantidadRecibida;
-            await context.SaveChangesAsync();
-            return Result.Success<Producto, DomainError>(entity.ToProducto());
+            // Concurrencia optimista: ver ReintentoConcurrencia y el token en AppDbContext.
+            return await ReintentoConcurrencia.EjecutarAsync(async () =>
+            {
+                using var context = CreateContext();
+                var entity = await context.Productos.FindAsync(id);
+                if (entity is null)
+                    return Result.Failure<Producto, DomainError>(ProductoErrors.NotFound(id));
+
+                entity.StockActual += cantidadRecibida;
+                await context.SaveChangesAsync();
+                return Result.Success<Producto, DomainError>(entity.ToProducto());
+            });
         }
         catch (Exception ex)
         {
@@ -176,20 +167,25 @@ public class ProductosEfRepository : IProductoRepository
     public async Task<Result<Producto, DomainError>> AjustarStockActualAsync(int id, int delta)
     {
         await InitializeAsync();
-        using var context = CreateContext();
-        var entity = await context.Productos.FindAsync(id);
-        if (entity is null)
-            return Result.Failure<Producto, DomainError>(ProductoErrors.NotFound(id));
         try
         {
-            var nuevoStock = entity.StockActual + delta;
-            if (nuevoStock < 0)
-                return Result.Failure<Producto, DomainError>(
-                    ProductoErrors.Validation(["El stock no puede quedar por debajo de 0"]));
+            // Concurrencia optimista: ver ReintentoConcurrencia y el token en AppDbContext.
+            return await ReintentoConcurrencia.EjecutarAsync(async () =>
+            {
+                using var context = CreateContext();
+                var entity = await context.Productos.FindAsync(id);
+                if (entity is null)
+                    return Result.Failure<Producto, DomainError>(ProductoErrors.NotFound(id));
 
-            entity.StockActual = nuevoStock;
-            await context.SaveChangesAsync();
-            return Result.Success<Producto, DomainError>(entity.ToProducto());
+                var nuevoStock = entity.StockActual + delta;
+                if (nuevoStock < 0)
+                    return Result.Failure<Producto, DomainError>(
+                        ProductoErrors.Validation(["El stock no puede quedar por debajo de 0"]));
+
+                entity.StockActual = nuevoStock;
+                await context.SaveChangesAsync();
+                return Result.Success<Producto, DomainError>(entity.ToProducto());
+            });
         }
         catch (Exception ex)
         {

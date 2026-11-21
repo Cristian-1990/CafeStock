@@ -1,4 +1,5 @@
 ﻿@page "/"
+@attribute [Authorize(Policy = Politicas.Trabajador)]
 @implements IDisposable
 @inject MascotSettingsService MascotSettings
 
@@ -21,13 +22,15 @@
                    Href="/productos">
             Ver productos
         </MudButton>
-        <MudButton Variant="Variant.Outlined"
-                   Color="Color.Secondary"
-                   Size="Size.Large"
-                   StartIcon="@Icons.Material.Filled.LocalShipping"
-                   Href="/proveedores">
-            Ver proveedores
-        </MudButton>
+        <AuthorizeView Policy="@Politicas.Encargado">
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Secondary"
+                       Size="Size.Large"
+                       StartIcon="@Icons.Material.Filled.LocalShipping"
+                       Href="/proveedores">
+                Ver proveedores
+            </MudButton>
+        </AuthorizeView>
         <MudButton Variant="Variant.Outlined"
                    Color="Color.Primary"
                    Size="Size.Large"

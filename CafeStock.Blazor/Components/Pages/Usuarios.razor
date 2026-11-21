@@ -1,0 +1,172 @@
+@page "/admin/usuarios"
+@attribute [Authorize(Policy = Politicas.Admin)]
+@inject IUsuarioService UsuarioService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<PageTitle>Usuarios</PageTitle>
+
+<div class="mb-4" style="background-color:rgba(109,76,65,0.10); border-radius:12px; padding:16px 24px; display:inline-block;">
+    <MudText Typo="Typo.h4" Style="color:#3E2723; margin:0;">Usuarios</MudText>
+</div>
+
+<MudPaper Class="pa-4 mb-6" Elevation="2">
+    <MudText Typo="Typo.h6" Class="mb-2">Nuevo usuario</MudText>
+    <MudGrid>
+        <MudItem xs="12" sm="4">
+            <MudTextField @bind-Value="_nuevoNombre" Label="Nombre de usuario" Variant="Variant.Outlined" Immediate="true"/>
+        </MudItem>
+        <MudItem xs="12" sm="4">
+            <MudTextField @bind-Value="_nuevaPassword" Label="Contraseña" InputType="InputType.Password"
+                          HelperText="Mínimo 8 caracteres, con letras y un número" Variant="Variant.Outlined" Immediate="true"/>
+        </MudItem>
+        <MudItem xs="12" sm="4">
+            <MudSelect T="string" @bind-Value="_nuevoRol" Label="Rol" Variant="Variant.Outlined">
+                @foreach (var rol in Roles.Todos)
+                {
+                    <MudSelectItem Value="@rol">@rol</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+    </MudGrid>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-3" OnClick="CrearAsync"
+               Disabled="@(_trabajando || string.IsNullOrWhiteSpace(_nuevoNombre) || string.IsNullOrEmpty(_nuevaPassword))">
+        Crear usuario
+    </MudButton>
+</MudPaper>
+
+@if (_cargando)
+{
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
+}
+else
+{
+    <MudTable Items="_usuarios" Hover="true" Elevation="2" Breakpoint="Breakpoint.Sm">
+        <HeaderContent>
+            <MudTh>Usuario</MudTh>
+            <MudTh>Rol</MudTh>
+            <MudTh>Acciones</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Usuario">
+                @context.NombreUsuario
+                @if (context.Id == _idActual)
+                {
+                    <MudChip T="string" Size="Size.Small" Color="Color.Primary" Class="ml-2">tú</MudChip>
+                }
+            </MudTd>
+            <MudTd DataLabel="Rol">
+                <MudSelect T="string" Value="@context.Rol" ValueChanged="@(nuevo => CambiarRolAsync(context, nuevo))"
+                           Dense="true" Variant="Variant.Outlined" Margin="Margin.Dense" Style="max-width:170px;">
+                    @foreach (var rol in Roles.Todos)
+                    {
+                        <MudSelectItem Value="@rol">@rol</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudTd>
+            <MudTd DataLabel="Acciones">
+                <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Primary" Class="mr-2"
+                           OnClick="@(() => RestablecerPasswordAsync(context))">
+                    Restablecer contraseña
+                </MudButton>
+                <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Error"
+                           Disabled="@(context.Id == _idActual)"
+                           OnClick="@(() => EliminarAsync(context))">
+                    Eliminar
+                </MudButton>
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+}
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState> EstadoAutenticacion { get; set; } = default!;
+
+    private List<Usuario> _usuarios = [];
+    private string _idActual = string.Empty;
+    private bool _cargando = true;
+    private bool _trabajando;
+
+    private string _nuevoNombre = string.Empty;
+    private string _nuevaPassword = string.Empty;
+    private string _nuevoRol = Roles.Trabajador;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var estado = await EstadoAutenticacion;
+        _idActual = estado.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+        await CargarAsync();
+    }
+
+    private async Task CargarAsync()
+    {
+        _usuarios = (await UsuarioService.ListarAsync()).ToList();
+        _cargando = false;
+    }
+
+    private async Task CrearAsync()
+    {
+        _trabajando = true;
+        try
+        {
+            var resultado = await UsuarioService.CrearAsync(_nuevoNombre, _nuevaPassword, _nuevoRol);
+            if (resultado.IsFailure)
+            {
+                Snackbar.Add(resultado.Error.Message, Severity.Error);
+                return;
+            }
+
+            Snackbar.Add($"Usuario {resultado.Value.NombreUsuario} creado como {resultado.Value.Rol}", Severity.Success);
+            _nuevoNombre = string.Empty;
+            _nuevaPassword = string.Empty;
+            await CargarAsync();
+        }
+        finally
+        {
+            _trabajando = false;
+        }
+    }
+
+    private async Task CambiarRolAsync(Usuario usuario, string nuevoRol)
+    {
+        var resultado = await UsuarioService.CambiarRolAsync(usuario.Id, nuevoRol);
+        if (resultado.IsFailure)
+            Snackbar.Add(resultado.Error.Message, Severity.Error);
+        else
+            Snackbar.Add($"{usuario.NombreUsuario} ahora es {nuevoRol}", Severity.Success);
+
+        // Recarga siempre: si falló, el desplegable vuelve al rol real y no queda mostrando uno que no se aplicó.
+        await CargarAsync();
+    }
+
+    private async Task RestablecerPasswordAsync(Usuario usuario)
+    {
+        var parametros = new DialogParameters<ContrasenaDialog> { { x => x.NombreUsuario, usuario.NombreUsuario } };
+        var dialogo = await DialogService.ShowAsync<ContrasenaDialog>("Restablecer contraseña", parametros);
+        var respuesta = await dialogo.Result;
+        if (respuesta is null || respuesta.Canceled || respuesta.Data is not string nueva) return;
+
+        var resultado = await UsuarioService.RestablecerPasswordAsync(usuario.Id, nueva);
+        if (resultado.IsFailure)
+            Snackbar.Add(resultado.Error.Message, Severity.Error);
+        else
+            Snackbar.Add($"Contraseña de {usuario.NombreUsuario} restablecida", Severity.Success);
+    }
+
+    private async Task EliminarAsync(Usuario usuario)
+    {
+        var confirmado = await DialogService.ShowMessageBoxAsync(
+            "Eliminar usuario",
+            $"¿Eliminar a {usuario.NombreUsuario}? Esta acción no se puede deshacer.",
+            yesText: "Eliminar", cancelText: "Cancelar");
+        if (confirmado != true) return;
+
+        var resultado = await UsuarioService.EliminarAsync(usuario.Id, _idActual);
+        if (resultado.IsFailure)
+            Snackbar.Add(resultado.Error.Message, Severity.Error);
+        else
+            Snackbar.Add($"Usuario {usuario.NombreUsuario} eliminado", Severity.Success);
+
+        await CargarAsync();
+    }
+}

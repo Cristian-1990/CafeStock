@@ -1,4 +1,10 @@
+using CafeStock.Back.Auth;
 using CafeStock.Back.Infrastructure;
+using CafeStock.Back.Services.Usuarios;
+using CafeStock.Blazor.Endpoints;
+using CafeStock.Blazor.Services;
+using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Identity;
 using CafeStock.Back.Repositories.Compras.Base;
 using CafeStock.Back.Repositories.Presupuestos.Base;
 using CafeStock.Back.Repositories.Productos.Base;
@@ -60,31 +66,49 @@ try
     // Singleton: diccionario estático de solo lectura, sin estado por circuito.
     builder.Services.AddSingleton<CafeStock.Blazor.Services.IMascotMessageProvider, CafeStock.Blazor.Services.MascotMessageProvider>();
 
-    // Configurar la base de datos
-    var dbPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "cafestock.db");
+    // Configurar la base de datos — en Development (dotnet run, ver launchSettings.json) usa un
+    // fichero de pruebas aparte, NUNCA la base de datos real de producción (cafestock.db, la
+    // que usa el servicio systemd en Production). Así se puede levantar la app en local/en la
+    // Pi para probar cambios sin arriesgar el stock/compras real de la cafetería.
+    var dbFileName = builder.Environment.IsDevelopment() ? "cafestock-test.db" : "cafestock.db";
+    var dbPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), dbFileName);
     var connectionString = $"Data Source={dbPath}";
 
-    // Registrar dependencias del Back
-    var provider = DependenciesProvider.BuildServiceProvider(connectionString);
-    builder.Services.AddSingleton(provider.GetService<IProductoRepository>()!);
-    builder.Services.AddScoped<IProductoService, CafeStock.Back.Services.Productos.ProductoService>();
-    builder.Services.AddScoped<CafeStock.Back.Validators.Common.IValidador<CafeStock.Back.Models.Producto>, CafeStock.Back.Validators.Productos.ValidadorProducto>();
-    builder.Services.AddSingleton(provider.GetService<IProveedorRepository>()!);
-    builder.Services.AddScoped<IProveedorService, CafeStock.Back.Services.Proveedores.ProveedorService>();
-    builder.Services.AddScoped<CafeStock.Back.Validators.Common.IValidador<CafeStock.Back.Models.Proveedor>, CafeStock.Back.Validators.Proveedores.ValidadorProveedor>();
-    builder.Services.AddSingleton(provider.GetService<ICompraRepository>()!);
-    builder.Services.AddScoped<ICompraService, CafeStock.Back.Services.Compras.CompraService>();
-    builder.Services.AddScoped<CafeStock.Back.Validators.Common.IValidador<CafeStock.Back.Models.Compra>, CafeStock.Back.Validators.Compras.ValidadorCompra>();
-    builder.Services.AddScoped<IFacturaService, CafeStock.Back.Services.Facturas.FacturaService>();
-    builder.Services.AddSingleton(provider.GetService<IRegistroCafeRepository>()!);
-    builder.Services.AddScoped<IRegistroCafeService, CafeStock.Back.Services.RegistrosCafe.RegistroCafeService>();
-    builder.Services.AddSingleton(provider.GetService<IPresupuestoRepository>()!);
-    builder.Services.AddScoped<IPresupuestoService, CafeStock.Back.Services.Presupuestos.PresupuestoService>();
-    builder.Services.AddScoped<CafeStock.Back.Validators.Common.IValidador<CafeStock.Back.Models.Presupuesto>, CafeStock.Back.Validators.Presupuestos.ValidadorPresupuesto>();
-    builder.Services.AddSingleton(provider.GetService<ISnapshotInventarioRepository>()!);
-    builder.Services.AddScoped<ISnapshotInventarioService, CafeStock.Back.Services.SnapshotsInventario.SnapshotInventarioService>();
+    // Crea o actualiza el esquema con EF Core Migrations ANTES de aceptar peticiones: si la base
+    // de datos no se puede preparar, la app falla al arrancar con un error claro en el log en
+    // vez de dar un HTTP 500 en la primera página que se visite. Las bases antiguas (creadas
+    // sin migraciones) se actualizan y se marcan como baseline automáticamente.
+    await DatabaseInitializer.EnsureInitializedAsync(connectionString);
+
+    // Registrar dependencias del Back (repositorios, validadores y servicios) en el contenedor del host
+    builder.Services.AddCafeStockBack(connectionString);
+
+    // Autenticación: usuarios y roles con ASP.NET Core Identity (guardados en la misma base de
+    // datos) y sesión por cookie. SignInManager vive aquí y no en el Back porque necesita HttpContext.
+    builder.Services.AddCafeStockIdentity(connectionString).AddSignInManager();
+    builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme)
+        .AddIdentityCookies(cookies => cookies.ApplicationCookie?.Configure(opciones =>
+        {
+            opciones.Cookie.Name = "CafeStock.Sesion";
+            opciones.LoginPath = "/login";
+            opciones.AccessDeniedPath = "/acceso-denegado";
+            // Tablet de la cafetería: la sesión aguanta un turno largo y se renueva con el uso.
+            opciones.ExpireTimeSpan = TimeSpan.FromHours(12);
+            opciones.SlidingExpiration = true;
+        }));
+
+    // Cada política incluye los roles superiores (ver Politicas.RolesPermitidos).
+    builder.Services.AddAuthorizationBuilder()
+        .AddPolicy(Politicas.Trabajador, p => p.RequireRole(Politicas.RolesPermitidos(Politicas.Trabajador)))
+        .AddPolicy(Politicas.Encargado, p => p.RequireRole(Politicas.RolesPermitidos(Politicas.Encargado)))
+        .AddPolicy(Politicas.Admin, p => p.RequireRole(Politicas.RolesPermitidos(Politicas.Admin)));
+    builder.Services.AddCascadingAuthenticationState();
+    builder.Services.AddScoped<AuthenticationStateProvider, RevalidacionSesion>();
 
     var app = builder.Build();
+
+    // Los tres roles tienen que existir antes de que nadie pueda iniciar sesión.
+    await app.Services.GetRequiredService<IUsuarioService>().AsegurarRolesAsync();
 
     // Configure the HTTP request pipeline.
     if (!app.Environment.IsDevelopment())
@@ -95,6 +119,10 @@ try
 
     app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
     app.UseHttpsRedirection();
+    // Orden obligatorio: primero saber quién es (autenticación), luego qué puede hacer
+    // (autorización) y después validar el token antifalsificación de los formularios.
+    app.UseAuthentication();
+    app.UseAuthorization();
     app.UseAntiforgery();
 
     // Complementa a MapStaticAssets: ese middleware solo conoce el manifiesto
@@ -108,6 +136,7 @@ try
         RequestPath = "/images"
     });
     app.MapStaticAssets();
+    app.MapAuthEndpoints();
     app.MapRazorComponents<App>()
         .AddInteractiveServerRenderMode();
 
