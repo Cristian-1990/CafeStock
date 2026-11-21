@@ -4,9 +4,33 @@ namespace CafeStock.Blazor.Services;
 /// Iconos que no existen en el set de Material Icons que trae MudBlazor
 /// (<see cref="MudBlazor.Icons.Material"/>). Cada valor es el contenido SVG
 /// interno que MudBlazor inyecta dentro de su &lt;svg viewBox="0 0 24 24"&gt;.
+/// Los de trazo usan 2 px de grosor y ocupan casi toda la rejilla para pesar lo mismo que los
+/// iconos rellenos de Material (Inicio, Informes) con los que conviven en el menú.
 /// </summary>
 public static class CustomIcons
 {
+    /// <summary>
+    /// Saco de café con un grano en el centro: "Stock" (lo que hay en el almacén).
+    /// </summary>
+    public const string CoffeeBag =
+        """
+        <path d="M7.5,2.5 L16.5,2.5 L19,6.5 L19,20 Q19,21.7 17.3,21.7 L6.7,21.7 Q5,21.7 5,20 L5,6.5 Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+        <path d="M5,6.5 L19,6.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <ellipse cx="12" cy="14.6" rx="2.9" ry="4.1" fill="none" stroke="currentColor" stroke-width="1.8" transform="rotate(-30 12 14.6)"/>
+        <path d="M10.4,17 C11.7,15.2 11.3,14.1 13.6,12.2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        """;
+
+    /// <summary>
+    /// Caja abierta con una flecha que entra en ella: "Recepcionar" (lo que llega del proveedor).
+    /// </summary>
+    public const string DeliveryBox =
+        """
+        <path d="M3,11 L3,21 L21,21 L21,11" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+        <path d="M3,11 L6,7.5 M21,11 L18,7.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M12,2 L12,15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M7.7,10.7 L12,15 L16.3,10.7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        """;
+
     /// <summary>
     /// Grano de café: óvalo con la hendidura central, en trazo para que se
     /// lea igual sobre cualquier fondo (menú, botones...).
