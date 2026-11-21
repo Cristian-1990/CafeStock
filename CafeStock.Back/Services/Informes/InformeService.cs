@@ -31,6 +31,14 @@ public class InformeService : IInformeService
 
     private DateTime Ahora => _reloj.GetLocalNow().DateTime;
 
+    /// <summary>
+    /// Importe total de una compra: la suma de sus líneas (cantidad × precio real) MÁS el importe de
+    /// las compras excepcionales (artículos sueltos del supermercado, que no tienen línea). Todos los
+    /// informes de gasto pasan por aquí; antes solo sumaban las líneas y el gasto salía corto.
+    /// </summary>
+    public static decimal ImporteDe(Compra compra) =>
+        compra.Lineas.Sum(l => l.Cantidad * l.PrecioUnitario) + compra.ImporteComprasExcepcionales;
+
     // ---- 1. Gasto del mes actual ----
 
     public GastoMensual CalcularGastoMesActual(IEnumerable<Compra> compras)
@@ -42,13 +50,11 @@ public class InformeService : IInformeService
 
         var gastoMesActual = lista
             .Where(c => c.Fecha >= inicioMesActual && c.Fecha < inicioMesActual.AddMonths(1))
-            .SelectMany(c => c.Lineas)
-            .Sum(l => l.Cantidad * l.PrecioUnitario);
+            .Sum(ImporteDe);
 
         var gastoMesAnterior = lista
             .Where(c => c.Fecha >= inicioMesAnterior && c.Fecha < inicioMesActual)
-            .SelectMany(c => c.Lineas)
-            .Sum(l => l.Cantidad * l.PrecioUnitario);
+            .Sum(ImporteDe);
 
         decimal? variacion = gastoMesAnterior > 0
             ? (gastoMesActual - gastoMesAnterior) / gastoMesAnterior * 100
@@ -74,7 +80,7 @@ public class InformeService : IInformeService
             .Select(g => (
                 ProveedorId: g.Key,
                 Nombre: ResolverNombreProveedorDeGrupo(g),
-                Gasto: g.SelectMany(c => c.Lineas).Sum(l => l.Cantidad * l.PrecioUnitario)))
+                Gasto: g.Sum(ImporteDe)))
             .OrderByDescending(t => t.Gasto)
             .ToList();
 
@@ -147,7 +153,7 @@ public class InformeService : IInformeService
     public List<PuntoDato> CalcularGastoPorMetodoPago(IEnumerable<Compra> compras) =>
         compras
             .GroupBy(c => string.IsNullOrWhiteSpace(c.MetodoPago) ? "Sin especificar" : c.MetodoPago)
-            .Select(g => new PuntoDato(g.Key, g.SelectMany(c => c.Lineas).Sum(l => l.Cantidad * l.PrecioUnitario)))
+            .Select(g => new PuntoDato(g.Key, g.Sum(ImporteDe)))
             .OrderByDescending(p => p.Valor)
             .ToList();
 
@@ -212,7 +218,7 @@ public class InformeService : IInformeService
             .GroupBy(c => proveedoresPorId[c.ProveedorId!.Value].EsSupermercadoGenerico)
             .Select(g => new PuntoDato(
                 g.Key ? "Supermercado genérico" : "Proveedores habituales",
-                g.SelectMany(c => c.Lineas).Sum(l => l.Cantidad * l.PrecioUnitario)))
+                g.Sum(ImporteDe)))
             .OrderByDescending(p => p.Valor)
             .ToList();
     }
@@ -234,7 +240,7 @@ public class InformeService : IInformeService
 
     public List<PuntoDato> CalcularTicketMedioPorProveedor(IEnumerable<Compra> compras) =>
         AgruparComprasPorProveedor(compras)
-            .Select(g => new PuntoDato(ResolverNombreProveedorDeGrupo(g), g.Average(c => c.Lineas.Sum(l => l.Cantidad * l.PrecioUnitario))))
+            .Select(g => new PuntoDato(ResolverNombreProveedorDeGrupo(g), g.Average(ImporteDe)))
             .OrderByDescending(p => p.Valor)
             .ToList();
 
