@@ -73,32 +73,68 @@ public class ProveedorColorTest
         PaletaProveedores.ColorDe(null).Should().Be("#6D4C41");
     }
 
-    [TestCase("#FFFFFF", "#3E2723")]   // fondo blanco: texto oscuro
-    [TestCase("#F59F00", "#3E2723")]   // ámbar: claro, texto oscuro
-    [TestCase("#74B816", "#3E2723")]   // lima: texto oscuro
-    [TestCase("#1C7ED6", "#FFFFFF")]   // azul: texto blanco
-    [TestCase("#F40009", "#FFFFFF")]   // rojo intenso
-    [TestCase("#8B4513", "#FFFFFF")]   // marrón
-    [TestCase("#000000", "#FFFFFF")]
-    public void TextoSobre_ElijeElDeMayorContraste(string fondo, string esperado)
+    // ---------- Texto siempre blanco: el fondo se oscurece solo si hace falta ----------
+
+    [TestCase("#1C7ED6")]   // azul
+    [TestCase("#F40009")]   // rojo intenso de Coca-Cola
+    [TestCase("#8B4513")]   // marrón de Puchero
+    [TestCase("#5C3317")]   // marrón oscuro de Atrian
+    [TestCase("#1D3C87")]   // azul oscuro de Délifrance
+    public void FondoParaTextoBlanco_SiYaContrasta_NoCambiaElColor(string color)
     {
-        PaletaProveedores.TextoSobre(fondo).Should().Be(esperado);
+        PaletaProveedores.FondoParaTextoBlanco(color).Should().Be(color);
+    }
+
+    [TestCase("#F59F00")]   // ámbar
+    [TestCase("#74B816")]   // lima
+    [TestCase("#15AABF")]   // cian
+    [TestCase("#FFFFFF")]   // blanco puro
+    public void FondoParaTextoBlanco_SiEsMuyClaro_LoOscureceHastaQueSeLeaElBlanco(string color)
+    {
+        var resultado = PaletaProveedores.FondoParaTextoBlanco(color);
+
+        resultado.Should().NotBe(color);
+        PaletaProveedores.ContrasteConBlanco(resultado).Should().BeGreaterThanOrEqualTo(PaletaProveedores.ContrasteMinimoConBlanco);
     }
 
     [Test]
-    public void TextoSobre_ConColorInvalido_DevuelveBlanco()
+    public void FondoParaTextoBlanco_ConservaElTono_SoloLoOscurece()
     {
-        PaletaProveedores.TextoSobre("rojo").Should().Be("#FFFFFF");
-        PaletaProveedores.TextoSobre(null).Should().Be("#FFFFFF");
+        // El ámbar sigue siendo ámbar (más rojo que verde y más verde que azul), solo más oscuro.
+        var (r, g, b) = Canales(PaletaProveedores.FondoParaTextoBlanco("#F59F00"));
+
+        r.Should().BeGreaterThan(g);
+        g.Should().BeGreaterThan(b);
+        r.Should().BeLessThan(0xF5);
     }
 
     [Test]
-    public void VariablesCss_DefineFondoYTextoLegible()
+    public void FondoParaTextoBlanco_TodosLosTonosDeLaPaleta_PermitenLeerElBlanco()
+    {
+        foreach (var color in PaletaProveedores.Colores)
+            PaletaProveedores.ContrasteConBlanco(PaletaProveedores.FondoParaTextoBlanco(color))
+                .Should().BeGreaterThanOrEqualTo(PaletaProveedores.ContrasteMinimoConBlanco, color);
+    }
+
+    [Test]
+    public void FondoParaTextoBlanco_ConColorInvalido_DevuelveElMarronNeutro()
+    {
+        PaletaProveedores.FondoParaTextoBlanco("rojo").Should().Be("#6D4C41");
+        PaletaProveedores.FondoParaTextoBlanco(null).Should().Be("#6D4C41");
+    }
+
+    private static (int R, int G, int B) Canales(string hex) =>
+        (Convert.ToInt32(hex.Substring(1, 2), 16), Convert.ToInt32(hex.Substring(3, 2), 16), Convert.ToInt32(hex.Substring(5, 2), 16));
+
+    [Test]
+    public void VariablesCss_ElTextoEsSiempreBlanco()
     {
         PaletaProveedores.VariablesCss(new Proveedor { Id = 1, Color = "#1C7ED6" })
             .Should().Be("--proveedor-color:#1C7ED6;--proveedor-texto:#FFFFFF");
-        PaletaProveedores.VariablesCss("#F59F00")
-            .Should().Be("--proveedor-color:#F59F00;--proveedor-texto:#3E2723");
+
+        // Un color claro se oscurece, pero el texto sigue siendo blanco.
+        PaletaProveedores.VariablesCss("#F59F00").Should().EndWith("--proveedor-texto:#FFFFFF");
+        PaletaProveedores.VariablesCss("#F59F00").Should().NotContain("#F59F00");
     }
 
     [Test]

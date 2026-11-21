@@ -25,7 +25,6 @@ public static class PaletaProveedores
     ];
 
     private const string TextoClaro = "#FFFFFF";
-    private const string TextoOscuro = "#3E2723";
 
     /// <summary>El primer color de la paleta que ningún proveedor usa; si se agotan, vuelve a empezar.</summary>
     public static string Siguiente(IEnumerable<string> usados)
@@ -56,31 +55,46 @@ public static class PaletaProveedores
         && valor.Trim()[1..].All(Uri.IsHexDigit);
 
     /// <summary>
-    /// Color de texto (blanco o espresso) con el que mejor se lee sobre un fondo de este color: el de
-    /// mayor contraste según la fórmula de WCAG. Para poner el nombre del proveedor sobre su color.
+    /// El nombre del proveedor se escribe SIEMPRE en blanco (decisión del dueño: nada de textos
+    /// negros según el color). Para que el blanco se lea, un color demasiado claro se oscurece lo justo
+    /// hasta llegar a <see cref="ContrasteMinimoConBlanco"/>; los que ya contrastan bien no cambian.
+    /// Solo afecta al fondo bajo el nombre: bordes y puntos usan el color original.
     /// </summary>
-    public static string TextoSobre(string? fondoHex)
+    public static string FondoParaTextoBlanco(string? colorHex)
     {
-        if (!EsHexValido(fondoHex)) return TextoClaro;
+        if (!EsHexValido(colorHex)) return "#6D4C41";
 
-        var luzFondo = LuminanciaRelativa(fondoHex!.Trim());
-        var contrasteConBlanco = (1.05) / (luzFondo + 0.05);
-        var contrasteConOscuro = (luzFondo + 0.05) / (LuminanciaRelativa(TextoOscuro) + 0.05);
-        return contrasteConBlanco >= contrasteConOscuro ? TextoClaro : TextoOscuro;
+        var hex = colorHex!.Trim().ToUpperInvariant();
+        var (r, g, b) = (Convert.ToInt32(hex.Substring(1, 2), 16), Convert.ToInt32(hex.Substring(3, 2), 16), Convert.ToInt32(hex.Substring(5, 2), 16));
+
+        // Mezcla con negro en pasos del 3 % hasta que el blanco contraste lo suficiente (tope: 60 %).
+        for (var paso = 0; paso <= 20; paso++)
+        {
+            var factor = 1 - paso * 0.03;
+            var (rr, gg, bb) = ((int)Math.Round(r * factor), (int)Math.Round(g * factor), (int)Math.Round(b * factor));
+            var candidato = $"#{rr:X2}{gg:X2}{bb:X2}";
+            if (ContrasteConBlanco(candidato) >= ContrasteMinimoConBlanco) return candidato;
+        }
+        return $"#{(int)Math.Round(r * 0.4):X2}{(int)Math.Round(g * 0.4):X2}{(int)Math.Round(b * 0.4):X2}";
     }
 
     /// <summary>
+    /// 3:1 es el mínimo de WCAG para texto grande o en negrita; el nombre del proveedor va siempre en
+    /// negrita. Exigir 4,5:1 apagaría demasiado los naranjas y los marrones claros de marca.
+    /// </summary>
+    public const double ContrasteMinimoConBlanco = 3.0;
+
+    public static double ContrasteConBlanco(string colorHex) => 1.05 / (LuminanciaRelativa(colorHex) + 0.05);
+
+    /// <summary>
     /// Variables CSS para pintar el nombre de un proveedor sobre su color (clase global
-    /// .etiqueta-proveedor en app.css): "--proveedor-color" (fondo) y "--proveedor-texto" (el de mayor
-    /// contraste). Se usa en el atributo style del elemento.
+    /// .etiqueta-proveedor en app.css): "--proveedor-color" (fondo, oscurecido si hace falta para que se
+    /// lea el blanco) y "--proveedor-texto" (siempre blanco). Se usa en el atributo style del elemento.
     /// </summary>
     public static string VariablesCss(Proveedor? proveedor) => VariablesCss(ColorDe(proveedor));
 
-    public static string VariablesCss(string? colorHex)
-    {
-        var color = EsHexValido(colorHex) ? colorHex!.Trim() : "#6D4C41";
-        return $"--proveedor-color:{color};--proveedor-texto:{TextoSobre(color)}";
-    }
+    public static string VariablesCss(string? colorHex) =>
+        $"--proveedor-color:{FondoParaTextoBlanco(colorHex)};--proveedor-texto:{TextoClaro}";
 
     private static double LuminanciaRelativa(string hex)
     {
