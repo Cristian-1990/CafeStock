@@ -37,3 +37,9 @@ Esto es deliberadamente una práctica de cara al curso de DAW del usuario (traba
 - Para llevar algo de `dev` a `main`: abrir un Pull Request en GitHub, nunca un merge local + push directo — aunque hoy el propio usuario sea quien lo apruebe, el hábito es abrir PR y esperar aprobación explícita suya antes de mergear.
 - La Pi (donde vive `cafestock.service`) sigue siempre a `main`, nunca a `dev`: solo hace `git pull origin main` + `dotnet publish -c Release -o publish` + `sudo systemctl restart cafestock.service` cuando algo ya se mergeó. La Pi no es entorno de pruebas — el entorno de pruebas es el portátil/sobremesa, con su propia base de datos local, nunca la `.db` real de producción.
 - Si una sesión de Claude Code corre en la Pi, su rol es desplegar `main` (pull + publish + restart) y depurar producción, no desarrollar features nuevas ahí — eso se hace en una sesión aparte contra `dev`.
+
+## Rediseño de interfaz (estilo y reglas para tocar lo visual)
+- App de gestión de cafetería y productos en C# / Blazor.
+- Mantén intacta toda la lógica C# (`@code`, servicios, modelos y bindings).
+- Usa CSS aislado (`.razor.css`) y variables CSS globales (`--bg-*`, `--text-*`, `--accent-*`).
+- Estética: cafetería de especialidad moderna (tonos crema cálido, espresso, terracota), precios con `tabular-nums`, tarjetas limpias y botones táctiles claros.
