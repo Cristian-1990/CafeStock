@@ -590,13 +590,50 @@ a:focus-visible, button:focus-visible, [role="button"]:focus-visible {
     background-color: rgba(109, 76, 65, 0.10);
 }
 
-/* Con el menú lateral desplegado, el botón de la mascota oculta pasa a ser el pie del propio menú. */
+/* Con el menú lateral desplegado, el botón de la mascota oculta es una opción más del menú, apartada al pie. */
+.mascota-etiqueta {
+    display: none;
+}
+
 .menu-abierto .mascota-esquina {
-    left: 12px;
-    bottom: 12px;
+    left: 0;
+    bottom: 0;
     z-index: 1300;
-    width: calc(min(260px, 85vw) - 24px);
-    display: flex;
-    justify-content: center;
-    border-radius: 16px;
+    width: min(260px, 85vw);
+    box-sizing: border-box;
+    border: 0;
+    border-top: 1px solid rgba(109, 76, 65, 0.18);
+    border-radius: 0;
+    box-shadow: none;
+    background-color: var(--bg-surface, #FFFBF3);
+}
+
+.menu-abierto .mascota-esquina .mascota-toggle {
+    justify-content: flex-start;
+}
+
+.menu-abierto .mascota-esquina .mascota-interruptor {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 16px;
+    min-height: 56px;
+    padding: 0 16px;
+    border-radius: 0;
+    color: var(--bg-espresso, #3E2723);
+    font-size: 0.95rem;
+    font-weight: 500;
+    letter-spacing: 0;
+}
+
+.menu-abierto .mascota-esquina .mascota-etiqueta {
+    display: inline;
+    flex: 1;
+    text-align: left;
+}
+
+.menu-abierto .mascota-esquina .mascota-estado {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--text-muted, #7A6A5E);
 }
