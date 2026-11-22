@@ -1,7 +1,9 @@
 <MudDialog>
     <DialogContent>
         <MudText Class="mb-3">Nueva contraseña para <strong>@NombreUsuario</strong>.</MudText>
-        <MudTextField @bind-Value="_password" Label="Nueva contraseña" InputType="InputType.Password"
+        <MudTextField @bind-Value="_password" Label="Nueva contraseña" InputType="@(_verPassword ? InputType.Text : InputType.Password)"
+                      Adornment="Adornment.End" AdornmentIcon="@(_verPassword ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+                      OnAdornmentClick="@(() => _verPassword = !_verPassword)" AdornmentAriaLabel="@(_verPassword ? "Ocultar contraseña" : "Mostrar contraseña")"
                       HelperText="Mínimo 8 caracteres, con letras y un número" Variant="Variant.Outlined"
                       Immediate="true" AutoFocus="true"/>
     </DialogContent>
@@ -20,6 +22,7 @@
     [Parameter] public string NombreUsuario { get; set; } = string.Empty;
 
     private string _password = string.Empty;
+    private bool _verPassword;
 
     private void Aceptar() => MudDialog.Close(DialogResult.Ok(_password));
 
