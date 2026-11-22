@@ -73,6 +73,24 @@
     }
 </div>
 
+@* Orden de la tabla: A–Z o por urgencia (los productos por reponer primero, del más urgente al menos). *@
+@if (_filtroActivo)
+{
+    <div class="d-flex flex-wrap align-center gap-2 mb-4">
+        <MudText Typo="Typo.overline" Style="color:#6D4C41;">Orden</MudText>
+        <MudChip T="string" Color="@(_ordenUrgencia ? Color.Default : Color.Primary)"
+                 Variant="@(_ordenUrgencia ? Variant.Outlined : Variant.Filled)"
+                 OnClick="@(() => _ordenUrgencia = false)">
+            A–Z
+        </MudChip>
+        <MudChip T="string" Color="@(_ordenUrgencia ? Color.Primary : Color.Default)"
+                 Variant="@(_ordenUrgencia ? Variant.Filled : Variant.Outlined)"
+                 OnClick="@(() => _ordenUrgencia = true)">
+            Más urgentes primero
+        </MudChip>
+    </div>
+}
+
 @if (_proveedorSeleccionadoObj is not null)
 {
     <div class="d-flex align-center mb-4" style="gap:1rem;">
@@ -99,14 +117,14 @@
     {
         <div class="d-flex flex-wrap align-center gap-2 mb-4">
             <MudText Typo="Typo.overline" Style="color:#6D4C41;">Orden</MudText>
-            <MudChip T="string" Color="@(_ordenPasillo ? Color.Default : Color.Primary)"
-                     Variant="@(_ordenPasillo ? Variant.Outlined : Variant.Filled)"
-                     OnClick="@(() => _ordenPasillo = false)">
+            <MudChip T="string" Color="@(_ordenPasillo && !_ordenUrgencia ? Color.Default : Color.Primary)"
+                     Variant="@(_ordenPasillo && !_ordenUrgencia ? Variant.Outlined : Variant.Filled)"
+                     OnClick="@(() => { _ordenPasillo = false; _ordenUrgencia = false; })">
                 A–Z
             </MudChip>
-            <MudChip T="string" Color="@(_ordenPasillo ? Color.Primary : Color.Default)"
-                     Variant="@(_ordenPasillo ? Variant.Filled : Variant.Outlined)"
-                     OnClick="@(() => _ordenPasillo = true)">
+            <MudChip T="string" Color="@(_ordenPasillo && !_ordenUrgencia ? Color.Primary : Color.Default)"
+                     Variant="@(_ordenPasillo && !_ordenUrgencia ? Variant.Filled : Variant.Outlined)"
+                     OnClick="@(() => { _ordenPasillo = true; _ordenUrgencia = false; })">
                 Por pasillo
             </MudChip>
         </div>
@@ -172,6 +190,12 @@ else
     private int? _proveedorSeleccionado;
     private bool _todosSeleccionado;
     private bool _ordenPasillo;
+    private bool _ordenUrgencia;
+
+    // ?orden=urgencia: llega con "Todos" elegido y los productos por orden de urgencia.
+    [SupplyParameterFromQuery(Name = "orden")]
+    [Parameter]
+    public string? OrdenInicial { get; set; }
 
     private Proveedor? _proveedorSeleccionadoObj =>
         _proveedores.FirstOrDefault(p => p.Id == _proveedorSeleccionado);
@@ -200,6 +224,15 @@ else
                 .Where(p => _proveedorSeleccionado is null || p.ProveedorId == _proveedorSeleccionado)
                 .ToList();
 
+            // Por urgencia (viene de "Ver todos" en Inicio): primero los que hay que reponer, del más urgente
+            // al menos (ver NivelStock.PorUrgencia), y detrás los que están completos, A–Z.
+            if (_ordenUrgencia)
+            {
+                var urgentes = NivelStock.PorUrgencia(filtrados);
+                var resto = filtrados.Except(urgentes).OrdenarAlfabeticamente(p => p.Nombre);
+                return urgentes.Concat(resto).ToList();
+            }
+
             var porPasillo = _ordenPasillo && _proveedorSeleccionadoObj?.EsSupermercadoGenerico == true;
             return porPasillo
                 ? filtrados
@@ -224,6 +257,12 @@ else
         if (ProveedorIdInicial is not null)
         {
             _proveedorSeleccionado = ProveedorIdInicial;
+        }
+
+        if (string.Equals(OrdenInicial, "urgencia", StringComparison.OrdinalIgnoreCase))
+        {
+            _ordenUrgencia = true;
+            if (_proveedorSeleccionado is null) _todosSeleccionado = true;
         }
 
         _cargando = false;

@@ -212,6 +212,12 @@ else
     [Parameter]
     public bool SinProveedorInicial { get; set; }
 
+    // Producto destacado: llega desde "Hacer stock" de Lo más urgente (Inicio). Se pone el primero de la
+    // lista y con su fila resaltada, para contarlo sin buscarlo entre decenas.
+    [SupplyParameterFromQuery(Name = "productoId")]
+    [Parameter]
+    public int? ProductoDestacadoId { get; set; }
+
     private bool _ordenPasillo;
     private bool _generandoPedido;
 
@@ -233,9 +239,18 @@ else
                 lista = _productos.Where(p => p.ProveedorId == proveedorId).ToList();
             }
 
-            return _ordenPasillo && _grupoSeleccionado?.EsSupermercadoGenerico == true
+            var ordenada = _ordenPasillo && _grupoSeleccionado?.EsSupermercadoGenerico == true
                 ? lista.OrderBy(p => p.Pasillo ?? int.MaxValue).ThenBy(p => p.OrdenEnPasillo).LuegoAlfabeticamente(p => p.Nombre).ToList()
                 : lista.OrdenarAlfabeticamente(p => p.Nombre).ToList();
+
+            // El producto destacado, si está en este grupo, va el primero.
+            var destacado = ordenada.FirstOrDefault(p => p.Id == ProductoDestacadoId);
+            if (destacado is not null)
+            {
+                ordenada.Remove(destacado);
+                ordenada.Insert(0, destacado);
+            }
+            return ordenada;
         }
     }
 
@@ -316,6 +331,7 @@ else
     {
         EstadoFila.Pendiente => "background-color:rgba(193,120,23,0.12);",
         EstadoFila.Guardado  => "background-color:rgba(102,187,106,0.16);",
+        _ when p.Id == ProductoDestacadoId => "box-shadow:inset 5px 0 0 #A8481F; background-color:rgba(168,72,31,0.08);",
         _                    => string.Empty
     };
 
