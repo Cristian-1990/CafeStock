@@ -103,8 +103,9 @@
 
     .menu-cerrado .app-mascot-interior,
     .menu-abierto .app-mascot-interior {
-        position: relative;
-        /* Bajado para alinearse con el contenido: el globo a la altura de la primera fila de tarjetas y el león a la de la segunda (títulos y buscador quedan por encima). NO sigue el scroll: se queda en su altura y se va con la página. */
+        /* Fijo en pantalla: nace a la altura del contenido (el globo con la primera fila de tarjetas y el león con la segunda, gracias al margen de abajo) y, al hacer scroll, se queda en esa misma altura de la ventana en vez de subir con la página. En ventanas bajas se sube lo justo para que el conjunto quepa. */
+        position: sticky;
+        top: max(76px, min(270px, calc(67vh - 290px)));
         margin-top: 190px;
         display: flex;
         flex-direction: column;
