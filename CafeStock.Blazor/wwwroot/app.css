@@ -1,5 +1,5 @@
 html, body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-family: var(--font-body, 'Helvetica Neue', Helvetica, Arial, sans-serif);
 }
 
 a, .btn-link {
@@ -74,7 +74,7 @@ h1:focus {
     background-color: var(--bg-surface);
     border: 3px solid var(--accent-gold);
     border-radius: 30px;
-    box-shadow: 0 4px 14px rgba(62, 39, 35, 0.18);
+    box-shadow: 0 4px 14px rgba(var(--rgb-sombra), 0.18);
 }
 
 .burbuja-mascota::before,
@@ -213,7 +213,7 @@ h1:focus {
     background-color: rgba(255, 251, 245, 0.94);
     -webkit-backdrop-filter: blur(8px);
     backdrop-filter: blur(8px);
-    border: 1px solid rgba(109, 76, 65, 0.15);
+    border: 1px solid rgba(var(--rgb-borde), 0.15);
     border-radius: 22px;
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.40), 0 2px 6px rgba(0, 0, 0, 0.20);
     text-align: center;
@@ -404,10 +404,25 @@ h1:focus {
     /* Forma, sombra y tipografía */
     --radius-card: 18px;
     --radius-pill: 9999px;
-    --shadow-card: 0 1px 2px rgba(62, 39, 35, 0.08), 0 8px 24px rgba(62, 39, 35, 0.10);
-    --shadow-card-hover: 0 2px 4px rgba(62, 39, 35, 0.10), 0 14px 32px rgba(62, 39, 35, 0.16);
+    --shadow-card: 0 1px 2px rgba(var(--rgb-sombra), 0.08), 0 8px 24px rgba(var(--rgb-sombra), 0.10);
+    --shadow-card-hover: 0 2px 4px rgba(var(--rgb-sombra), 0.10), 0 14px 32px rgba(var(--rgb-sombra), 0.16);
     --touch-min: 44px;
     --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+
+    /* Tokens de tema: lo que antes estaba escrito a mano en cada página. */
+    --color-primary: #6D4C41;
+    --color-dark: #3E2723;
+    --bg-panel: #F5F0EB;
+    --color-bad: #993C1D;
+    --color-bad-strong: #7A2410;
+    --color-good: #3B6D11;
+    --texto-suave-sobre-oscuro: #EAD9C6;
+    --acento-sobre-oscuro: #F0C9A8;
+    --foto-1: #EFE6DA;
+    --foto-2: #E3D3C0;
+    --rgb-borde: 109, 76, 65;
+    --rgb-sombra: 62, 39, 35;
+    --font-body: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
 /* Nombre de proveedor sobre su color interno (Facturas, Catálogo, Proveedores). El elemento lleva
@@ -501,7 +516,7 @@ a:focus-visible, button:focus-visible, [role="button"]:focus-visible {
    ===================================================================== */
 .mud-appbar {
     background-color: var(--bg-espresso);
-    box-shadow: 0 2px 12px rgba(62, 39, 35, 0.25);
+    box-shadow: 0 2px 12px rgba(var(--rgb-sombra), 0.25);
 }
 
 /* Modo pruebas (Development): misma barra espresso, con una franja y una pastilla terracota. Se ve de
@@ -530,7 +545,7 @@ a:focus-visible, button:focus-visible, [role="button"]:focus-visible {
     --mud-palette-drawer-text: var(--text-espresso);
     --mud-palette-drawer-icon: var(--text-muted);
     background-color: var(--bg-surface);
-    border-right: 1px solid rgba(109, 76, 65, 0.14);
+    border-right: 1px solid rgba(var(--rgb-borde), 0.14);
 }
 
 .mud-drawer .mud-nav-link {
@@ -587,7 +602,7 @@ a:focus-visible, button:focus-visible, [role="button"]:focus-visible {
 }
 
 .mascota-interruptor:hover {
-    background-color: rgba(109, 76, 65, 0.10);
+    background-color: rgba(var(--rgb-borde), 0.10);
 }
 
 /* Con el menú desplegado, la mascota oculta se llama desde su opción al pie del menú (MainLayout): sobra la pastilla. */
@@ -608,5 +623,5 @@ a:focus-visible, button:focus-visible, [role="button"]:focus-visible {
 .menu-pie {
     margin-top: auto;
     padding-top: 8px;
-    border-top: 1px solid rgba(109, 76, 65, 0.18);
+    border-top: 1px solid rgba(var(--rgb-borde), 0.18);
 }
