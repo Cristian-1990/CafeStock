@@ -12,6 +12,10 @@ public class MascotMessageProvider : IMascotMessageProvider
 {
     private static readonly Dictionary<string, (MascotPose Pose, string Mensaje)> Mensajes = new()
     {
+        // Inicio (ruta vacía): el león con la bolsa de café, ya con el diseño definitivo.
+        [""] = (MascotPose.Producto,
+            "¡Bienvenido a CafeStock! Desde aquí gestionas proveedores, tu catálogo de productos, la reposición de stock y las ventas. Vamos paso a paso."),
+
         ["facturas"] = (MascotPose.Albaranes,
             "Aquí consultas el historial de compras con su factura o albarán adjunto. Si buscas las de un proveedor concreto, entra en su ficha y toca 'Ver facturas'."),
 

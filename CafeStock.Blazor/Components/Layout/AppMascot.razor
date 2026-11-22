@@ -7,19 +7,26 @@
 {
     @* El botón activar/desactivar va justo debajo de los pies del león. Su clic no cierra el león
        (stopPropagation dentro de MascotToggle). *@
+    @* En pantalla ancha (ver AppMascot.razor.css) el león vive en el MARGEN IZQUIERDO, fuera de la columna
+       de contenido y pegajoso al hacer scroll, con el globo encima. En pantallas más estrechas, donde no
+       hay margen, va arriba como siempre. *@
     <div class="app-mascot">
-        <div class="app-mascot-bubble burbuja-mascota" @onclick="Dismiss">
-            <MudText Typo="Typo.body2">@_currentMessage!.Value.Mensaje</MudText>
+        <div class="app-mascot-interior">
+            <div class="app-mascot-bubble burbuja-mascota" @onclick="Dismiss">
+                <MudText Typo="Typo.body2">@_currentMessage!.Value.Mensaje</MudText>
+            </div>
+            <img class="app-mascot-avatar" src="@GetImagePath(_currentMessage!.Value.Pose)" alt="Mascota CafeStock" @onclick="Dismiss"/>
+            <MascotToggle/>
         </div>
-        <img class="app-mascot-avatar" src="@GetImagePath(_currentMessage!.Value.Pose)" alt="Mascota CafeStock" @onclick="Dismiss"/>
-        <MascotToggle/>
     </div>
 }
 else if (_settingsReady && !MascotSettings.Enabled && _currentMessage is not null)
 {
     @* Mascota desactivada: queda solo el botón para volver a activarla en esta misma pantalla. *@
     <div class="app-mascot app-mascot--apagada">
-        <MascotToggle/>
+        <div class="app-mascot-interior">
+            <MascotToggle/>
+        </div>
     </div>
 }
 
