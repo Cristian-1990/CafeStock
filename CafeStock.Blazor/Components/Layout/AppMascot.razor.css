@@ -78,8 +78,8 @@
 }
 
 /* =====================================================================
-   LEÓN A LA IZQUIERDA (escritorio, desde 960 px): el león sale siempre en el lado izquierdo, pegajoso al
-   hacer scroll, con el globo encima (cola hacia abajo). Ocupa como mucho un tercio del ancho de la pantalla
+   LEÓN A LA IZQUIERDA (escritorio, desde 960 px): el león sale siempre en el lado izquierdo, fijo en su altura (no sigue
+   el scroll), con el globo encima (cola hacia abajo). Ocupa como mucho un tercio del ancho de la pantalla
    y un tercio de su altura. El MudLayout lleva la clase menu-abierto / menu-cerrado (el menú ocupa 260 px).
    Hay dos casos, que solo cambian las variables --m-ancho (ancho del hueco) y --m-izq (dónde se coloca):
 
@@ -103,10 +103,9 @@
 
     .menu-cerrado .app-mascot-interior,
     .menu-abierto .app-mascot-interior {
-        position: sticky;
-        top: 76px;
-        /* Bajado para alinearse con el contenido: el globo a la altura de la primera fila de tarjetas y el león a la de la segunda (títulos y buscador quedan por encima). Al hacer scroll se queda pegado arriba. */
-        margin-top: 138px;
+        position: relative;
+        /* Bajado para alinearse con el contenido: el globo a la altura de la primera fila de tarjetas y el león a la de la segunda (títulos y buscador quedan por encima). NO sigue el scroll: se queda en su altura y se va con la página. */
+        margin-top: 190px;
         display: flex;
         flex-direction: column;
         align-items: center;
