@@ -1,35 +1,13 @@
 ﻿@page "/"
 @attribute [Authorize(Policy = Politicas.Trabajador)]
-@implements IDisposable
-@inject MascotSettingsService MascotSettings
 @inject IProductoService ProductoService
 @inject IProveedorService ProveedorService
 
 <PageTitle>CafeStock</PageTitle>
 
 <div class="home">
-    @* La mascota va ARRIBA del todo, como en el resto de pantallas (ver AppMascot). *@
-    @if (MascotSettings.Enabled)
-    {
-        @* El león nuevo (el de la bolsa, ya con el diseño definitivo) se queda en Inicio. Cuando haya un
-           "saludo" nuevo con este mismo diseño, bastará con cambiar el nombre del fichero. *@
-        <div class="home-presentation">
-            @* El bocadillo va primero en el marcado a propósito: en desktop se saca del flujo con
-               position:absolute (no importa el orden), pero en pantalla estrecha (position:static, ver
-               media query) necesita aparecer ANTES que el león para mostrarse encima, no debajo. *@
-            <div class="home-welcome-bubble burbuja-mascota">
-                <MudText Typo="Typo.body2">
-                    ¡Bienvenido a CafeStock! Desde aquí gestionas proveedores, tu catálogo de productos, la reposición de stock y las ventas. Vamos paso a paso.
-                </MudText>
-            </div>
-            <img src="images/mascot/mascot-producto.png"
-                 alt="Mascota CafeStock"
-                 class="mascot-home-image"/>
-        </div>
-    }
-
-    @* Botón activar/desactivar justo debajo de los pies del león (igual en todas las pantallas). *@
-    <MascotToggle/>
+    @* La mascota de Inicio la pinta AppMascot, igual que en el resto de pantallas (mensaje de bienvenida en
+       MascotMessageProvider), en el margen izquierdo. *@
 
     @* Resumen del día: en vez de repetir el logo y el nombre (ya están en la cabecera), la banda de
        arriba saluda y da lo que importa al empezar el turno: cuánto hay que reponer. *@
@@ -61,37 +39,41 @@
         </div>
     </section>
 
-    @* Lo más urgente: los PROVEEDORES con productos por reponer (no los productos sueltos), los más
-       vacíos primero, cada uno con su barra de nivel y un botón directo a hacer su stock. *@
-    @if (_proveedoresUrgentes.Count > 0)
+    @* Lo más urgente: los TRES productos más urgentes (los que están en mínimos), cada uno con su imagen
+       del catálogo, su proveedor, su barra de nivel y un botón que abre Realizar stock en el proveedor
+       al que pertenece, con ese producto destacado. "Ver todos" lleva a Stock con todos los productos por
+       reponer en orden de urgencia (ver NivelStock.PorUrgencia). *@
+    @if (_urgentes.Count > 0)
     {
         <section class="home-urgente" aria-labelledby="urgente-titulo">
             <div class="home-urgente-cabecera">
                 <h2 id="urgente-titulo" class="home-urgente-titulo">Lo más urgente</h2>
-                <a class="home-urgente-enlace" href="/productos">Ver todo el stock</a>
+                <a class="home-urgente-enlace" href="/productos?orden=urgencia">Ver todos</a>
             </div>
             <ul class="home-urgente-lista">
-                @foreach (var urgente in _proveedoresUrgentes)
+                @foreach (var urgente in _urgentes)
                 {
-                    <li style="--proveedor-color:@urgente.Color">
-                        <span class="urgente-logo">
-                            @if (!string.IsNullOrWhiteSpace(urgente.ImagenUrl))
+                    var producto = urgente.Producto;
+                    <li>
+                        <span class="urgente-foto">
+                            @if (!string.IsNullOrWhiteSpace(producto.ImagenUrl))
                             {
-                                <img src="@urgente.ImagenUrl" alt="" loading="lazy" decoding="async"/>
+                                <img src="@producto.ImagenUrl" alt="" loading="lazy" decoding="async"/>
                             }
                             else
                             {
-                                <MudIcon Icon="@Icons.Material.Filled.LocalShipping" Class="urgente-logo-icono"/>
+                                <MudIcon Icon="@Icons.Material.Filled.Inventory2" Class="urgente-foto-icono"/>
                             }
                         </span>
                         <span class="urgente-datos">
-                            <span class="urgente-nombre">@urgente.Nombre</span>
-                            <span class="urgente-detalle">
-                                @urgente.ProductosPorReponer @(urgente.ProductosPorReponer == 1 ? "producto por reponer" : "productos por reponer")
-                            </span>
-                            <span class="medidor @NivelStock.Clase(urgente.StockActual, urgente.StockMaximo)" role="img"
-                                  aria-label="Stock del proveedor: @urgente.StockActual de @urgente.StockMaximo">
-                                <span class="medidor-relleno" style="width:@(NivelStock.Porcentaje(urgente.StockActual, urgente.StockMaximo))%"></span>
+                            <span class="urgente-nombre">@producto.Nombre</span>
+                            <span class="etiqueta-proveedor urgente-proveedor" style="@urgente.EstiloProveedor">@urgente.NombreProveedor</span>
+                            <span class="urgente-nivel">
+                                <span class="medidor @NivelStock.Clase(producto.StockActual, producto.StockMaximo)" role="img"
+                                      aria-label="Stock @producto.StockActual de @producto.StockMaximo">
+                                    <span class="medidor-relleno" style="width:@(NivelStock.Porcentaje(producto.StockActual, producto.StockMaximo))%"></span>
+                                </span>
+                                <span class="urgente-cifras">@producto.StockActual / @producto.StockMaximo</span>
                             </span>
                         </span>
                         <MudButton Variant="Variant.Filled"
@@ -147,12 +129,11 @@
     private int _sinStock;
     private int _completos;
 
-    // Un proveedor con productos por reponer: su stock sumado (para su barra de nivel) y a dónde ir.
-    private record ProveedorUrgente(
-        string Nombre, string Color, string ImagenUrl, int ProductosPorReponer,
-        int StockActual, int StockMaximo, string EnlaceHacerStock);
+    // Un producto urgente, con lo necesario para pintar su fila: su proveedor (nombre y estilo de color) y
+    // el enlace a Realizar stock en ese proveedor, con el producto destacado.
+    private record ProductoUrgente(Producto Producto, string NombreProveedor, string EstiloProveedor, string EnlaceHacerStock);
 
-    private List<ProveedorUrgente> _proveedoresUrgentes = [];
+    private List<ProductoUrgente> _urgentes = [];
 
     // Texto escrito a mano (sin CultureInfo): en la Pi la globalización puede no tener es-ES.
     private static string FechaHoy
@@ -189,52 +170,23 @@
         _sinStock = productos.Count(p => p.StockMaximo > 0 && p.StockActual <= 0);
         _completos = productos.Count(p => p.CantidadAComprar <= 0);
 
-        // Proveedores con algún producto por reponer. Orden: el más vacío primero (stock sumado de TODOS
-        // sus productos sobre su máximo sumado); a igualdad, el que tiene más productos por reponer.
+        // Los tres productos más urgentes (ver NivelStock.PorUrgencia). Los de seguimiento individual (los
+        // cafés de Venta) no entran: su stock no se cuenta en Realizar stock y el botón no los encontraría.
         var proveedores = (await ProveedorService.GetAllAsync()).ToDictionary(p => p.Id);
-        _proveedoresUrgentes = productos
-            .GroupBy(p => p.ProveedorId)
-            .Where(g => g.Any(p => p.CantidadAComprar > 0))
-            .Select(g =>
+        _urgentes = NivelStock.PorUrgencia(productos.Where(p => !p.SeguimientoIndividual))
+            .Take(3)
+            .Select(p =>
             {
-                var proveedor = g.Key is int id && proveedores.TryGetValue(id, out var p) ? p : null;
-                return new
-                {
-                    Proveedor = proveedor,
-                    PorReponer = g.Count(p => p.CantidadAComprar > 0),
-                    Actual = g.Sum(p => p.StockActual),
-                    Maximo = g.Sum(p => p.StockMaximo),
-                    Enlace = g.Key is int idEnlace
-                        ? $"/stock/realizar?proveedorId={idEnlace}"
-                        : "/stock/realizar?sinProveedor=true"
-                };
+                var proveedor = p.ProveedorId is int id && proveedores.TryGetValue(id, out var prov) ? prov : null;
+                var enlace = proveedor is null
+                    ? $"/stock/realizar?sinProveedor=true&productoId={p.Id}"
+                    : $"/stock/realizar?proveedorId={proveedor.Id}&productoId={p.Id}";
+                return new ProductoUrgente(
+                    p,
+                    proveedor?.Nombre ?? "Sin proveedor",
+                    PaletaProveedores.VariablesCss(proveedor),
+                    enlace);
             })
-            .OrderBy(x => NivelStock.Porcentaje(x.Actual, x.Maximo))
-            .ThenByDescending(x => x.PorReponer)
-            .Take(5)
-            .Select(x => new ProveedorUrgente(
-                x.Proveedor?.Nombre ?? "Sin proveedor asignado",
-                PaletaProveedores.ColorDe(x.Proveedor),
-                x.Proveedor?.ImagenUrl ?? string.Empty,
-                x.PorReponer, x.Actual, x.Maximo, x.Enlace))
             .ToList();
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            // Prerender sin circuito JS: la lectura de localStorage va aquí, no en OnInitializedAsync.
-            await MascotSettings.InitializeAsync();
-            MascotSettings.EnabledChanged += OnMascotEnabledChanged;
-            StateHasChanged();
-        }
-    }
-
-    private void OnMascotEnabledChanged(bool enabled) => InvokeAsync(StateHasChanged);
-
-    public void Dispose()
-    {
-        MascotSettings.EnabledChanged -= OnMascotEnabledChanged;
     }
 }
