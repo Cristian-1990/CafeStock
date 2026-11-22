@@ -589,3 +589,14 @@ a:focus-visible, button:focus-visible, [role="button"]:focus-visible {
 .mascota-interruptor:hover {
     background-color: rgba(109, 76, 65, 0.10);
 }
+
+/* Con el menú lateral desplegado, el botón de la mascota oculta pasa a ser el pie del propio menú. */
+.menu-abierto .mascota-esquina {
+    left: 12px;
+    bottom: 12px;
+    z-index: 1300;
+    width: calc(min(260px, 85vw) - 24px);
+    display: flex;
+    justify-content: center;
+    border-radius: 16px;
+}
