@@ -105,7 +105,7 @@
     .menu-abierto .app-mascot-interior {
         /* Fijo en pantalla: nace a la altura del contenido (el globo con la primera fila de tarjetas y el león con la segunda, gracias al margen de abajo) y, al hacer scroll, se queda en esa misma altura de la ventana en vez de subir con la página. En ventanas bajas se sube lo justo para que el conjunto quepa. */
         position: sticky;
-        top: max(76px, min(270px, calc(67vh - 290px)));
+        top: max(76px, calc(67vh - 270px));
         margin-top: 190px;
         display: flex;
         flex-direction: column;
