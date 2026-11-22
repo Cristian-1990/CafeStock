@@ -3,8 +3,9 @@
 @inject IWebHostEnvironment WebHostEnvironment
 @inject NavigationManager NavigationManager
 @inject MascotSettingsService MascotSettings
+@inject TemaSettingsService TemaSettings
 
-<MudThemeProvider Theme="_theme"/>
+<MudThemeProvider Theme="@TemaCafeStock.Por(TemaSettings.Actual)"/>
 <MudPopoverProvider/>
 <MudDialogProvider/>
 <MudSnackbarProvider/>
@@ -98,6 +99,10 @@
                             OnClick="AlternarMascotaAsync">
                     Mascota guía · @(MascotSettings.Enabled ? "ON" : "OFF")
                 </MudNavLink>
+                @* Tema visual de este dispositivo: marrón (el de siempre) o blanco y negro. *@
+                <MudNavLink Icon="@Icons.Material.Filled.Palette" OnClick="TemaSettings.AlternarAsync">
+                    Tema · @(TemaSettings.EsBlancoNegro ? "Blanco y negro" : "Café")
+                </MudNavLink>
             </MudNavMenu>
         </div>
     </MudDrawer>
@@ -119,7 +124,6 @@
 </div>
 
 @code {
-    private readonly MudTheme _theme = TemaCafeStock.Tema;
 
     // El menú empieza abierto y se cierra al elegir una opción; el botón de la cabecera lo reabre.
     private bool _menuAbierto = true;
@@ -131,13 +135,17 @@
         _rutaActual = RutaSinQuery(NavigationManager.Uri);
         NavigationManager.LocationChanged += AlCambiarDeRuta;
         MascotSettings.EnabledChanged += AlCambiarMascota;
+        TemaSettings.TemaCambiado += AlCambiarTema;
     }
+
+    private void AlCambiarTema(string id) => InvokeAsync(StateHasChanged);
 
     // localStorage solo existe tras el prerender: aquí se lee el valor guardado para pintar bien ON/OFF.
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (!firstRender) return;
         await MascotSettings.InitializeAsync();
+        await TemaSettings.InitializeAsync();
         StateHasChanged();
     }
 
@@ -162,5 +170,6 @@
     {
         NavigationManager.LocationChanged -= AlCambiarDeRuta;
         MascotSettings.EnabledChanged -= AlCambiarMascota;
+        TemaSettings.TemaCambiado -= AlCambiarTema;
     }
 }

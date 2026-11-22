@@ -38,7 +38,7 @@
     font-weight: 600;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: #F0C9A8;
+    color: var(--acento-sobre-oscuro);
 }
 
 .home-titulo {
@@ -53,7 +53,7 @@
 .home-subtitulo {
     margin: 8px 0 0;
     font-size: 1.05rem;
-    color: #EAD9C6;
+    color: var(--texto-suave-sobre-oscuro);
 }
 
 /* Cifras: cada una es un enlace a la lista de stock. */
@@ -109,7 +109,7 @@
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: #EAD9C6;
+    color: var(--texto-suave-sobre-oscuro);
 }
 
 .cifra--reponer .cifra-numero {
@@ -129,7 +129,7 @@
     margin-top: 20px;
     padding: 18px 22px;
     background-color: var(--bg-surface);
-    border: 1px solid rgba(109, 76, 65, 0.16);
+    border: 1px solid rgba(var(--rgb-borde), 0.16);
     border-radius: var(--radius-card);
     box-shadow: var(--shadow-card);
 }
@@ -174,7 +174,7 @@
     gap: 12px;
     min-height: var(--touch-min);
     padding: 6px 0;
-    border-top: 1px solid rgba(109, 76, 65, 0.12);
+    border-top: 1px solid rgba(var(--rgb-borde), 0.12);
 }
 
 /* Fila de producto urgente: foto del catálogo, nombre, proveedor sobre su color, barra de nivel y el botón. */
@@ -190,7 +190,7 @@
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    background: linear-gradient(135deg, #EFE6DA 0%, #E3D3C0 100%);
+    background: linear-gradient(135deg, var(--foto-1) 0%, var(--foto-2) 100%);
     border-radius: 14px;
 }
 
@@ -292,7 +292,7 @@
     text-decoration: none;
     color: var(--text-espresso);
     background-color: var(--bg-surface);
-    border: 1px solid rgba(109, 76, 65, 0.18);
+    border: 1px solid rgba(var(--rgb-borde), 0.18);
     border-radius: var(--radius-card);
     box-shadow: var(--shadow-card);
     transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
@@ -335,11 +335,11 @@
 }
 
 .accion--principal .accion-texto {
-    color: #EAD9C6;
+    color: var(--texto-suave-sobre-oscuro);
 }
 
 .accion--principal ::deep .accion-icono {
-    color: #F0C9A8;
+    color: var(--acento-sobre-oscuro);
 }
 
 @media (max-width: 600px) {

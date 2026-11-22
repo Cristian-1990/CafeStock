@@ -104,17 +104,17 @@ else
     {
         @if (_productosFiltrados.Any(p => p.Unidad.Grupo() == GrupoUnidadMedida.Peso))
         {
-            <MudText Typo="Typo.h6" Class="mb-2" Style="color:#3E2723;">@SeccionesUnidadLabels.UsoCafeteria</MudText>
+            <MudText Typo="Typo.h6" Class="mb-2" Style="color:var(--color-dark);">@SeccionesUnidadLabels.UsoCafeteria</MudText>
             @TarjetasProductos(_productosFiltrados.Where(p => p.Unidad.Grupo() == GrupoUnidadMedida.Peso))
         }
         @if (_productosFiltrados.Any(p => p.Unidad.Grupo() == GrupoUnidadMedida.Unidad))
         {
-            <MudText Typo="Typo.h6" Class="mb-2 mt-6" Style="color:#3E2723;">@SeccionesUnidadLabels.VentaAlPublico</MudText>
+            <MudText Typo="Typo.h6" Class="mb-2 mt-6" Style="color:var(--color-dark);">@SeccionesUnidadLabels.VentaAlPublico</MudText>
             @TarjetasProductos(_productosFiltrados.Where(p => p.Unidad.Grupo() == GrupoUnidadMedida.Unidad))
         }
         @if (_productosFiltrados.Any(p => p.Unidad.Grupo() == GrupoUnidadMedida.SinClasificar))
         {
-            <MudText Typo="Typo.h6" Class="mb-2 mt-6" Style="color:#3E2723;">Sin clasificar</MudText>
+            <MudText Typo="Typo.h6" Class="mb-2 mt-6" Style="color:var(--color-dark);">Sin clasificar</MudText>
             @TarjetasProductos(_productosFiltrados.Where(p => p.Unidad.Grupo() == GrupoUnidadMedida.SinClasificar))
         }
     }

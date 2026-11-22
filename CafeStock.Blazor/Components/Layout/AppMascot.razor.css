@@ -35,7 +35,7 @@
     max-width: 100%;
     object-fit: contain;
     flex-shrink: 0;
-    filter: drop-shadow(0 2px 6px rgba(62, 39, 35, 0.30));
+    filter: drop-shadow(0 2px 6px rgba(var(--rgb-sombra), 0.30));
     /* Recorta un borde casi transparente que traen los PNG de origen. */
     clip-path: inset(2px);
 }
@@ -98,18 +98,25 @@
         bottom: 0;
         left: var(--m-izq);
         width: var(--m-ancho);
+        display: flex;
+        flex-direction: column;
         margin: 0;
     }
 
     .menu-cerrado .app-mascot-interior,
     .menu-abierto .app-mascot-interior {
-        /* Fijo en pantalla: nace a la altura del contenido (el globo con la primera fila de tarjetas y el león con la segunda, gracias al margen de abajo) y, al hacer scroll, se queda en esa misma altura de la ventana en vez de subir con la página. En ventanas bajas se sube lo justo para que el conjunto quepa. */
+        /* Anclado ABAJO de la ventana: la columna del león ocupa todo el alto de la página y el conjunto se pega al borde inferior de la pantalla (sticky bottom), así que no se mueve al hacer scroll y no depende de lo alto que sea el contenido de arriba. */
         position: sticky;
-        top: max(76px, min(270px, calc(67vh - 290px)));
-        margin-top: 190px;
+        bottom: 0;
+        margin-top: auto;
         display: flex;
         flex-direction: column;
         align-items: center;
+    }
+
+    /* Pegado al borde de abajo: sin el margen inferior del botón. */
+    .app-mascot-interior ::deep .mascota-toggle {
+        margin-bottom: 2px;
     }
 
     .menu-cerrado .app-mascot-bubble,
@@ -200,9 +207,9 @@
     bottom: 8px;
     z-index: 5;
     background-color: rgba(245, 239, 230, 0.92);
-    border: 1px solid rgba(109, 76, 65, 0.18);
+    border: 1px solid rgba(var(--rgb-borde), 0.18);
     border-radius: 999px;
-    box-shadow: 0 2px 8px rgba(62, 39, 35, 0.18);
+    box-shadow: 0 2px 8px rgba(var(--rgb-sombra), 0.18);
 }
 
 .mascota-esquina ::deep .mascota-toggle {
