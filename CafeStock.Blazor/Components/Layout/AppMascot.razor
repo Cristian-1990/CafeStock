@@ -22,10 +22,26 @@
 }
 else if (_settingsReady && !MascotSettings.Enabled && _currentMessage is not null)
 {
-    @* Mascota desactivada: queda solo el botón para volver a activarla en esta misma pantalla. *@
+    @* Mascota desactivada: queda visible solo un pequeño botón para volver a llamarla. *@
     <div class="app-mascot app-mascot--apagada">
         <div class="app-mascot-interior">
             <MascotToggle/>
+        </div>
+    </div>
+}
+else if (_settingsReady && MascotSettings.Enabled && _dismissed && _currentMessage is not null)
+{
+    @* El león se cerró tocándolo (sin desactivar la mascota): mismo botón pequeño para volver a llamarlo. *@
+    <div class="app-mascot app-mascot--apagada">
+        <div class="app-mascot-interior">
+            <div class="mascota-toggle">
+                <MudIconButton Icon="@Icons.Material.Filled.ToggleOff"
+                               Color="Color.Secondary"
+                               Size="Size.Large"
+                               Title="Mostrar mascota guía"
+                               aria-label="Mostrar mascota guía"
+                               OnClick="Mostrar"/>
+            </div>
         </div>
     </div>
 }
@@ -55,6 +71,8 @@ else if (_settingsReady && !MascotSettings.Enabled && _currentMessage is not nul
             StateHasChanged();
         }
     }
+
+    private void Mostrar() => _dismissed = false;
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
