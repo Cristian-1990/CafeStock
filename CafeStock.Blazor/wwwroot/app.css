@@ -425,6 +425,60 @@ h1:focus {
     --font-body: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
+/* =====================================================================
+   TEMA "BLANCO Y NEGRO" (segundo tema, elegible en el menú lateral).
+   Se activa con <html data-tema="blanconegro"> y solo redefine las variables de arriba: ningún
+   componente sabe qué tema hay puesto. Los colores con significado (niveles de stock, proveedores,
+   bien/mal) NO cambian. Negro #111, blanco, crema y amarillo crema como único acento.
+   ===================================================================== */
+:root[data-tema="blanconegro"] {
+    --bg-page: #FFFFFF;
+    --bg-sunken: #F4F1EA;
+    --bg-surface: #F4F1EA;
+    --bg-panel: #F4F1EA;
+    --bg-espresso: #111111;
+    --bg-espresso-soft: #2A2A2A;
+
+    --text-primary: #111111;
+    --text-espresso: #111111;
+    --text-muted: #4A4A4A;
+    --text-on-dark: #FFFFFF;
+
+    --accent-terracota: #111111;
+    --accent-terracota-soft: #F6E7B4;
+    --accent-gold: #E0BC4F;
+    --accent-green-soft: #E4EBDC;
+
+    --color-primary: #111111;
+    --color-dark: #111111;
+    --color-bad: #A32D2D;
+    --color-bad-strong: #791F1F;
+    --color-good: #2F6B1F;
+    --texto-suave-sobre-oscuro: #E8E2D0;
+    --acento-sobre-oscuro: #F2D98B;
+    --foto-1: #F4F1EA;
+    --foto-2: #E6DFCC;
+    --rgb-borde: 17, 17, 17;
+    --rgb-sombra: 0, 0, 0;
+
+    --font-body: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+    --font-display: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+    --mud-typography-default-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+}
+
+:root[data-tema="blanconegro"] body,
+:root[data-tema="blanconegro"] .mud-typography {
+    font-family: var(--font-body);
+}
+
+/* Títulos de la app: en el tema B, sans en peso medio (la serif Fraunces es del tema marrón). */
+:root[data-tema="blanconegro"] h1,
+:root[data-tema="blanconegro"] h2,
+:root[data-tema="blanconegro"] h3,
+:root[data-tema="blanconegro"] h4 {
+    letter-spacing: -0.01em;
+}
+
 /* Nombre de proveedor sobre su color interno (Facturas, Catálogo, Proveedores). El elemento lleva
    style="@PaletaProveedores.VariablesCss(...)", que define --proveedor-color (fondo, oscurecido solo si
    hace falta para que se lea) y --proveedor-texto (siempre blanco). */
