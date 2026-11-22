@@ -16,7 +16,7 @@
 }
 else
 {
-    @if (_proveedorSeleccionado is not null)
+    @if (_proveedorSeleccionado is > 0)
     {
         <div class="d-flex gap-2 mb-4">
             <MudButton Variant="Variant.Outlined"
@@ -37,9 +37,14 @@ else
     <MudSelect T="int?" @bind-Value="_proveedorSeleccionado"
                Label="Proveedor"
                Variant="Variant.Outlined"
-               Clearable="true"
                Style="max-width:300px;"
+               ToStringFunc="@(id => (id is null or 0) ? "Todas" : _proveedores.FirstOrDefault(p => p.Id == id)?.Nombre)"
                Class="mb-4">
+        @* "Todas" es una elección más de la lista, la primera y algo resaltada respecto al resto. *@
+        <MudSelectItem T="int?" Value="@((int?)0)"
+                       Style="font-weight:700; background-color:rgba(193,120,23,0.14); border-bottom:1px solid rgba(109,76,65,0.25);">
+            Todas
+        </MudSelectItem>
         @foreach (var proveedor in _proveedores)
         {
             <MudSelectItem T="int?" Value="@proveedor.Id">@proveedor.Nombre</MudSelectItem>
@@ -86,12 +91,12 @@ else
 
     private IEnumerable<Compra> _facturasFiltradas =>
         _facturas
-            .Where(f => _proveedorSeleccionado is null || f.ProveedorId == _proveedorSeleccionado)
+            .Where(f => _proveedorSeleccionado is null or 0 || f.ProveedorId == _proveedorSeleccionado)
             .OrderByDescending(f => f.Fecha);
 
     protected override async Task OnInitializedAsync()
     {
-        _proveedorSeleccionado = ProveedorIdInicial;
+        _proveedorSeleccionado = ProveedorIdInicial ?? 0; // 0 = "Todas" (MudSelect no pinta un elemento con valor null)
         _proveedores = await ProveedorService.GetAllAsync();
         _facturas = await FacturaService.GetAllAsync();
         _cargando = false;
