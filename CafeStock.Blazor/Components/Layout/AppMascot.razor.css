@@ -98,15 +98,17 @@
         bottom: 0;
         left: var(--m-izq);
         width: var(--m-ancho);
+        display: flex;
+        flex-direction: column;
         margin: 0;
     }
 
     .menu-cerrado .app-mascot-interior,
     .menu-abierto .app-mascot-interior {
-        /* Fijo en pantalla: nace a la altura del contenido (el globo con la primera fila de tarjetas y el león con la segunda, gracias al margen de abajo) y, al hacer scroll, se queda en esa misma altura de la ventana en vez de subir con la página. En ventanas bajas se sube lo justo para que el conjunto quepa. */
+        /* Anclado ABAJO de la ventana: la columna del león ocupa todo el alto de la página y el conjunto se pega al borde inferior de la pantalla (sticky bottom), así que no se mueve al hacer scroll y no depende de lo alto que sea el contenido de arriba. */
         position: sticky;
-        top: max(76px, calc(67vh - 270px));
-        margin-top: 190px;
+        bottom: 16px;
+        margin-top: auto;
         display: flex;
         flex-direction: column;
         align-items: center;
