@@ -63,6 +63,7 @@ try
     // Scoped, no Singleton: una instancia por circuito (por tablet/pestaña), no compartida
     // entre todos los usuarios conectados a la vez — ver comentario en MascotSettingsService.
     builder.Services.AddScoped<CafeStock.Blazor.Services.MascotSettingsService>();
+    builder.Services.AddScoped<CafeStock.Blazor.Services.TemaSettingsService>();
     // Singleton: diccionario estático de solo lectura, sin estado por circuito.
     builder.Services.AddSingleton<CafeStock.Blazor.Services.IMascotMessageProvider, CafeStock.Blazor.Services.MascotMessageProvider>();
 

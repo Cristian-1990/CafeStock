@@ -43,6 +43,40 @@ public class NivelStockYOrdenTest
         NivelStock.Clase(4, 12).Should().Be("n3");   // 33 %
     }
 
+    // ---------- Urgencia ----------
+
+    private static Producto P(string nombre, int actual, int maximo) =>
+        new() { Nombre = nombre, StockActual = actual, StockMaximo = maximo };
+
+    [Test]
+    public void PorUrgencia_OrdenaPorMenorPorcentajeDeStock()
+    {
+        var productos = new[] { P("Medio", 5, 10), P("Casi vacío", 1, 10), P("Vacío", 0, 10), P("Bajo", 3, 10) };
+
+        NivelStock.PorUrgencia(productos).Select(p => p.Nombre).Should().Equal("Vacío", "Casi vacío", "Bajo", "Medio");
+    }
+
+    [Test]
+    public void PorUrgencia_ConPorcentajeIgual_PasaPrimeroElQueMasUnidadesNecesita_YLuegoAZ()
+    {
+        var productos = new[]
+        {
+            P("Zumo", 0, 4),      // 0 %, faltan 4
+            P("Harina", 0, 12),   // 0 %, faltan 12  -> primero
+            P("Azúcar", 0, 4),    // 0 %, faltan 4   -> empata con Zumo: A–Z
+        };
+
+        NivelStock.PorUrgencia(productos).Select(p => p.Nombre).Should().Equal("Harina", "Azúcar", "Zumo");
+    }
+
+    [Test]
+    public void PorUrgencia_NoIncluyeLosCompletosNiLosSinMaximo()
+    {
+        var productos = new[] { P("Completo", 10, 10), P("Pasado", 12, 10), P("Sin máximo", 0, 0), P("Falta", 2, 10) };
+
+        NivelStock.PorUrgencia(productos).Select(p => p.Nombre).Should().Equal("Falta");
+    }
+
     // ---------- OrdenAlfabetico ----------
 
     [Test]

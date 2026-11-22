@@ -35,7 +35,7 @@
     max-width: 100%;
     object-fit: contain;
     flex-shrink: 0;
-    filter: drop-shadow(0 2px 6px rgba(62, 39, 35, 0.30));
+    filter: drop-shadow(0 2px 6px rgba(var(--rgb-sombra), 0.30));
     /* Recorta un borde casi transparente que traen los PNG de origen. */
     clip-path: inset(2px);
 }
@@ -75,4 +75,143 @@
     .app-mascot-avatar {
         height: 260px;
     }
+}
+
+/* =====================================================================
+   LEÓN A LA IZQUIERDA (escritorio, desde 960 px): el león sale siempre en el lado izquierdo, fijo en su altura (no sigue
+   el scroll), con el globo encima (cola hacia abajo). Ocupa como mucho un tercio del ancho de la pantalla
+   y un tercio de su altura. El MudLayout lleva la clase menu-abierto / menu-cerrado (el menú ocupa 260 px).
+   Hay dos casos, que solo cambian las variables --m-ancho (ancho del hueco) y --m-izq (dónde se coloca):
+
+   · COLUMNA (anchos medios): no hay margen libre, así que el contenedor reserva una columna a la izquierda
+     (padding en app.css) de min(280 px, 26 % del ancho útil) y el león va dentro.
+   · MARGEN (≥ 1668 px con el menú cerrado, ≥ 1928 px con él abierto): el contenedor central de 1280 px deja a
+     su izquierda un margen de ~190 px o más, y el león va ahí, sin quitar sitio al contenido.
+
+   Por debajo de 960 px (móvil y tablet vertical, donde el menú es un panel superpuesto) sigue arriba, como antes.
+   ===================================================================== */
+@media (min-width: 960px) {
+    .menu-cerrado .app-mascot,
+    .menu-abierto .app-mascot {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: var(--m-izq);
+        width: var(--m-ancho);
+        display: flex;
+        flex-direction: column;
+        margin: 0;
+    }
+
+    .menu-cerrado .app-mascot-interior,
+    .menu-abierto .app-mascot-interior {
+        /* Anclado ABAJO de la ventana: la columna del león ocupa todo el alto de la página y el conjunto se pega al borde inferior de la pantalla (sticky bottom), así que no se mueve al hacer scroll y no depende de lo alto que sea el contenido de arriba. */
+        position: sticky;
+        bottom: 0;
+        margin-top: auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    /* Pegado al borde de abajo: sin el margen inferior del botón. */
+    .app-mascot-interior ::deep .mascota-toggle {
+        margin-bottom: 2px;
+    }
+
+    .menu-cerrado .app-mascot-bubble,
+    .menu-abierto .app-mascot-bubble {
+        position: relative;
+        right: auto;
+        top: auto;
+        width: 100%;
+        max-width: none;
+        margin: 0 0 56px;
+        padding: 12px 16px;
+        border-radius: 24px;
+    }
+
+    .menu-cerrado .app-mascot-bubble ::deep .mud-typography-body2,
+    .menu-abierto .app-mascot-bubble ::deep .mud-typography-body2 {
+        font-size: 0.88rem;
+        line-height: 1.4;
+    }
+
+    /* Un tercio de la altura de la pantalla, sin pasar del ancho del hueco (proporción real 0,606). */
+    .menu-cerrado .app-mascot-avatar,
+    .menu-abierto .app-mascot-avatar {
+        height: min(33vh, calc(var(--m-ancho) / 0.606));
+    }
+
+    /* Cola del globo hacia abajo (apunta al león, que está debajo). */
+    .menu-cerrado .app-mascot-bubble::before,
+    .menu-cerrado .app-mascot-bubble::after,
+    .menu-abierto .app-mascot-bubble::before,
+    .menu-abierto .app-mascot-bubble::after {
+        right: auto;
+        top: auto;
+        left: calc(50% - 14px);
+    }
+
+    .menu-cerrado .app-mascot-bubble::before,
+    .menu-abierto .app-mascot-bubble::before {
+        bottom: -26px;
+        border-width: 26px 14px 0 14px;
+        border-color: transparent;
+        border-top-color: var(--accent-gold);
+    }
+
+    .menu-cerrado .app-mascot-bubble::after,
+    .menu-abierto .app-mascot-bubble::after {
+        bottom: -18px;
+        left: calc(50% - 10.5px);
+        border-width: 20px 10.5px 0 10.5px;
+        border-color: transparent;
+        border-top-color: var(--bg-surface);
+    }
+}
+
+/* Menú cerrado */
+@media (min-width: 960px) and (max-width: 1667px) {
+    .menu-cerrado .app-mascot {
+        --m-ancho: calc(min(280px, 26vw) - 24px);
+        --m-izq: 12px;
+    }
+}
+
+@media (min-width: 1668px) {
+    .menu-cerrado .app-mascot {
+        --m-ancho: calc((100vw - 1280px) / 2 - 28px);
+        --m-izq: calc(-1 * var(--m-ancho) - 12px);
+    }
+}
+
+/* Menú abierto (260 px de menú) */
+@media (min-width: 960px) and (max-width: 1927px) {
+    .menu-abierto .app-mascot {
+        --m-ancho: calc(min(280px, (100vw - 260px) * 0.26) - 24px);
+        --m-izq: 12px;
+    }
+}
+
+@media (min-width: 1928px) {
+    .menu-abierto .app-mascot {
+        --m-ancho: calc((100vw - 260px - 1280px) / 2 - 28px);
+        --m-izq: calc(-1 * var(--m-ancho) - 12px);
+    }
+}
+/* Mascota oculta: botón fijo en la esquina inferior izquierda, fuera del flujo para no quitar ancho al contenido. */
+.mascota-esquina {
+    position: fixed;
+    left: 8px;
+    bottom: 8px;
+    z-index: 5;
+    background-color: rgba(245, 239, 230, 0.92);
+    border: 1px solid rgba(var(--rgb-borde), 0.18);
+    border-radius: 999px;
+    box-shadow: 0 2px 8px rgba(var(--rgb-sombra), 0.18);
+}
+
+.mascota-esquina ::deep .mascota-toggle {
+    margin: 0;
 }

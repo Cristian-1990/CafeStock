@@ -8,8 +8,8 @@
 
 <PageTitle>Recepcionar</PageTitle>
 
-<div class="mb-4" style="background-color:rgba(109,76,65,0.10); border-radius:12px; padding:16px 24px; display:inline-block;">
-    <MudText Typo="Typo.h4" Style="color:#3E2723; margin:0;">Recepcionar</MudText>
+<div class="mb-4" style="background-color:rgba(var(--rgb-borde),0.10); border-radius:12px; padding:16px 24px; display:inline-block;">
+    <MudText Typo="Typo.h4" Style="color:var(--color-dark); margin:0;">Recepcionar</MudText>
 </div>
 
 @if (_cargando)
@@ -27,7 +27,7 @@ else
         var proveedorId = grupo.Proveedor?.Id;
         var nombreProveedor = grupo.Proveedor?.Nombre ?? "Sin proveedor asignado";
         <MudPaper Class="pa-4 mb-4" Elevation="2">
-            <MudText Typo="Typo.h6" Class="mb-3" Style="color:#3E2723;">
+            <MudText Typo="Typo.h6" Class="mb-3" Style="color:var(--color-dark);">
                 @nombreProveedor
             </MudText>
 
@@ -38,8 +38,8 @@ else
                DENTRO de la tarjeta del proveedor, nunca como bloque independiente. *@
             @if (grupo.Proveedor?.EsSupermercadoGenerico == true)
             {
-                <div class="mb-4 pa-3" style="background-color:#F5EFE6; border-radius:8px;">
-                    <MudText Typo="Typo.subtitle2" Class="mb-2" Style="color:#3E2723;">
+                <div class="mb-4 pa-3" style="background-color:var(--bg-page); border-radius:8px;">
+                    <MudText Typo="Typo.subtitle2" Class="mb-2" Style="color:var(--color-dark);">
                         Compra excepcional (artículo suelto)
                     </MudText>
                     <MudTextField @bind-Value="_descripcionExcepcional[grupo.Proveedor.Id]"

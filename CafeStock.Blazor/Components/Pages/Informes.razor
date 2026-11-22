@@ -12,8 +12,8 @@
 
 <PageTitle>Informes</PageTitle>
 
-<div class="mb-4" style="background-color:rgba(109,76,65,0.10); border-radius:12px; padding:16px 24px; display:inline-block;">
-    <MudText Typo="Typo.h4" Style="color:#3E2723; margin:0;">Informes</MudText>
+<div class="mb-4" style="background-color:rgba(var(--rgb-borde),0.10); border-radius:12px; padding:16px 24px; display:inline-block;">
+    <MudText Typo="Typo.h4" Style="color:var(--color-dark); margin:0;">Informes</MudText>
 </div>
 
 @if (_cargando)
@@ -40,7 +40,7 @@ else
                     <p class="kpi-valor">@_gastoMesAnterior.ToString("F2") €</p>
                     @if (_resumen.VariacionGastoPorcentual is decimal variacion)
                     {
-                        <p class="kpi-detalle" style="@($"color:{(variacion <= 0 ? "#3B6D11" : "#993C1D")}; font-weight:600;")">
+                        <p class="kpi-detalle" style="@($"color:{(variacion <= 0 ? "var(--color-good)" : "var(--color-bad)")}; font-weight:600;")">
                             <MudIcon Icon="@(variacion <= 0 ? Icons.Material.Filled.TrendingDown : Icons.Material.Filled.TrendingUp)" Size="MudBlazor.Size.Small" Class="kpi-icono"/>
                             Este mes @(variacion <= 0 ? "baja" : "sube") un @(Math.Abs(variacion).ToString("F1")) %
                         </p>
@@ -259,7 +259,7 @@ else
                         <MudTd DataLabel="% Desviación">
                             @if (context.PorcentajeDesviacion is decimal pct)
                             {
-                                <MudText Style="@($"color:{(pct > 0 ? "#993C1D" : "#3B6D11")}; font-weight:600;")">
+                                <MudText Style="@($"color:{(pct > 0 ? "var(--color-bad)" : "var(--color-good)")}; font-weight:600;")">
                                     @pct.ToString("F1") %
                                 </MudText>
                             }
@@ -352,12 +352,12 @@ else
                         <MudTd DataLabel="Antes">@context.PrecioAnterior.ToString("F2") €</MudTd>
                         <MudTd DataLabel="Ahora">@context.PrecioActual.ToString("F2") €</MudTd>
                         <MudTd DataLabel="Variación">
-                            <MudText Style="@($"color:{(context.PorcentajeVariacion > 0 ? "#993C1D" : "#3B6D11")}; font-weight:600;")">
+                            <MudText Style="@($"color:{(context.PorcentajeVariacion > 0 ? "var(--color-bad)" : "var(--color-good)")}; font-weight:600;")">
                                 @(context.PorcentajeVariacion > 0 ? "+" : string.Empty)@context.PorcentajeVariacion.ToString("F1") %
                             </MudText>
                         </MudTd>
                         <MudTd DataLabel="Impacto">
-                            <MudText Style="@($"color:{(context.ImpactoEuros > 0 ? "#993C1D" : "#3B6D11")}; font-weight:600;")">
+                            <MudText Style="@($"color:{(context.ImpactoEuros > 0 ? "var(--color-bad)" : "var(--color-good)")}; font-weight:600;")">
                                 @(context.ImpactoEuros > 0 ? "+" : string.Empty)@context.ImpactoEuros.ToString("F2") €
                             </MudText>
                         </MudTd>
@@ -428,7 +428,7 @@ else
                     <RowTemplate>
                         <MudTd DataLabel="Producto">@context.Etiqueta</MudTd>
                         <MudTd DataLabel="Diferencia">
-                            <MudText Style="@($"color:{(context.Valor > 0 ? "#993C1D" : "#3B6D11")}; font-weight:600;")">
+                            <MudText Style="@($"color:{(context.Valor > 0 ? "var(--color-bad)" : "var(--color-good)")}; font-weight:600;")">
                                 @context.Valor.ToString("F2") €
                             </MudText>
                         </MudTd>

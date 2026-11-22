@@ -31,6 +31,19 @@ public static class NivelStock
 
     public static int Tramo(int stockActual, int stockMaximo) => Tramo(Porcentaje(stockActual, stockMaximo));
 
+    /// <summary>
+    /// Productos por reponer, del más urgente al menos: primero el de menor porcentaje de stock sobre su
+    /// máximo; a igualdad (lo habitual, con muchos productos a cero), el que más unidades necesita; y, si
+    /// aún empatan, A–Z. Solo entran los que tienen máximo definido y están por debajo de él.
+    /// </summary>
+    public static List<Producto> PorUrgencia(IEnumerable<Producto> productos) =>
+        productos
+            .Where(p => p.StockMaximo > 0 && p.CantidadAComprar > 0)
+            .OrderBy(p => Porcentaje(p.StockActual, p.StockMaximo))
+            .ThenByDescending(p => p.CantidadAComprar)
+            .ThenBy(p => OrdenAlfabetico.Clave(p.Nombre), StringComparer.Ordinal)
+            .ToList();
+
     /// <summary>Clase CSS del medidor ("n1".."n5"); los colores viven en app.css (--nivel-N).</summary>
     public static string Clase(int stockActual, int stockMaximo) => $"n{Tramo(stockActual, stockMaximo)}";
 }

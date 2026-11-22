@@ -2,13 +2,15 @@
 @implements IDisposable
 @inject IWebHostEnvironment WebHostEnvironment
 @inject NavigationManager NavigationManager
+@inject MascotSettingsService MascotSettings
+@inject TemaSettingsService TemaSettings
 
-<MudThemeProvider Theme="_theme"/>
+<MudThemeProvider Theme="@TemaCafeStock.Por(TemaSettings.Actual)"/>
 <MudPopoverProvider/>
 <MudDialogProvider/>
 <MudSnackbarProvider/>
 
-<MudLayout>
+<MudLayout Class="@(_menuAbierto ? "menu-abierto" : "menu-cerrado")">
     @* Aviso de modo pruebas en Development (dotnet run, ver Program.cs) — usa cafestock-test.db,
        NUNCA la base de datos real, pero no debe confundirse a simple vista con la app de
        producción cuando ambas corren a la vez en la Pi. Antes era toda la barra en rojo, que
@@ -90,10 +92,24 @@
                 <MudNavLink Href="admin/usuarios" Icon="@Icons.Material.Filled.ManageAccounts">Usuarios</MudNavLink>
             </AuthorizeView>
         </MudNavMenu>
+        @* Opción del menú apartada al pie: activa/desactiva la mascota guía. *@
+        <div class="menu-pie">
+            <MudNavMenu>
+                <MudNavLink Icon="@(MascotSettings.Enabled ? Icons.Material.Filled.ToggleOn : Icons.Material.Filled.ToggleOff)"
+                            OnClick="AlternarMascotaAsync">
+                    Mascota guía · @(MascotSettings.Enabled ? "ON" : "OFF")
+                </MudNavLink>
+                @* Tema visual de este dispositivo: marrón (el de siempre) o blanco y negro. *@
+                <MudNavLink Icon="@Icons.Material.Filled.Palette" OnClick="TemaSettings.AlternarAsync">
+                    Tema · @(TemaSettings.EsBlancoNegro ? "Blanco y negro" : "Café")
+                </MudNavLink>
+            </MudNavMenu>
+        </div>
     </MudDrawer>
 
     <MudMainContent>
-        <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+        @* position:relative: el león en modo lateral (ver AppMascot.razor.css) se coloca respecto a esta columna. *@
+        <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4 contenedor-pagina" Style="position:relative;">
             @* La mascota va arriba del todo en cada página (y en Inicio, que lleva la suya). *@
             <AppMascot/>
             @Body
@@ -108,7 +124,6 @@
 </div>
 
 @code {
-    private readonly MudTheme _theme = TemaCafeStock.Tema;
 
     // El menú empieza abierto y se cierra al elegir una opción; el botón de la cabecera lo reabre.
     private bool _menuAbierto = true;
@@ -119,7 +134,24 @@
     {
         _rutaActual = RutaSinQuery(NavigationManager.Uri);
         NavigationManager.LocationChanged += AlCambiarDeRuta;
+        MascotSettings.EnabledChanged += AlCambiarMascota;
+        TemaSettings.TemaCambiado += AlCambiarTema;
     }
+
+    private void AlCambiarTema(string id) => InvokeAsync(StateHasChanged);
+
+    // localStorage solo existe tras el prerender: aquí se lee el valor guardado para pintar bien ON/OFF.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        await MascotSettings.InitializeAsync();
+        await TemaSettings.InitializeAsync();
+        StateHasChanged();
+    }
+
+    private Task AlternarMascotaAsync() => MascotSettings.SetEnabledAsync(!MascotSettings.Enabled);
+
+    private void AlCambiarMascota(bool enabled) => InvokeAsync(StateHasChanged);
 
     // Solo se cierra si cambia la página (no si solo cambia una query o un fragmento dentro de ella).
     private void AlCambiarDeRuta(object? sender, LocationChangedEventArgs e)
@@ -137,5 +169,7 @@
     public void Dispose()
     {
         NavigationManager.LocationChanged -= AlCambiarDeRuta;
+        MascotSettings.EnabledChanged -= AlCambiarMascota;
+        TemaSettings.TemaCambiado -= AlCambiarTema;
     }
 }

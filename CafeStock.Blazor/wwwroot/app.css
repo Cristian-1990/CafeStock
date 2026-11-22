@@ -1,5 +1,5 @@
 html, body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-family: var(--font-body, 'Helvetica Neue', Helvetica, Arial, sans-serif);
 }
 
 a, .btn-link {
@@ -74,7 +74,7 @@ h1:focus {
     background-color: var(--bg-surface);
     border: 3px solid var(--accent-gold);
     border-radius: 30px;
-    box-shadow: 0 4px 14px rgba(62, 39, 35, 0.18);
+    box-shadow: 0 4px 14px rgba(var(--rgb-sombra), 0.18);
 }
 
 .burbuja-mascota::before,
@@ -213,7 +213,7 @@ h1:focus {
     background-color: rgba(255, 251, 245, 0.94);
     -webkit-backdrop-filter: blur(8px);
     backdrop-filter: blur(8px);
-    border: 1px solid rgba(109, 76, 65, 0.15);
+    border: 1px solid rgba(var(--rgb-borde), 0.15);
     border-radius: 22px;
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.40), 0 2px 6px rgba(0, 0, 0, 0.20);
     text-align: center;
@@ -302,6 +302,58 @@ h1:focus {
     background-color: var(--accent-terracota);
 }
 
+/* Campo de contraseña con el botón "Mostrar" dentro. Más específico que ".acceso-tarjeta button" (que da
+   estilo de botón grande a los demás), para que el botón sea un enlace pequeño. */
+.acceso-campo-password {
+    position: relative;
+    display: flex;
+}
+
+.acceso-campo-password input {
+    flex: 1;
+    padding-right: 84px;
+}
+
+.acceso-tarjeta .acceso-ojo {
+    position: absolute;
+    top: 50%;
+    right: 6px;
+    min-height: 36px;
+    margin: 0;
+    padding: 0 12px;
+    transform: translateY(-50%);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--accent-terracota);
+    background: transparent;
+    border-radius: 8px;
+}
+
+.acceso-tarjeta .acceso-ojo:hover {
+    color: var(--text-espresso);
+    background-color: var(--bg-sunken);
+}
+
+.acceso-olvido {
+    margin-top: 16px;
+    font-size: 0.9rem;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.acceso-olvido summary {
+    display: inline-block;
+    min-height: 32px;
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--accent-terracota);
+}
+
+.acceso-olvido p {
+    margin: 8px 0 0;
+    line-height: 1.45;
+}
+
 .acceso-error {
     margin-bottom: 12px;
     padding: 10px 14px;
@@ -352,10 +404,79 @@ h1:focus {
     /* Forma, sombra y tipografía */
     --radius-card: 18px;
     --radius-pill: 9999px;
-    --shadow-card: 0 1px 2px rgba(62, 39, 35, 0.08), 0 8px 24px rgba(62, 39, 35, 0.10);
-    --shadow-card-hover: 0 2px 4px rgba(62, 39, 35, 0.10), 0 14px 32px rgba(62, 39, 35, 0.16);
+    --shadow-card: 0 1px 2px rgba(var(--rgb-sombra), 0.08), 0 8px 24px rgba(var(--rgb-sombra), 0.10);
+    --shadow-card-hover: 0 2px 4px rgba(var(--rgb-sombra), 0.10), 0 14px 32px rgba(var(--rgb-sombra), 0.16);
     --touch-min: 44px;
     --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+
+    /* Tokens de tema: lo que antes estaba escrito a mano en cada página. */
+    --color-primary: #6D4C41;
+    --color-dark: #3E2723;
+    --bg-panel: #F5F0EB;
+    --color-bad: #993C1D;
+    --color-bad-strong: #7A2410;
+    --color-good: #3B6D11;
+    --texto-suave-sobre-oscuro: #EAD9C6;
+    --acento-sobre-oscuro: #F0C9A8;
+    --foto-1: #EFE6DA;
+    --foto-2: #E3D3C0;
+    --rgb-borde: 109, 76, 65;
+    --rgb-sombra: 62, 39, 35;
+    --font-body: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+/* =====================================================================
+   TEMA "BLANCO Y NEGRO" (segundo tema, elegible en el menú lateral).
+   Se activa con <html data-tema="blanconegro"> y solo redefine las variables de arriba: ningún
+   componente sabe qué tema hay puesto. Los colores con significado (niveles de stock, proveedores,
+   bien/mal) NO cambian. Negro #111, blanco, crema y amarillo crema como único acento.
+   ===================================================================== */
+:root[data-tema="blanconegro"] {
+    --bg-page: #FFFFFF;
+    --bg-sunken: #F4F1EA;
+    --bg-surface: #F4F1EA;
+    --bg-panel: #F4F1EA;
+    --bg-espresso: #111111;
+    --bg-espresso-soft: #2A2A2A;
+
+    --text-primary: #111111;
+    --text-espresso: #111111;
+    --text-muted: #4A4A4A;
+    --text-on-dark: #FFFFFF;
+
+    --accent-terracota: #111111;
+    --accent-terracota-soft: #F6E7B4;
+    --accent-gold: #E0BC4F;
+    --accent-green-soft: #E4EBDC;
+
+    --color-primary: #111111;
+    --color-dark: #111111;
+    --color-bad: #A32D2D;
+    --color-bad-strong: #791F1F;
+    --color-good: #2F6B1F;
+    --texto-suave-sobre-oscuro: #E8E2D0;
+    --acento-sobre-oscuro: #F2D98B;
+    --foto-1: #F4F1EA;
+    --foto-2: #E6DFCC;
+    --rgb-borde: 17, 17, 17;
+    --rgb-sombra: 0, 0, 0;
+
+    --font-body: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+    --font-display: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+    --mud-typography-default-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+}
+
+:root[data-tema="blanconegro"] body,
+:root[data-tema="blanconegro"] .mud-typography {
+    font-family: var(--font-body);
+}
+
+/* Títulos de la app: en el tema B, sans en peso medio (la serif Fraunces es del tema marrón). */
+:root[data-tema="blanconegro"] h1,
+:root[data-tema="blanconegro"] h2,
+:root[data-tema="blanconegro"] h3,
+:root[data-tema="blanconegro"] h4 {
+    letter-spacing: -0.01em;
 }
 
 /* Nombre de proveedor sobre su color interno (Facturas, Catálogo, Proveedores). El elemento lleva
@@ -370,6 +491,22 @@ h1:focus {
     color: var(--proveedor-texto, #FFFFFF);
     background-color: var(--proveedor-color, #6D4C41);
     border-radius: var(--radius-pill);
+}
+
+/* Columna del león a la izquierda (ver AppMascot.razor.css): en anchos medios no hay margen libre, así que el
+   contenedor de la página reserva a su izquierda el hueco del león (como mucho 280 px o el 26 % del ancho útil).
+   Solo si la página lleva mascota (:has). Desde 1668 px (menú cerrado) / 1928 px (abierto) el león cabe en el
+   margen y no se reserva nada. */
+@media (min-width: 960px) and (max-width: 1667px) {
+    .menu-cerrado .contenedor-pagina:has(> .app-mascot) {
+        padding-left: min(280px, 26vw);
+    }
+}
+
+@media (min-width: 960px) and (max-width: 1927px) {
+    .menu-abierto .contenedor-pagina:has(> .app-mascot) {
+        padding-left: min(280px, calc((100vw - 260px) * 0.26));
+    }
 }
 
 /* Medidor de stock (catálogo, tabla de Stock, Inicio): el relleno es el % sobre el máximo y su color
@@ -433,7 +570,7 @@ a:focus-visible, button:focus-visible, [role="button"]:focus-visible {
    ===================================================================== */
 .mud-appbar {
     background-color: var(--bg-espresso);
-    box-shadow: 0 2px 12px rgba(62, 39, 35, 0.25);
+    box-shadow: 0 2px 12px rgba(var(--rgb-sombra), 0.25);
 }
 
 /* Modo pruebas (Development): misma barra espresso, con una franja y una pastilla terracota. Se ve de
@@ -462,7 +599,7 @@ a:focus-visible, button:focus-visible, [role="button"]:focus-visible {
     --mud-palette-drawer-text: var(--text-espresso);
     --mud-palette-drawer-icon: var(--text-muted);
     background-color: var(--bg-surface);
-    border-right: 1px solid rgba(109, 76, 65, 0.14);
+    border-right: 1px solid rgba(var(--rgb-borde), 0.14);
 }
 
 .mud-drawer .mud-nav-link {
@@ -498,3 +635,47 @@ a:focus-visible, button:focus-visible, [role="button"]:focus-visible {
     padding-top: 10px;
 }
 
+/* Interruptor: icono + ON/OFF, táctil y discreto. */
+.mascota-interruptor {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: var(--touch-min);
+    padding: 0 10px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--accent-terracota, #A8481F);
+    font-weight: 700; font-size: 0.78rem; line-height: 1;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+}
+
+.mascota-interruptor--off {
+    color: var(--text-muted, #7A6A5E);
+}
+
+.mascota-interruptor:hover {
+    background-color: rgba(var(--rgb-borde), 0.10);
+}
+
+/* Con el menú desplegado, la mascota oculta se llama desde su opción al pie del menú (MainLayout): sobra la pastilla. */
+.mascota-etiqueta {
+    display: none;
+}
+
+.menu-abierto .mascota-esquina {
+    display: none;
+}
+
+/* Opción del menú apartada al pie de la barra lateral. */
+.mud-drawer-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.menu-pie {
+    margin-top: auto;
+    padding-top: 8px;
+    border-top: 1px solid rgba(var(--rgb-borde), 0.18);
+}
