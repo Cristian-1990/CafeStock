@@ -424,6 +424,22 @@ h1:focus {
     border-radius: var(--radius-pill);
 }
 
+/* Columna del león a la izquierda (ver AppMascot.razor.css): en anchos medios no hay margen libre, así que el
+   contenedor de la página reserva a su izquierda el hueco del león (como mucho 280 px o el 26 % del ancho útil).
+   Solo si la página lleva mascota (:has). Desde 1668 px (menú cerrado) / 1928 px (abierto) el león cabe en el
+   margen y no se reserva nada. */
+@media (min-width: 960px) and (max-width: 1667px) {
+    .menu-cerrado .contenedor-pagina:has(> .app-mascot) {
+        padding-left: min(280px, 26vw);
+    }
+}
+
+@media (min-width: 960px) and (max-width: 1927px) {
+    .menu-abierto .contenedor-pagina:has(> .app-mascot) {
+        padding-left: min(280px, calc((100vw - 260px) * 0.26));
+    }
+}
+
 /* Medidor de stock (catálogo, tabla de Stock, Inicio): el relleno es el % sobre el máximo y su color
    sale del tramo (clase n1..n5, ver NivelStock). El color no es lo único que informa: siempre va con
    las cifras. Global porque lo usan varias pantallas. */
