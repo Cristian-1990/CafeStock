@@ -106,7 +106,7 @@
         position: sticky;
         top: 76px;
         /* Bajado para alinearse con el contenido: el globo a la altura de la primera fila de tarjetas y el león a la de la segunda (títulos y buscador quedan por encima). Al hacer scroll se queda pegado arriba. */
-        margin-top: 190px;
+        margin-top: 138px;
         display: flex;
         flex-direction: column;
         align-items: center;
