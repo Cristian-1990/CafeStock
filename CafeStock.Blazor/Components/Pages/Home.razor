@@ -2,6 +2,9 @@
 @attribute [Authorize(Policy = Politicas.Trabajador)]
 @inject IProductoService ProductoService
 @inject IProveedorService ProveedorService
+@inject CafeStock.Back.Services.Facturas.IFacturaService FacturaService
+@inject CafeStock.Back.Services.Informes.IInformeService Informes
+@inject IUsuarioService UsuarioService
 
 <PageTitle>CafeStock</PageTitle>
 
@@ -23,19 +26,26 @@
             <p class="home-subtitulo">@FraseResumen</p>
         </div>
 
+        @* Tres accesos a lo que el menú lateral tiene más escondido: la última factura, el informe de ahorro y
+           los usuarios. Cada uno solo aparece a quien puede entrar (la protección real es el [Authorize] de
+           cada página). El stock ya tiene su sitio justo debajo (Lo más urgente) y en el menú. *@
         <div class="home-cifras">
-            <a class="cifra cifra--reponer" href="/productos">
-                <span class="cifra-numero">@_porReponer</span>
-                <span class="cifra-texto">por reponer</span>
-            </a>
-            <a class="cifra cifra--agotado" href="/productos">
-                <span class="cifra-numero">@_sinStock</span>
-                <span class="cifra-texto">sin stock</span>
-            </a>
-            <a class="cifra cifra--completo" href="/productos">
-                <span class="cifra-numero">@_completos</span>
-                <span class="cifra-texto">completos</span>
-            </a>
+            <AuthorizeView Policy="@Politicas.Encargado">
+                <a class="cifra" href="@EnlaceUltimaFactura">
+                    <span class="cifra-numero cifra-numero--medio">@(_ultimaFactura is null ? "—" : $"{_importeUltimaFactura:F2} €")</span>
+                    <span class="cifra-texto">Revisar última factura</span>
+                </a>
+                <a class="cifra" href="/informes">
+                    <span class="cifra-numero cifra-numero--medio">@_ahorroPrecio.ToString("F2") €</span>
+                    <span class="cifra-texto">Informe de ahorro</span>
+                </a>
+            </AuthorizeView>
+            <AuthorizeView Policy="@Politicas.Admin">
+                <a class="cifra" href="/admin/usuarios">
+                    <span class="cifra-numero cifra-numero--medio">@_numeroUsuarios</span>
+                    <span class="cifra-texto">Usuarios</span>
+                </a>
+            </AuthorizeView>
         </div>
     </section>
 
@@ -129,6 +139,14 @@
     private int _sinStock;
     private int _completos;
 
+    // Los tres accesos de la banda: última factura, ahorro por precio y nº de usuarios.
+    private Compra? _ultimaFactura;
+    private decimal _importeUltimaFactura;
+    private decimal _ahorroPrecio;
+    private int _numeroUsuarios;
+
+    private string EnlaceUltimaFactura => _ultimaFactura is null ? "/facturas" : $"/facturas/{_ultimaFactura.Id}";
+
     // Un producto urgente, con lo necesario para pintar su fila: su proveedor (nombre y estilo de color) y
     // el enlace a Realizar stock en ese proveedor, con el producto destacado.
     private record ProductoUrgente(Producto Producto, string NombreProveedor, string EstiloProveedor, string EnlaceHacerStock);
@@ -169,6 +187,15 @@
         _porReponer = productos.Count(p => p.CantidadAComprar > 0);
         _sinStock = productos.Count(p => p.StockMaximo > 0 && p.StockActual <= 0);
         _completos = productos.Count(p => p.CantidadAComprar <= 0);
+
+        // Accesos de la banda. Última factura = la compra más reciente; ahorro = lo que se ha dejado de pagar por
+        // bajadas de precio respecto a la compra anterior (la suma de los impactos negativos, ver
+        // CalcularVariacionesPrecio); usuarios = cuántas cuentas hay.
+        var compras = (await FacturaService.GetAllAsync()).ToList();
+        _ultimaFactura = compras.OrderByDescending(c => c.Fecha).FirstOrDefault();
+        _importeUltimaFactura = _ultimaFactura is null ? 0m : CafeStock.Back.Services.Informes.InformeService.ImporteDe(_ultimaFactura);
+        _ahorroPrecio = -Informes.CalcularVariacionesPrecio(compras).Where(v => v.ImpactoEuros < 0).Sum(v => v.ImpactoEuros);
+        _numeroUsuarios = (await UsuarioService.ListarAsync()).Count;
 
         // Los tres productos más urgentes (ver NivelStock.PorUrgencia). Los de seguimiento individual (los
         // cafés de Venta) no entran: su stock no se cuenta en Realizar stock y el botón no los encontraría.
