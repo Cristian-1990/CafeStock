@@ -8,7 +8,7 @@
     @* El botón activar/desactivar va justo debajo de los pies del león. Su clic no cierra el león
        (stopPropagation dentro de MascotToggle). *@
     @* En pantalla ancha (ver AppMascot.razor.css) el león vive en el MARGEN IZQUIERDO, fuera de la columna
-       de contenido y pegajoso al hacer scroll, con el globo encima. En pantallas más estrechas, donde no
+       de contenido y fijo en su altura (se va con la página al hacer scroll), con el globo encima. En pantallas más estrechas, donde no
        hay margen, va arriba como siempre. *@
     <div class="app-mascot">
         <div class="app-mascot-interior">
@@ -22,11 +22,19 @@
 }
 else if (_settingsReady && !MascotSettings.Enabled && _currentMessage is not null)
 {
-    @* Mascota desactivada: queda solo el botón para volver a activarla en esta misma pantalla. *@
-    <div class="app-mascot app-mascot--apagada">
-        <div class="app-mascot-interior">
-            <MascotToggle/>
-        </div>
+    @* Mascota desactivada: sin columna (el contenido recupera todo el ancho); solo un botón en la esquina. *@
+    <div class="mascota-esquina">
+        <MascotToggle/>
+    </div>
+}
+else if (_settingsReady && MascotSettings.Enabled && _dismissed && _currentMessage is not null)
+{
+    @* El león se cerró tocándolo (sin desactivar la mascota): mismo botón pequeño para volver a llamarlo. *@
+    <div class="mascota-esquina">
+        <button type="button" class="mascota-interruptor mascota-interruptor--off" title="Mostrar mascota guía"
+                aria-label="Mostrar mascota guía" @onclick="Mostrar">
+            <MudIcon Icon="@Icons.Material.Filled.ToggleOff"/><span class="mascota-etiqueta">Mascota guía</span><span class="mascota-estado">OFF</span>
+        </button>
     </div>
 }
 
@@ -55,6 +63,8 @@ else if (_settingsReady && !MascotSettings.Enabled && _currentMessage is not nul
             StateHasChanged();
         }
     }
+
+    private void Mostrar() => _dismissed = false;
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {

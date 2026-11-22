@@ -302,6 +302,58 @@ h1:focus {
     background-color: var(--accent-terracota);
 }
 
+/* Campo de contraseña con el botón "Mostrar" dentro. Más específico que ".acceso-tarjeta button" (que da
+   estilo de botón grande a los demás), para que el botón sea un enlace pequeño. */
+.acceso-campo-password {
+    position: relative;
+    display: flex;
+}
+
+.acceso-campo-password input {
+    flex: 1;
+    padding-right: 84px;
+}
+
+.acceso-tarjeta .acceso-ojo {
+    position: absolute;
+    top: 50%;
+    right: 6px;
+    min-height: 36px;
+    margin: 0;
+    padding: 0 12px;
+    transform: translateY(-50%);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--accent-terracota);
+    background: transparent;
+    border-radius: 8px;
+}
+
+.acceso-tarjeta .acceso-ojo:hover {
+    color: var(--text-espresso);
+    background-color: var(--bg-sunken);
+}
+
+.acceso-olvido {
+    margin-top: 16px;
+    font-size: 0.9rem;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.acceso-olvido summary {
+    display: inline-block;
+    min-height: 32px;
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--accent-terracota);
+}
+
+.acceso-olvido p {
+    margin: 8px 0 0;
+    line-height: 1.45;
+}
+
 .acceso-error {
     margin-bottom: 12px;
     padding: 10px 14px;
@@ -370,6 +422,22 @@ h1:focus {
     color: var(--proveedor-texto, #FFFFFF);
     background-color: var(--proveedor-color, #6D4C41);
     border-radius: var(--radius-pill);
+}
+
+/* Columna del león a la izquierda (ver AppMascot.razor.css): en anchos medios no hay margen libre, así que el
+   contenedor de la página reserva a su izquierda el hueco del león (como mucho 280 px o el 26 % del ancho útil).
+   Solo si la página lleva mascota (:has). Desde 1668 px (menú cerrado) / 1928 px (abierto) el león cabe en el
+   margen y no se reserva nada. */
+@media (min-width: 960px) and (max-width: 1667px) {
+    .menu-cerrado .contenedor-pagina:has(> .app-mascot) {
+        padding-left: min(280px, 26vw);
+    }
+}
+
+@media (min-width: 960px) and (max-width: 1927px) {
+    .menu-abierto .contenedor-pagina:has(> .app-mascot) {
+        padding-left: min(280px, calc((100vw - 260px) * 0.26));
+    }
 }
 
 /* Medidor de stock (catálogo, tabla de Stock, Inicio): el relleno es el % sobre el máximo y su color
@@ -498,3 +566,47 @@ a:focus-visible, button:focus-visible, [role="button"]:focus-visible {
     padding-top: 10px;
 }
 
+/* Interruptor: icono + ON/OFF, táctil y discreto. */
+.mascota-interruptor {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: var(--touch-min);
+    padding: 0 10px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--accent-terracota, #A8481F);
+    font-weight: 700; font-size: 0.78rem; line-height: 1;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+}
+
+.mascota-interruptor--off {
+    color: var(--text-muted, #7A6A5E);
+}
+
+.mascota-interruptor:hover {
+    background-color: rgba(109, 76, 65, 0.10);
+}
+
+/* Con el menú desplegado, la mascota oculta se llama desde su opción al pie del menú (MainLayout): sobra la pastilla. */
+.mascota-etiqueta {
+    display: none;
+}
+
+.menu-abierto .mascota-esquina {
+    display: none;
+}
+
+/* Opción del menú apartada al pie de la barra lateral. */
+.mud-drawer-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.menu-pie {
+    margin-top: auto;
+    padding-top: 8px;
+    border-top: 1px solid rgba(109, 76, 65, 0.18);
+}

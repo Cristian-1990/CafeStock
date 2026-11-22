@@ -2,6 +2,7 @@
 @implements IDisposable
 @inject IWebHostEnvironment WebHostEnvironment
 @inject NavigationManager NavigationManager
+@inject MascotSettingsService MascotSettings
 
 <MudThemeProvider Theme="_theme"/>
 <MudPopoverProvider/>
@@ -90,11 +91,20 @@
                 <MudNavLink Href="admin/usuarios" Icon="@Icons.Material.Filled.ManageAccounts">Usuarios</MudNavLink>
             </AuthorizeView>
         </MudNavMenu>
+        @* Opción del menú apartada al pie: activa/desactiva la mascota guía. *@
+        <div class="menu-pie">
+            <MudNavMenu>
+                <MudNavLink Icon="@(MascotSettings.Enabled ? Icons.Material.Filled.ToggleOn : Icons.Material.Filled.ToggleOff)"
+                            OnClick="AlternarMascotaAsync">
+                    Mascota guía · @(MascotSettings.Enabled ? "ON" : "OFF")
+                </MudNavLink>
+            </MudNavMenu>
+        </div>
     </MudDrawer>
 
     <MudMainContent>
         @* position:relative: el león en modo lateral (ver AppMascot.razor.css) se coloca respecto a esta columna. *@
-        <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4" Style="position:relative;">
+        <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4 contenedor-pagina" Style="position:relative;">
             @* La mascota va arriba del todo en cada página (y en Inicio, que lleva la suya). *@
             <AppMascot/>
             @Body
@@ -120,7 +130,20 @@
     {
         _rutaActual = RutaSinQuery(NavigationManager.Uri);
         NavigationManager.LocationChanged += AlCambiarDeRuta;
+        MascotSettings.EnabledChanged += AlCambiarMascota;
     }
+
+    // localStorage solo existe tras el prerender: aquí se lee el valor guardado para pintar bien ON/OFF.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        await MascotSettings.InitializeAsync();
+        StateHasChanged();
+    }
+
+    private Task AlternarMascotaAsync() => MascotSettings.SetEnabledAsync(!MascotSettings.Enabled);
+
+    private void AlCambiarMascota(bool enabled) => InvokeAsync(StateHasChanged);
 
     // Solo se cierra si cambia la página (no si solo cambia una query o un fragmento dentro de ella).
     private void AlCambiarDeRuta(object? sender, LocationChangedEventArgs e)
@@ -138,5 +161,6 @@
     public void Dispose()
     {
         NavigationManager.LocationChanged -= AlCambiarDeRuta;
+        MascotSettings.EnabledChanged -= AlCambiarMascota;
     }
 }

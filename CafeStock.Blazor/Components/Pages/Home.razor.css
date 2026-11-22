@@ -91,6 +91,18 @@
     font-variant-numeric: tabular-nums;
 }
 
+/* Los accesos de la banda llevan un importe o un recuento y una etiqueta más larga que las antiguas cifras. */
+.cifra {
+    min-width: 128px;
+    max-width: 170px;
+    text-align: center;
+}
+
+.cifra-numero--medio {
+    font-size: 1.6rem;
+    color: #FFE0C2;
+}
+
 .cifra-texto {
     margin-top: 4px;
     font-size: 0.78rem;
