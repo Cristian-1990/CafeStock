@@ -108,6 +108,20 @@
                      Clearable="true"
                      Class="mb-4"/>
 
+    @* Ficha de café: opcional, solo para los cafés que se venden (pantalla Venta). Se abre sola si ya
+       tiene algún dato. La imagen de la ficha es la de arriba (Imagen). *@
+    <MudExpansionPanels Class="mb-4" Elevation="0">
+        <MudExpansionPanel Text="Ficha de café (opcional)" Expanded="@(_tieneFichaCafe)">
+            <MudTextField @bind-Value="_pais" Label="País" Variant="Variant.Outlined" Class="mb-3"/>
+            <MudTextField @bind-Value="_region" Label="Región" Variant="Variant.Outlined" Class="mb-3"/>
+            <MudTextField @bind-Value="_finca" Label="Finca" Variant="Variant.Outlined" Class="mb-3"/>
+            <MudTextField @bind-Value="_altitud" Label="Altitud" Placeholder="p.ej. 927 msnm" Variant="Variant.Outlined" Class="mb-3"/>
+            <MudTextField @bind-Value="_variedad" Label="Variedad" Variant="Variant.Outlined" Class="mb-3"/>
+            <MudTextField @bind-Value="_proceso" Label="Proceso" Placeholder="p.ej. Natural, Lavado" Variant="Variant.Outlined" Class="mb-3"/>
+            <MudTextField @bind-Value="_notasCata" Label="Notas de cata" Variant="Variant.Outlined" Lines="2" Class="mb-1"/>
+        </MudExpansionPanel>
+    </MudExpansionPanels>
+
     @if (_cargandoProveedores)
     {
         <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Small" Class="mb-4"/>
@@ -175,6 +189,18 @@
     private bool _aplicaConciliacionTpv;
     private int? _unidadesPorPack;
     private int? _proveedorId;
+
+    // Ficha de café (ver Producto): hay que cargarla y devolverla SIEMPRE, igual que el resto de campos,
+    // porque UpdateAsync escribe campo a campo y un formulario que no la trajera la borraría.
+    private string _pais = string.Empty;
+    private string _region = string.Empty;
+    private string _finca = string.Empty;
+    private string _altitud = string.Empty;
+    private string _variedad = string.Empty;
+    private string _proceso = string.Empty;
+    private string _notasCata = string.Empty;
+    private bool _tieneFichaCafe;
+
     private IEnumerable<Proveedor> _proveedores = [];
     private bool _cargandoProveedores = true;
     private string? _error;
@@ -226,6 +252,15 @@
                 _aplicaConciliacionTpv = resultado.Value.AplicaConciliacionTpv;
                 _unidadesPorPack = resultado.Value.UnidadesPorPack;
                 _proveedorId = resultado.Value.ProveedorId;
+                _pais = resultado.Value.Pais;
+                _region = resultado.Value.Region;
+                _finca = resultado.Value.Finca;
+                _altitud = resultado.Value.Altitud;
+                _variedad = resultado.Value.Variedad;
+                _proceso = resultado.Value.Proceso;
+                _notasCata = resultado.Value.NotasCata;
+                _tieneFichaCafe = new[] { _pais, _region, _finca, _altitud, _variedad, _proceso, _notasCata }
+                    .Any(t => !string.IsNullOrWhiteSpace(t));
             }
             else
             {
@@ -253,7 +288,14 @@
             ImagenUrl = _imagenUrl,
             AplicaConciliacionTpv = _aplicaConciliacionTpv,
             UnidadesPorPack = _unidadesPorPack,
-            ProveedorId = _proveedorId
+            ProveedorId = _proveedorId,
+            Pais = _pais ?? string.Empty,
+            Region = _region ?? string.Empty,
+            Finca = _finca ?? string.Empty,
+            Altitud = _altitud ?? string.Empty,
+            Variedad = _variedad ?? string.Empty,
+            Proceso = _proceso ?? string.Empty,
+            NotasCata = _notasCata ?? string.Empty
         };
 
         var resultado = _esNuevo

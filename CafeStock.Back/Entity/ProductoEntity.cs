@@ -21,4 +21,11 @@ public class ProductoEntity
     public int OrdenEnPasillo { get; set; }
     public bool EsFrontalPasillo { get; set; }
     public SeccionEspecial Seccion { get; set; }
+    public string Pais { get; set; } = string.Empty;
+    public string Region { get; set; } = string.Empty;
+    public string Finca { get; set; } = string.Empty;
+    public string Altitud { get; set; } = string.Empty;
+    public string Variedad { get; set; } = string.Empty;
+    public string Proceso { get; set; } = string.Empty;
+    public string NotasCata { get; set; } = string.Empty;
 }

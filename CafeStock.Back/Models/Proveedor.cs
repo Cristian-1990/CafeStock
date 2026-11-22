@@ -37,4 +37,13 @@ public record Proveedor
     /// tiempo de ejecución.
     /// </summary>
     public bool PrecioUnitarioAltaPrecision { get; set; } = false;
+
+    /// <summary>
+    /// Color interno del proveedor, en hexadecimal ("#A8481F"). Solo identifica visualmente al
+    /// proveedor en la interfaz (etiquetas, accesos directos, avisos): no tiene ningún efecto
+    /// sobre compras, stock ni informes. Si está vacío se asigna uno automáticamente al crear
+    /// el proveedor (ver <see cref="PaletaProveedores"/>); las pantallas usan
+    /// <see cref="PaletaProveedores.ColorDe"/> para no depender de que esté rellenado.
+    /// </summary>
+    public string Color { get; set; } = string.Empty;
 };

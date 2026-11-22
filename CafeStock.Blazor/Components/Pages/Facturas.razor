@@ -62,7 +62,10 @@ else
             </HeaderContent>
             <RowTemplate>
                 <MudTd DataLabel="Fecha">@context.Fecha.ToString("dd/MM/yyyy HH:mm")</MudTd>
-                <MudTd DataLabel="Proveedor">@(context.ProveedorNombre ?? "Sin proveedor asignado")</MudTd>
+                <MudTd DataLabel="Proveedor">
+                    @* El nombre va sobre el color interno del proveedor. *@
+                    <span class="etiqueta-proveedor" style="@EstiloProveedor(context)">@(context.ProveedorNombre ?? "Sin proveedor asignado")</span>
+                </MudTd>
                 <MudTd DataLabel="Total">@CalcularTotal(context).ToString("F2") €</MudTd>
             </RowTemplate>
         </MudTable>
@@ -93,6 +96,10 @@ else
         _facturas = await FacturaService.GetAllAsync();
         _cargando = false;
     }
+
+    // Variables CSS del color de ese proveedor; sin proveedor, el marrón neutro.
+    private string EstiloProveedor(Compra factura) =>
+        PaletaProveedores.VariablesCss(_proveedores.FirstOrDefault(p => p.Id == factura.ProveedorId));
 
     private static decimal CalcularTotal(Compra factura) =>
         factura.Lineas.Sum(l => l.Cantidad * l.PrecioUnitario) + factura.ImporteComprasExcepcionales;

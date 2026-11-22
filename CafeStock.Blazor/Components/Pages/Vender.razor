@@ -20,7 +20,7 @@ else if (!_productos.Any())
 }
 else
 {
-    <MudPaper Class="pa-6 mb-6" Elevation="2" Style="max-width:500px;">
+    <MudPaper Class="pa-6 mb-6" Elevation="2" Style="max-width:640px;">
         <MudSelect T="int?" @bind-Value="_productoId"
                    Label="Producto"
                    Variant="Variant.Outlined"
@@ -31,8 +31,51 @@ else
             }
         </MudSelect>
 
+        @* Ficha del café elegido: imagen y detalles (país, finca, altitud, variedad, proceso, notas de
+           cata), para poder explicárselo al cliente. Solo se muestran los datos que estén rellenos;
+           se editan en la ficha del producto (Catálogo). *@
+        @if (_productoSeleccionado is { } cafe)
+        {
+            <article class="ficha-cafe" aria-label="Ficha de @cafe.Nombre">
+                <div class="ficha-cafe-imagen">
+                    @if (!string.IsNullOrWhiteSpace(cafe.ImagenUrl))
+                    {
+                        <img src="@cafe.ImagenUrl" alt="@cafe.Nombre" decoding="async"/>
+                    }
+                    else
+                    {
+                        <MudIcon Icon="@CustomIcons.CoffeeBean" Class="ficha-cafe-icono"/>
+                    }
+                </div>
+                <div class="ficha-cafe-datos">
+                    <h2 class="ficha-cafe-nombre">@cafe.Nombre</h2>
+                    <p class="ficha-cafe-stock">@cafe.StockActual @(cafe.StockActual == 1 ? "disponible" : "disponibles")</p>
+                    @if (DatosFicha(cafe).Any())
+                    {
+                        <dl class="ficha-cafe-lista">
+                            @foreach (var (etiqueta, valor) in DatosFicha(cafe))
+                            {
+                                <div>
+                                    <dt>@etiqueta</dt>
+                                    <dd>@valor</dd>
+                                </div>
+                            }
+                        </dl>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(cafe.NotasCata))
+                    {
+                        <p class="ficha-cafe-notas">“@cafe.NotasCata”</p>
+                    }
+                    @if (!DatosFicha(cafe).Any() && string.IsNullOrWhiteSpace(cafe.NotasCata))
+                    {
+                        <p class="ficha-cafe-vacia">Este café aún no tiene ficha: se rellena desde Catálogo, en la ficha del producto.</p>
+                    }
+                </div>
+            </article>
+        }
+
         <MudTextField @bind-Value="_nombreTrabajador"
-                      Label="Nombre del trabajador"
+                      Label="Nombre de la persona que lo vende"
                       Variant="Variant.Outlined"
                       Immediate="true"
                       Class="mb-4"/>
@@ -85,6 +128,18 @@ else
     private bool _registrando;
 
     private bool PuedeRegistrar => _productoId is not null && !string.IsNullOrWhiteSpace(_nombreTrabajador);
+
+    private Producto? _productoSeleccionado => _productos.FirstOrDefault(p => p.Id == _productoId);
+
+    // Solo los datos de la ficha que estén rellenos, en el orden en que se leen mejor.
+    private static List<(string Etiqueta, string Valor)> DatosFicha(Producto cafe) =>
+        new (string Etiqueta, string Valor)[]
+        {
+            ("País", cafe.Pais), ("Región", cafe.Region), ("Finca", cafe.Finca),
+            ("Altitud", cafe.Altitud), ("Variedad", cafe.Variedad), ("Proceso", cafe.Proceso),
+        }
+        .Where(d => !string.IsNullOrWhiteSpace(d.Valor))
+        .ToList();
 
     protected override async Task OnInitializedAsync()
     {

@@ -30,3 +30,27 @@ public record LineaExcedenteStock(DateTime Fecha, string Producto, string Provee
 
 /// <summary>Gasto del mes actual y variación porcentual frente al mes anterior (null si no hubo gasto el mes anterior).</summary>
 public record GastoMensual(decimal GastoMesActual, decimal? VariacionPorcentual);
+
+/// <summary>
+/// Cambio de precio de un producto entre su compra anterior y la última. PorcentajeVariacion > 0 = ha
+/// subido. ImpactoEuros = (precio actual − anterior) × cantidad de la última compra: positivo es lo que
+/// se ha pagado de MÁS, negativo lo que se ha AHORRADO por precio.
+/// </summary>
+public record VariacionPrecio(
+    int ProductoId, string Producto, decimal PrecioAnterior, decimal PrecioActual,
+    decimal PorcentajeVariacion, decimal ImpactoEuros, DateTime Fecha);
+
+/// <summary>Gravedad de un aviso del Resumen; el orden de la enumeración es de menos a más grave.</summary>
+public enum NivelAviso { Info, Atencion, Alerta }
+
+/// <summary>Aviso accionable del Resumen: qué pasa (Titulo) y el dato que lo explica (Detalle).</summary>
+public record AvisoInforme(NivelAviso Nivel, string Titulo, string Detalle);
+
+/// <summary>
+/// Las seis cifras del Resumen. Los porcentajes y el presupuesto son null cuando no hay con qué
+/// comparar (sin gasto el mes anterior, sin presupuesto asignado este mes).
+/// </summary>
+public record ResumenInforme(
+    decimal GastoMes, decimal? VariacionGastoPorcentual,
+    decimal? PresupuestoMes, decimal? PorcentajePresupuestoConsumido,
+    decimal ValorInventario, int ProductosAgotados, int ProveedoresSinCompra);

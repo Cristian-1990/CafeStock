@@ -392,30 +392,25 @@ public partial class AppDbContext
     /// </summary>
     public async Task AsegurarSeguimientoIndividualCafePucheroAsync()
     {
-        var puchero = await Proveedores.FirstOrDefaultAsync(p => p.Nombre == "Puchero");
-        if (puchero is null) return;
+        // SQL directo (UPDATE) y NO consultas LINQ: esta migración corre ANTES de que se apliquen las
+        // migraciones de EF, y una consulta LINQ selecciona todas las columnas del modelo actual, que
+        // en una base antigua aún no existen ("no such column"). Solo toca columnas antiguas.
+        var kg = (int)UnidadMedida.Kg;
+        var unidades = (int)UnidadMedida.Unidades;
 
-        var candidatos = await Productos
-            .Where(p => p.ProveedorId == puchero.Id && p.Nombre == "Brasil")
-            .ToListAsync();
-        if (!candidatos.Any()) return;
+        await Database.ExecuteSqlInterpolatedAsync($"""
+            UPDATE Productos
+            SET Nombre = {"Brasil — Grano 1kg"}, SeguimientoIndividual = 1
+            WHERE Nombre = 'Brasil' AND Unidad = {kg}
+              AND ProveedorId IN (SELECT Id FROM Proveedores WHERE Nombre = 'Puchero')
+            """);
 
-        foreach (var producto in candidatos)
-        {
-            switch (producto.Unidad)
-            {
-                case UnidadMedida.Kg:
-                    producto.Nombre = "Brasil — Grano 1kg";
-                    producto.SeguimientoIndividual = true;
-                    break;
-                case UnidadMedida.Unidades:
-                    producto.Nombre = "Brasil — Cuarto 250g";
-                    producto.SeguimientoIndividual = true;
-                    break;
-            }
-        }
-
-        await SaveChangesAsync();
+        await Database.ExecuteSqlInterpolatedAsync($"""
+            UPDATE Productos
+            SET Nombre = {"Brasil — Cuarto 250g"}, SeguimientoIndividual = 1
+            WHERE Nombre = 'Brasil' AND Unidad = {unidades}
+              AND ProveedorId IN (SELECT Id FROM Proveedores WHERE Nombre = 'Puchero')
+            """);
     }
 
     /// <summary>
@@ -429,11 +424,9 @@ public partial class AppDbContext
     /// </summary>
     public async Task AsegurarAgrupacionPorUnidadPucheroAsync()
     {
-        var puchero = await Proveedores.FirstOrDefaultAsync(p => p.Nombre == "Puchero");
-        if (puchero is null || puchero.AgruparPorTipoUnidad) return;
-
-        puchero.AgruparPorTipoUnidad = true;
-        await SaveChangesAsync();
+        // SQL directo por la misma razón que AsegurarSeguimientoIndividualCafePucheroAsync.
+        await Database.ExecuteSqlRawAsync(
+            "UPDATE Proveedores SET AgruparPorTipoUnidad = 1 WHERE Nombre = 'Puchero' AND AgruparPorTipoUnidad = 0");
     }
 
     /// <summary>
@@ -449,10 +442,9 @@ public partial class AppDbContext
     /// </summary>
     public async Task AsegurarPrecioAltaPrecisionPriegolaAsync()
     {
-        var priegola = await Proveedores.FirstOrDefaultAsync(p => p.Nombre.Trim() == "Priégola");
-        if (priegola is null || priegola.PrecioUnitarioAltaPrecision) return;
-
-        priegola.PrecioUnitarioAltaPrecision = true;
-        await SaveChangesAsync();
+        // SQL directo por la misma razón que AsegurarSeguimientoIndividualCafePucheroAsync.
+        // TRIM de SQLite quita los espacios de los extremos, igual que el Trim() de C#.
+        await Database.ExecuteSqlInterpolatedAsync(
+            $"UPDATE Proveedores SET PrecioUnitarioAltaPrecision = 1 WHERE TRIM(Nombre) = {"Priégola"} AND PrecioUnitarioAltaPrecision = 0");
     }
 }

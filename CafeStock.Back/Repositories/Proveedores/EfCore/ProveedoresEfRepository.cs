@@ -84,6 +84,9 @@ public class ProveedoresEfRepository : IProveedorRepository
             entity.EsSupermercadoGenerico = proveedor.EsSupermercadoGenerico;
             entity.AgruparPorTipoUnidad = proveedor.AgruparPorTipoUnidad;
             entity.PrecioUnitarioAltaPrecision = proveedor.PrecioUnitarioAltaPrecision;
+            // Un formulario que no conozca el color lo manda vacío: en ese caso se conserva el actual.
+            if (!string.IsNullOrWhiteSpace(proveedor.Color))
+                entity.Color = proveedor.Color;
             await context.SaveChangesAsync();
             return Result.Success<Proveedor, DomainError>(entity.ToProveedor());
         }

@@ -65,8 +65,9 @@ else
                         </div>
                     }
                     <MudCardContent Style="padding:0;">
-                        <div style="background-color:rgba(109,76,65,0.22); text-align:center; padding:8px 12px;">
-                            <MudText Typo="Typo.h6" Style="color:#3E2723;">
+                        @* Franja con el color interno del proveedor y su nombre encima. *@
+                        <div style="@PaletaProveedores.VariablesCss(proveedor); background-color:var(--proveedor-color); text-align:center; padding:8px 12px;">
+                            <MudText Typo="Typo.h6" Style="color:var(--proveedor-texto);">
                                 @proveedor.Nombre
                             </MudText>
                         </div>

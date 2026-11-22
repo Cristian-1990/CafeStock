@@ -106,6 +106,13 @@ public class ProductosEfRepository : IProductoRepository
                 entity.OrdenEnPasillo = producto.OrdenEnPasillo;
                 entity.EsFrontalPasillo = producto.EsFrontalPasillo;
                 entity.Seccion = producto.Seccion;
+                entity.Pais = producto.Pais;
+                entity.Region = producto.Region;
+                entity.Finca = producto.Finca;
+                entity.Altitud = producto.Altitud;
+                entity.Variedad = producto.Variedad;
+                entity.Proceso = producto.Proceso;
+                entity.NotasCata = producto.NotasCata;
                 await context.SaveChangesAsync();
                 return Result.Success<Producto, DomainError>(entity.ToProducto());
             });

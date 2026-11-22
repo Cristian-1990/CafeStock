@@ -24,6 +24,13 @@ public static class ProductoMapper
            OrdenEnPasillo = producto.OrdenEnPasillo,
            EsFrontalPasillo = producto.EsFrontalPasillo,
            Seccion = producto.Seccion,
+           Pais = producto.Pais,
+           Region = producto.Region,
+           Finca = producto.Finca,
+           Altitud = producto.Altitud,
+           Variedad = producto.Variedad,
+           Proceso = producto.Proceso,
+           NotasCata = producto.NotasCata,
        };
     }
 
@@ -46,7 +53,14 @@ public static class ProductoMapper
             Pasillo = entity.Pasillo,
             OrdenEnPasillo = entity.OrdenEnPasillo,
             EsFrontalPasillo = entity.EsFrontalPasillo,
-            Seccion = entity.Seccion
+            Seccion = entity.Seccion,
+            Pais = entity.Pais,
+            Region = entity.Region,
+            Finca = entity.Finca,
+            Altitud = entity.Altitud,
+            Variedad = entity.Variedad,
+            Proceso = entity.Proceso,
+            NotasCata = entity.NotasCata
         };
     }
 }

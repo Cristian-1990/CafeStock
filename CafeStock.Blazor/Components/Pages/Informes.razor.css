@@ -1,0 +1,190 @@
+/* =====================================================================
+   INFORMES — pestañas, tarjetas de cifras clave (KPI) y avisos.
+   Todo lo de color sale de las variables globales de app.css.
+   ===================================================================== */
+
+/* Cifras clave: rejilla fluida de tarjetas. */
+.kpi-rejilla {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
+}
+
+/* Seis cifras: 3 + 3 en pantalla ancha, 2 + 2 + 2 en tablet y una por fila en móvil. */
+@media (min-width: 900px) {
+    .kpi-rejilla:not(.kpi-rejilla--dos):not(.kpi-rejilla--uno) {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 520px) {
+    .kpi-rejilla {
+        grid-template-columns: 1fr;
+    }
+}
+
+.kpi-rejilla--dos {
+    max-width: 560px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.kpi-rejilla--uno {
+    max-width: 280px;
+    grid-template-columns: 1fr;
+}
+
+.kpi {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 18px 20px;
+    color: var(--text-espresso);
+    text-decoration: none;
+    background-color: var(--bg-surface);
+    border: 1px solid rgba(109, 76, 65, 0.16);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+}
+
+/* Las tarjetas que llevan a otra pantalla se levantan al pasar el ratón y son zona táctil completa. */
+.kpi--enlace {
+    cursor: pointer;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.kpi--enlace:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-card-hover);
+}
+
+.kpi-etiqueta,
+.kpi-valor,
+.kpi-detalle {
+    margin: 0;
+}
+
+.kpi-etiqueta {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.kpi-valor {
+    font-family: var(--font-display);
+    font-size: 2.1rem;
+    font-weight: 600;
+    line-height: 1.15;
+    font-variant-numeric: tabular-nums;
+}
+
+.kpi-valor--alerta {
+    color: var(--accent-terracota);
+}
+
+.kpi-valor--bueno {
+    color: var(--accent-green);
+}
+
+.kpi-valor--apagado {
+    color: var(--text-muted);
+    opacity: 0.6;
+}
+
+.kpi-detalle {
+    font-size: 0.88rem;
+    line-height: 1.35;
+    color: var(--text-muted);
+}
+
+.kpi-detalle ::deep .kpi-icono {
+    width: 18px;
+    height: 18px;
+    margin-right: 2px;
+    vertical-align: -4px;
+}
+
+/* Barra del presupuesto consumido: cuanto más lleno, peor. */
+.kpi-barra {
+    display: block;
+    height: 10px;
+    margin: 4px 0;
+    overflow: hidden;
+    background-color: var(--bg-sunken);
+    border-radius: var(--radius-pill);
+}
+
+.kpi-barra-relleno {
+    display: block;
+    height: 100%;
+    border-radius: var(--radius-pill);
+    transition: width 0.3s ease;
+}
+
+.kpi-barra--verde { background-color: var(--nivel-5); }
+.kpi-barra--ambar { background-color: var(--nivel-3); }
+.kpi-barra--rojo  { background-color: var(--nivel-1); }
+
+/* Títulos de sección dentro de cada pestaña. */
+.informes-subtitulo {
+    margin: 8px 0 12px;
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--text-espresso);
+}
+
+.informes-subtitulo--menor {
+    font-size: 1.1rem;
+}
+
+.informes-ayuda {
+    max-width: 62ch;
+    margin: -6px 0 14px;
+    font-size: 0.92rem;
+    color: var(--text-muted);
+}
+
+/* Avisos: una columna, legibles también en móvil. */
+.informes-avisos {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 760px;
+    margin-bottom: 24px;
+}
+
+.informes-avisos ::deep .informes-aviso {
+    border-radius: 14px;
+    background-color: var(--bg-surface);
+}
+
+.informe-grafico {
+    width: 100%;
+    max-width: 760px;
+}
+
+/* Pestañas: texto sin mayúsculas forzadas y zona táctil cómoda; en móvil se desplazan en horizontal. */
+.informes-pestanas ::deep .mud-tab {
+    min-height: var(--touch-min);
+    text-transform: none;
+    font-size: 0.98rem;
+    font-weight: 600;
+}
+
+/* Aire entre las pestañas y su contenido. */
+.informes-pestanas ::deep .mud-tabs-panels {
+    padding-top: 16px;
+}
+
+@media (max-width: 600px) {
+    .kpi-valor {
+        font-size: 1.8rem;
+    }
+
+    .kpi-rejilla--dos {
+        grid-template-columns: 1fr;
+    }
+}
