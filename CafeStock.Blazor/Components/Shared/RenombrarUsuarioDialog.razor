@@ -1,0 +1,32 @@
+<MudDialog>
+    <DialogContent>
+        <MudText Class="mb-3">Nuevo nombre para <strong>@NombreActual</strong>.</MudText>
+        <MudTextField @bind-Value="_nombre" Label="Nombre de usuario" Variant="Variant.Outlined"
+                      Immediate="true" AutoFocus="true"
+                      OnKeyDown="@(e => { if (e.Key == "Enter" && PuedeAceptar) Aceptar(); })"/>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancelar">Cancelar</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Aceptar" Disabled="@(!PuedeAceptar)">
+            Renombrar
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public string NombreActual { get; set; } = string.Empty;
+
+    private string _nombre = string.Empty;
+
+    protected override void OnInitialized() => _nombre = NombreActual;
+
+    // Hace falta un nombre distinto del actual: renombrar a lo mismo no tiene sentido.
+    private bool PuedeAceptar =>
+        !string.IsNullOrWhiteSpace(_nombre) && _nombre.Trim() != NombreActual;
+
+    private void Aceptar() => MudDialog.Close(DialogResult.Ok(_nombre.Trim()));
+
+    private void Cancelar() => MudDialog.Cancel();
+}
