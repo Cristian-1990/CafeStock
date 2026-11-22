@@ -302,6 +302,58 @@ h1:focus {
     background-color: var(--accent-terracota);
 }
 
+/* Campo de contraseña con el botón "Mostrar" dentro. Más específico que ".acceso-tarjeta button" (que da
+   estilo de botón grande a los demás), para que el botón sea un enlace pequeño. */
+.acceso-campo-password {
+    position: relative;
+    display: flex;
+}
+
+.acceso-campo-password input {
+    flex: 1;
+    padding-right: 84px;
+}
+
+.acceso-tarjeta .acceso-ojo {
+    position: absolute;
+    top: 50%;
+    right: 6px;
+    min-height: 36px;
+    margin: 0;
+    padding: 0 12px;
+    transform: translateY(-50%);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--accent-terracota);
+    background: transparent;
+    border-radius: 8px;
+}
+
+.acceso-tarjeta .acceso-ojo:hover {
+    color: var(--text-espresso);
+    background-color: var(--bg-sunken);
+}
+
+.acceso-olvido {
+    margin-top: 16px;
+    font-size: 0.9rem;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+.acceso-olvido summary {
+    display: inline-block;
+    min-height: 32px;
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--accent-terracota);
+}
+
+.acceso-olvido p {
+    margin: 8px 0 0;
+    line-height: 1.45;
+}
+
 .acceso-error {
     margin-bottom: 12px;
     padding: 10px 14px;
