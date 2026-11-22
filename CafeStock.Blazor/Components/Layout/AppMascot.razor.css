@@ -193,3 +193,18 @@
         --m-izq: calc(-1 * var(--m-ancho) - 12px);
     }
 }
+/* Mascota oculta: botón fijo en la esquina inferior izquierda, fuera del flujo para no quitar ancho al contenido. */
+.mascota-esquina {
+    position: fixed;
+    left: 8px;
+    bottom: 8px;
+    z-index: 5;
+    background-color: rgba(245, 239, 230, 0.92);
+    border: 1px solid rgba(109, 76, 65, 0.18);
+    border-radius: 999px;
+    box-shadow: 0 2px 8px rgba(62, 39, 35, 0.18);
+}
+
+.mascota-esquina ::deep .mascota-toggle {
+    margin: 0;
+}

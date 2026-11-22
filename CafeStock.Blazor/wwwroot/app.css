@@ -566,3 +566,26 @@ a:focus-visible, button:focus-visible, [role="button"]:focus-visible {
     padding-top: 10px;
 }
 
+/* Interruptor: icono + ON/OFF, táctil y discreto. */
+.mascota-interruptor {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: var(--touch-min);
+    padding: 0 10px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--accent-terracota, #A8481F);
+    font-weight: 700; font-size: 0.78rem; line-height: 1;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+}
+
+.mascota-interruptor--off {
+    color: var(--text-muted, #7A6A5E);
+}
+
+.mascota-interruptor:hover {
+    background-color: rgba(109, 76, 65, 0.10);
+}

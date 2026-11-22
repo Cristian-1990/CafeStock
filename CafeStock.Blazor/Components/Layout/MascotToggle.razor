@@ -8,12 +8,13 @@
 <div class="mascota-toggle" @onclick:stopPropagation="true">
     @* Solo el botón, sin texto visible: un interruptor (encendido / apagado). El nombre accesible y el
        tooltip ("Desactivar / Activar mascota guía") siguen ahí para lectores de pantalla y para el ratón. *@
-    <MudIconButton Icon="@(MascotSettings.Enabled ? Icons.Material.Filled.ToggleOn : Icons.Material.Filled.ToggleOff)"
-                   Color="Color.Secondary"
-                   Size="Size.Large"
-                   Title="@(MascotSettings.Enabled ? "Desactivar mascota guía" : "Activar mascota guía")"
-                   aria-label="@(MascotSettings.Enabled ? "Desactivar mascota guía" : "Activar mascota guía")"
-                   OnClick="AlternarAsync"/>
+    <button type="button" class="mascota-interruptor @(MascotSettings.Enabled ? "mascota-interruptor--on" : "mascota-interruptor--off")"
+            title="@(MascotSettings.Enabled ? "Desactivar mascota guía" : "Activar mascota guía")"
+            aria-label="@(MascotSettings.Enabled ? "Desactivar mascota guía" : "Activar mascota guía")"
+            @onclick="AlternarAsync">
+        <MudIcon Icon="@(MascotSettings.Enabled ? Icons.Material.Filled.ToggleOn : Icons.Material.Filled.ToggleOff)"/>
+        <span>@(MascotSettings.Enabled ? "ON" : "OFF")</span>
+    </button>
 </div>
 
 @code {

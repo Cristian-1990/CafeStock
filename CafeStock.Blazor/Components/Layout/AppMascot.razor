@@ -22,27 +22,19 @@
 }
 else if (_settingsReady && !MascotSettings.Enabled && _currentMessage is not null)
 {
-    @* Mascota desactivada: queda visible solo un pequeño botón para volver a llamarla. *@
-    <div class="app-mascot app-mascot--apagada">
-        <div class="app-mascot-interior">
-            <MascotToggle/>
-        </div>
+    @* Mascota desactivada: sin columna (el contenido recupera todo el ancho); solo un botón en la esquina. *@
+    <div class="mascota-esquina">
+        <MascotToggle/>
     </div>
 }
 else if (_settingsReady && MascotSettings.Enabled && _dismissed && _currentMessage is not null)
 {
     @* El león se cerró tocándolo (sin desactivar la mascota): mismo botón pequeño para volver a llamarlo. *@
-    <div class="app-mascot app-mascot--apagada">
-        <div class="app-mascot-interior">
-            <div class="mascota-toggle">
-                <MudIconButton Icon="@Icons.Material.Filled.ToggleOff"
-                               Color="Color.Secondary"
-                               Size="Size.Large"
-                               Title="Mostrar mascota guía"
-                               aria-label="Mostrar mascota guía"
-                               OnClick="Mostrar"/>
-            </div>
-        </div>
+    <div class="mascota-esquina">
+        <button type="button" class="mascota-interruptor mascota-interruptor--off" title="Mostrar mascota guía"
+                aria-label="Mostrar mascota guía" @onclick="Mostrar">
+            <MudIcon Icon="@Icons.Material.Filled.ToggleOff"/><span>OFF</span>
+        </button>
     </div>
 }
 
