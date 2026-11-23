@@ -220,12 +220,12 @@ h1:focus {
 }
 
 .acceso-logo {
-    height: 84px;
-    width: 84px;
-    object-fit: cover;
-    background-color: #FFFFFF;
-    border: 3px solid var(--accent-gold);
-    border-radius: 50%;
+    height: 132px;
+    width: 132px;
+    object-fit: contain;
+    background: transparent;
+    border: 0;
+    filter: drop-shadow(0 4px 10px rgba(var(--rgb-sombra), 0.30));
 }
 
 .acceso-eyebrow {
