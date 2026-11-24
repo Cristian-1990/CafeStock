@@ -84,41 +84,6 @@ else
             <MudCollapse Expanded="abierto">
             <div class="mt-3"></div>
 
-            @* Compra excepcional de artículos sueltos (un molde, un cubo de basura...) — solo
-               para supermercados genéricos, y siempre visible dentro de su propia tarjeta,
-               haya o no algo pendiente de reponer hoy de ese proveedor (ver
-               Compra.DescripcionComprasExcepcionales y _gruposCompletos). Va como complemento
-               DENTRO de la tarjeta del proveedor, nunca como bloque independiente. *@
-            @if (grupo.Proveedor?.EsSupermercadoGenerico == true)
-            {
-                <div class="mb-4 pa-3" style="background-color:var(--bg-page); border-radius:8px;">
-                    <MudText Typo="Typo.subtitle2" Class="mb-2" Style="color:var(--color-dark);">
-                        Compra excepcional (artículo suelto)
-                    </MudText>
-                    <MudTextField @bind-Value="_descripcionExcepcional[grupo.Proveedor.Id]"
-                                  Label="¿Qué se compró? (opcional, p.ej. un molde, un cubo de basura...)"
-                                  Variant="Variant.Outlined"
-                                  Lines="2"
-                                  Class="mb-3"/>
-                    <MudNumericField T="decimal" @bind-Value="_importeExcepcional[grupo.Proveedor.Id]"
-                                      Label="Total (€)"
-                                      Variant="Variant.Outlined"
-                                      Min="0"
-                                      Format="F2"
-                                      Adornment="Adornment.Start"
-                                      AdornmentText="€"
-                                      Class="mb-3"
-                                      Style="max-width:180px;"/>
-                    <MudButton Variant="Variant.Filled"
-                               Color="Color.Primary"
-                               StartIcon="@Icons.Material.Filled.Save"
-                               OnClick="@(() => GuardarCompraExcepcionalAsync(grupo.Proveedor))"
-                               Disabled="_guardandoExcepcional.Contains(grupo.Proveedor.Id)">
-                        @(_guardandoExcepcional.Contains(grupo.Proveedor.Id) ? "Guardando..." : "Guardar")
-                    </MudButton>
-                </div>
-            }
-
             @if (!grupo.Productos.Any())
             {
                 <MudText Typo="Typo.body2" Style="color:#8D7B6E;">
@@ -194,6 +159,26 @@ else
                 </RowTemplate>
             </MudTable>
 
+            @* Añadir nota (todos los proveedores): texto libre que se guarda en la propia compra (campo
+               Notas, visible y editable en la factura) para anotar un extra, p.ej. "también se compró un
+               molde", y poder localizarlo luego por el texto. El total que se muestra es SOLO el de los
+               productos de la tabla, precalculado con las cantidades y precios que hay ahora mismo en
+               ella: es lo que se registrará como compra. La nota NO suma importe alguno al total. *@
+            <div class="mt-4 pa-3" style="background-color:var(--bg-page); border-radius:8px;">
+                <MudText Typo="Typo.subtitle2" Class="mb-2" Style="color:var(--color-dark);">
+                    Añadir nota
+                </MudText>
+                <MudTextField @bind-Value="_notas[ClaveNota(proveedorId)]"
+                              Label="Nota (opcional): p.ej. un molde, un cubo de basura..."
+                              Variant="Variant.Outlined"
+                              Lines="2"
+                              Immediate="true"
+                              Class="mb-3"/>
+                <MudText Typo="Typo.subtitle1" Style="color:var(--color-dark); font-variant-numeric:tabular-nums;">
+                    Total de los productos: <strong>@TotalGrupo(grupo.Productos).ToString("F2") €</strong>
+                </MudText>
+            </div>
+
             <MudButton Variant="Variant.Filled"
                        Color="Color.Primary"
                        Class="mt-3"
@@ -250,12 +235,9 @@ else
     private HashSet<int?> _confirmandoGrupo = [];
     private bool _cargando = true;
 
-    // Buffers del panel de "Compras excepcionales", uno por proveedor con
-    // EsSupermercadoGenerico activo — independientes de _productos/_grupos porque el panel
-    // debe estar siempre disponible, haya o no algo pendiente de reponer ese día.
-    private Dictionary<int, string> _descripcionExcepcional = [];
-    private Dictionary<int, decimal> _importeExcepcional = [];
-    private HashSet<int> _guardandoExcepcional = [];
+    // Texto de "Añadir nota" por proveedor (clave: ver ClaveNota). Se guarda en Compra.Notas al
+    // confirmar la recepción y se vacía después.
+    private readonly Dictionary<int, string> _notas = [];
 
     private IEnumerable<(Proveedor? Proveedor, List<Producto> Productos)> _grupos =>
         AgrupadorProveedor.AgruparPorProveedor(_productos, _proveedores);
@@ -263,8 +245,8 @@ else
     /// <summary>
     /// _grupos + una tarjeta vacía por cada supermercado genérico que hoy no tiene nada
     /// pendiente de reponer (AgruparPorProveedor solo genera grupo para proveedores con algún
-    /// producto en _productos) — así su tarjeta de "Compra excepcional" sigue apareciendo
-    /// siempre, como pide la UI, en vez de depender de que haya stock bajo mínimo ese día.
+    /// producto en _productos) — así su tarjeta sigue apareciendo siempre, en vez de depender
+    /// de que haya stock bajo mínimo ese día.
     /// </summary>
     private IEnumerable<(Proveedor? Proveedor, List<Producto> Productos)> _gruposCompletos
     {
@@ -287,8 +269,8 @@ else
     protected override async Task OnInitializedAsync()
     {
         _proveedores = await ProveedorService.GetAllAsync();
-        _descripcionExcepcional = _proveedores.ToDictionary(p => p.Id, _ => string.Empty);
-        _importeExcepcional = _proveedores.ToDictionary(p => p.Id, _ => 0m);
+        _notas[0] = string.Empty;
+        foreach (var p in _proveedores) _notas[p.Id] = string.Empty;
         await CargarAsync();
     }
 
@@ -331,6 +313,46 @@ else
     /// Compra que se registra al final. Los productos con cantidad 0 o sin precio introducido
     /// se saltan sin bloquear el resto del grupo.
     /// </summary>
+    /// <summary>
+    /// Cantidad y precio unitario finales de un producto según lo que hay ahora mismo en el
+    /// formulario. Si "Recibido en packs" está activo, se calculan a partir de Nº de packs/Precio
+    /// del pack — a partir de ahí el flujo sigue exactamente igual que siempre
+    /// (ConfirmarRecepcionAsync, captura del excedente, LineaCompra), sin saber que el origen fue
+    /// un pack en vez de unidades sueltas. Lo usan tanto la recepción como el total mostrado, para
+    /// que ese total coincida siempre con lo que se va a registrar.
+    /// </summary>
+    private (int Cantidad, decimal Precio) CantidadYPrecio(Producto producto)
+    {
+        if (_recibidoEnPacks[producto.Id] && producto.UnidadesPorPack is > 1)
+        {
+            var unidadesPorPack = producto.UnidadesPorPack.Value;
+            return (_numPacksRecibidos[producto.Id] * unidadesPorPack,
+                    Math.Round(_precioPackRecibido[producto.Id] / unidadesPorPack, 2));
+        }
+
+        return (_cantidadesRecibidas[producto.Id], _preciosRecibidos[producto.Id]);
+    }
+
+    /// <summary>
+    /// Total de los productos del grupo con lo que hay en la tabla: solo cuentan las líneas que se
+    /// registrarán (cantidad > 0 y precio > 0), igual que en ProcesarRecepcionGrupoAsync. Se
+    /// precalcula con los precios previos de cada producto y se actualiza al cambiar cantidades.
+    /// </summary>
+    private decimal TotalGrupo(List<Producto> productosGrupo)
+    {
+        var total = 0m;
+        foreach (var producto in productosGrupo)
+        {
+            var (cantidad, precio) = CantidadYPrecio(producto);
+            if (cantidad > 0 && precio > 0)
+                total += cantidad * precio;
+        }
+        return total;
+    }
+
+    // Nota por proveedor; 0 = "Sin proveedor asignado" (un Dictionary no admite clave null).
+    private static int ClaveNota(int? proveedorId) => proveedorId ?? 0;
+
     private async Task ProcesarRecepcionGrupoAsync(int? proveedorId, List<Producto> productosGrupo)
     {
         _confirmandoGrupo.Add(proveedorId);
@@ -339,25 +361,7 @@ else
             var lineas = new List<LineaCompra>();
             foreach (var producto in productosGrupo)
             {
-                int cantidad;
-                decimal precio;
-
-                // Si "Recibido en packs" está activo para este producto, la Cantidad y el
-                // PrecioUnitario finales se calculan aquí a partir de Nº de packs/Precio del
-                // pack — a partir de este punto el flujo sigue exactamente igual que siempre
-                // (ConfirmarRecepcionAsync, captura del excedente, LineaCompra), sin saber que
-                // el origen fue un pack en vez de unidades sueltas.
-                if (_recibidoEnPacks[producto.Id] && producto.UnidadesPorPack is > 1)
-                {
-                    var unidadesPorPack = producto.UnidadesPorPack.Value;
-                    cantidad = _numPacksRecibidos[producto.Id] * unidadesPorPack;
-                    precio = Math.Round(_precioPackRecibido[producto.Id] / unidadesPorPack, 2);
-                }
-                else
-                {
-                    cantidad = _cantidadesRecibidas[producto.Id];
-                    precio = _preciosRecibidos[producto.Id];
-                }
+                var (cantidad, precio) = CantidadYPrecio(producto);
 
                 if (cantidad <= 0 || precio <= 0)
                     continue;
@@ -392,10 +396,15 @@ else
                 return;
             }
 
-            var compra = new Compra { ProveedorId = proveedorId, Fecha = DateTime.Now, Lineas = lineas };
+            // La nota (si la hay) viaja en la propia compra, en Compra.Notas; no suma importe.
+            var nota = _notas.GetValueOrDefault(ClaveNota(proveedorId))?.Trim() ?? string.Empty;
+            var compra = new Compra { ProveedorId = proveedorId, Fecha = DateTime.Now, Lineas = lineas, Notas = nota };
             var resultadoCompra = await CompraService.CreateAsync(compra);
             if (resultadoCompra.IsSuccess)
+            {
+                _notas[ClaveNota(proveedorId)] = string.Empty;
                 Snackbar.Add($"Recepción confirmada: {lineas.Count} producto(s)", Severity.Success);
+            }
             else
                 Snackbar.Add(resultadoCompra.Error.Message, Severity.Error);
 
@@ -407,48 +416,4 @@ else
         }
     }
 
-    /// <summary>
-    /// Registra una compra excepcional como una Compra propia, sin líneas — no toca stock ni
-    /// productos, solo queda guardado el importe y la descripción (ver
-    /// Compra.DescripcionComprasExcepcionales). Si el importe es 0, no hay nada que guardar:
-    /// significa que ese día no hubo compra excepcional, no un error.
-    /// </summary>
-    private async Task GuardarCompraExcepcionalAsync(Proveedor proveedor)
-    {
-        var importe = _importeExcepcional[proveedor.Id];
-        if (importe <= 0)
-        {
-            Snackbar.Add("El total debe ser mayor que 0 para guardar una compra excepcional", Severity.Warning);
-            return;
-        }
-
-        _guardandoExcepcional.Add(proveedor.Id);
-        try
-        {
-            var compra = new Compra
-            {
-                ProveedorId = proveedor.Id,
-                Fecha = DateTime.Now,
-                Lineas = [],
-                DescripcionComprasExcepcionales = _descripcionExcepcional[proveedor.Id],
-                ImporteComprasExcepcionales = importe
-            };
-
-            var resultado = await CompraService.CreateAsync(compra);
-            if (resultado.IsSuccess)
-            {
-                Snackbar.Add("Compra excepcional registrada", Severity.Success);
-                _descripcionExcepcional[proveedor.Id] = string.Empty;
-                _importeExcepcional[proveedor.Id] = 0m;
-            }
-            else
-            {
-                Snackbar.Add(resultado.Error.Message, Severity.Error);
-            }
-        }
-        finally
-        {
-            _guardandoExcepcional.Remove(proveedor.Id);
-        }
-    }
 }
