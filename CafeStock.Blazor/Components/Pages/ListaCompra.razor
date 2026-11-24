@@ -22,14 +22,67 @@ else if (!_productos.Any() && !_proveedores.Any(p => p.EsSupermercadoGenerico))
 }
 else
 {
+    @* Acordeón: cada proveedor es una tarjeta que se despliega al pulsar su cabecera (logo + nombre);
+       estos dos botones abren o cierran todas de golpe. Es solo presentación: el contenido de cada
+       tarjeta y la recepción funcionan igual que siempre. *@
+    <div class="d-flex flex-wrap align-center gap-2 mb-4">
+        <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small"
+                   StartIcon="@Icons.Material.Filled.UnfoldMore" OnClick="ExpandirTodo">
+            Mostrar todo
+        </MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small"
+                   StartIcon="@Icons.Material.Filled.UnfoldLess" OnClick="ContraerTodo">
+            Solo proveedores
+        </MudButton>
+    </div>
+
     @foreach (var grupo in _gruposCompletos)
     {
         var proveedorId = grupo.Proveedor?.Id;
         var nombreProveedor = grupo.Proveedor?.Nombre ?? "Sin proveedor asignado";
+        var abierto = _expandidos.Contains(proveedorId);
         <MudPaper Class="pa-4 mb-4" Elevation="2">
-            <MudText Typo="Typo.h6" Class="mb-3" Style="color:var(--color-dark);">
-                @nombreProveedor
-            </MudText>
+            <div role="button" tabindex="0" aria-expanded="@(abierto ? "true" : "false")"
+                 class="d-flex align-center gap-3"
+                 style="cursor:pointer; user-select:none;"
+                 @onclick="@(() => AlternarProveedor(proveedorId))"
+                 @onkeydown="@((KeyboardEventArgs e) => TeclaProveedor(e, proveedorId))">
+                @if (!string.IsNullOrWhiteSpace(grupo.Proveedor?.ImagenUrl))
+                {
+                    <div class="d-flex align-center justify-center"
+                         style="width:72px; height:48px; flex-shrink:0; background-color:var(--bg-panel); border-radius:8px; overflow:hidden;">
+                        <img src="@grupo.Proveedor!.ImagenUrl" alt="" loading="lazy" decoding="async"
+                             style="max-width:100%; max-height:100%; object-fit:contain; display:block;"/>
+                    </div>
+                }
+                else
+                {
+                    <div class="d-flex align-center justify-center"
+                         style="width:72px; height:48px; flex-shrink:0; background-color:var(--bg-panel); border-radius:8px;">
+                        <MudIcon Icon="@Icons.Material.Filled.LocalShipping" Style="color:var(--color-primary);"/>
+                    </div>
+                }
+                <MudText Typo="Typo.h6" Style="color:var(--color-dark); flex:1; margin:0;">
+                    @nombreProveedor
+                </MudText>
+                @if (grupo.Productos.Count > 0)
+                {
+                    @* Crema #F4F1EA (el que eligió el dueño) para resaltar el contador y la flecha; el borde fino
+                       evita que se pierdan sobre el fondo de la tarjeta. *@
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Filled"
+                             Style="background-color:#F4F1EA; color:var(--color-dark); font-weight:600; border:1px solid rgba(var(--rgb-borde),0.45);">
+                        @grupo.Productos.Count producto@(grupo.Productos.Count == 1 ? "" : "s")
+                    </MudChip>
+                }
+                <div class="d-flex align-center justify-center"
+                     style="width:36px; height:36px; flex-shrink:0; border-radius:50%; background-color:#F4F1EA; border:1px solid rgba(var(--rgb-borde),0.45);">
+                    <MudIcon Icon="@(abierto ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)"
+                             Style="color:var(--color-dark);"/>
+                </div>
+            </div>
+
+            <MudCollapse Expanded="abierto">
+            <div class="mt-3"></div>
 
             @* Compra excepcional de artículos sueltos (un molde, un cubo de basura...) — solo
                para supermercados genéricos, y siempre visible dentro de su propia tarjeta,
@@ -150,11 +203,37 @@ else
                 @(_confirmandoGrupo.Contains(proveedorId) ? "Confirmando..." : "Confirmar recepción")
             </MudButton>
             }
+            </MudCollapse>
         </MudPaper>
     }
 }
 
 @code {
+    // Proveedores desplegados (null = "Sin proveedor asignado"). Empieza vacío: al entrar se ve solo la
+    // lista de proveedores, que es lo que acorta la pantalla. Sobrevive a CargarAsync (tras confirmar
+    // una recepción la tarjeta no se cierra sola).
+    private readonly HashSet<int?> _expandidos = [];
+
+    private void AlternarProveedor(int? proveedorId)
+    {
+        if (!_expandidos.Remove(proveedorId))
+            _expandidos.Add(proveedorId);
+    }
+
+    private void TeclaProveedor(KeyboardEventArgs e, int? proveedorId)
+    {
+        if (e.Key is "Enter" or " ")
+            AlternarProveedor(proveedorId);
+    }
+
+    private void ExpandirTodo()
+    {
+        foreach (var g in _gruposCompletos.ToList())
+            _expandidos.Add(g.Proveedor?.Id);
+    }
+
+    private void ContraerTodo() => _expandidos.Clear();
+
     private IEnumerable<Producto> _productos = [];
     private IEnumerable<Proveedor> _proveedores = [];
     private Dictionary<int, int> _cantidadesRecibidas = [];
