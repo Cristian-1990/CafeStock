@@ -16,13 +16,18 @@ public static class AuthEndpoints
     {
         app.MapPost("/auth/login", async (
             [FromForm] string? usuario, [FromForm] string? password, [FromForm] string? returnUrl,
+            [FromForm] string? recordar,
             SignInManager<IdentityUser> signInManager, IUsuarioService usuarios, ILogger<Program> logger) =>
         {
             if (!await usuarios.HayUsuariosAsync())
                 return Results.LocalRedirect("/primer-acceso");
 
+            // "Recordar contraseña en este equipo": una casilla sin marcar no envía nada, y entonces la cookie
+            // de sesión no persiste (termina al cerrar el navegador). La contraseña en sí nunca se guarda.
+            var recordarSesion = recordar == "true";
+
             var resultado = await signInManager.PasswordSignInAsync(
-                usuario?.Trim() ?? string.Empty, password ?? string.Empty, isPersistent: true, lockoutOnFailure: true);
+                usuario?.Trim() ?? string.Empty, password ?? string.Empty, isPersistent: recordarSesion, lockoutOnFailure: true);
 
             if (resultado.Succeeded)
             {
