@@ -5,6 +5,7 @@
 @inject CafeStock.Back.Services.Compras.ICompraService CompraService
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
+@inject NavigationManager Navigation
 
 <PageTitle>Recepcionar</PageTitle>
 
@@ -97,6 +98,7 @@ else
                     <MudTh>Producto</MudTh>
                     <MudTh>Cantidad a recibir</MudTh>
                     <MudTh>Precio unitario</MudTh>
+                    <MudTh></MudTh>
                 </HeaderContent>
                 <RowTemplate>
                     <MudTd DataLabel="Producto">
@@ -156,6 +158,14 @@ else
                                               Style="max-width:130px;"/>
                         </MudTd>
                     }
+                    @* Enlace discreto a la ficha del producto; la ficha ofrece volver aquí con el mismo
+                       proveedor desplegado (ver UrlFicha). *@
+                    <MudTd>
+                        <MudLink Href="@UrlFicha(context.Id)" Underline="Underline.Hover"
+                                 Style="font-size:0.8rem; color:var(--color-primary); opacity:0.8;">
+                            Ver
+                        </MudLink>
+                    </MudTd>
                 </RowTemplate>
             </MudTable>
 
@@ -198,6 +208,24 @@ else
     // lista de proveedores, que es lo que acorta la pantalla. Sobrevive a CargarAsync (tras confirmar
     // una recepción la tarjeta no se cierra sola).
     private readonly HashSet<int?> _expandidos = [];
+
+    // Proveedores a desplegar al llegar, separados por comas (0 = "Sin proveedor asignado"): es lo que
+    // viaja en el enlace "Volver a Recepcionar" de la ficha de producto, para encontrar todo como estaba.
+    [SupplyParameterFromQuery(Name = "abrir")]
+    [Parameter]
+    public string? AbrirIniciales { get; set; }
+
+    /// <summary>
+    /// Enlace "Ver" de cada producto: abre su ficha y le dice cómo volver a esta pantalla con los
+    /// mismos proveedores desplegados. Lo que se hubiera tecleado en cantidades o precios sin confirmar
+    /// no se conserva.
+    /// </summary>
+    private string UrlFicha(int productoId)
+    {
+        var abiertos = string.Join(',', _expandidos.Select(id => id ?? 0).OrderBy(id => id));
+        var volver = abiertos.Length == 0 ? "/lista-compra" : $"/lista-compra?abrir={abiertos}";
+        return $"/productos/{productoId}?volver={Uri.EscapeDataString(volver)}";
+    }
 
     private void AlternarProveedor(int? proveedorId)
     {
@@ -271,6 +299,13 @@ else
         _proveedores = await ProveedorService.GetAllAsync();
         _notas[0] = string.Empty;
         foreach (var p in _proveedores) _notas[p.Id] = string.Empty;
+
+        foreach (var trozo in (AbrirIniciales ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            if (int.TryParse(trozo, out var id))
+                _expandidos.Add(id == 0 ? null : id);
+        }
+
         await CargarAsync();
     }
 

@@ -16,7 +16,7 @@ else if (_producto is null)
                Color="Color.Primary"
                StartIcon="@Icons.Material.Filled.ArrowBack"
                Href="@_urlVolver">
-        Volver al catálogo
+        @_textoVolver
     </MudButton>
 }
 else
@@ -26,7 +26,7 @@ else
                StartIcon="@Icons.Material.Filled.ArrowBack"
                Href="@_urlVolver"
                Class="mb-4">
-        Volver al catálogo
+        @_textoVolver
     </MudButton>
 
     <div class="d-flex align-center mb-6" style="gap:1rem;">
@@ -93,7 +93,16 @@ else
     // URL del listado con su filtro, pasada al abrir la ficha; si se entra por
     // enlace directo, se vuelve al listado sin filtro.
     [Parameter, SupplyParameterFromQuery(Name = "volver")] public string? Volver { get; set; }
-    private string _urlVolver => string.IsNullOrWhiteSpace(Volver) ? "/lista-detallada" : Volver;
+    // Solo rutas locales ("/algo"): un enlace manipulado no puede sacar al usuario a otra web.
+    private string _urlVolver =>
+        !string.IsNullOrWhiteSpace(Volver) && Volver.StartsWith('/') && !Volver.StartsWith("//") && !Volver.StartsWith("/\\")
+            ? Volver
+            : "/lista-detallada";
+
+    // Desde Recepcionar el botón lo dice, para no hablar de "catálogo" cuando se vuelve a otra pantalla.
+    private string _textoVolver => _urlVolver.StartsWith("/lista-compra", StringComparison.OrdinalIgnoreCase)
+        ? "Volver a Recepcionar"
+        : "Volver al catálogo";
 
     private Producto? _producto;
     private string? _nombreProveedor;
