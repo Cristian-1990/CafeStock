@@ -105,7 +105,26 @@ else
     }
     else
     {
-        <MudTable Items="_productosDelGrupo" Hover="true" Elevation="2" RowStyleFunc="FilaEstilo">
+        <div class="d-flex justify-center mb-4">
+            <MudPaper Elevation="3" Style="border-radius:9999px; max-width:400px; width:100%; padding:2px 20px;">
+                <MudTextField T="string"
+                              @bind-Value="_busqueda"
+                              Immediate="true"
+                              Clearable="true"
+                              Placeholder="Buscar producto..."
+                              Variant="Variant.Text"
+                              Underline="false"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"/>
+            </MudPaper>
+        </div>
+
+        @if (!_productosVisibles.Any())
+        {
+            <MudAlert Severity="Severity.Info" Class="mb-4">Ningún producto coincide con la búsqueda.</MudAlert>
+        }
+
+        <MudTable Items="_productosVisibles" Hover="true" Elevation="2" RowStyleFunc="FilaEstilo">
             <HeaderContent>
                 <MudTh>Nombre</MudTh>
                 <MudTh>Cantidad actual</MudTh>
@@ -254,6 +273,25 @@ else
         }
     }
 
+    // Texto de la barra de búsqueda. Solo filtra lo que se VE en la tabla (_productosVisibles): "Actualizar
+    // todo" y "Generar pedido" siguen trabajando sobre TODO el grupo (_productosDelGrupo), para que buscar
+    // un producto no deje fuera del pedido a los demás ni deje cambios pendientes sin guardar.
+    private string _busqueda = string.Empty;
+
+    // Sin tildes ni mayúsculas, igual que el orden A–Z ("cafe" encuentra "Café"). Se materializa con
+    // ToList para no recorrer una consulta diferida mientras el estado puede cambiar.
+    private List<Producto> _productosVisibles
+    {
+        get
+        {
+            var lista = _productosDelGrupo.ToList();
+            var clave = OrdenAlfabetico.Clave(_busqueda);
+            return clave.Length == 0
+                ? lista
+                : lista.Where(p => OrdenAlfabetico.Clave(p.Nombre).Contains(clave, StringComparison.Ordinal)).ToList();
+        }
+    }
+
     // Lo que hay que pedir de este grupo: los productos por debajo de su máximo.
     private List<Producto> _productosAPedir => _productosDelGrupo.Where(p => p.CantidadAComprar > 0).ToList();
 
@@ -337,18 +375,21 @@ else
 
     private void SeleccionarProveedor(Proveedor proveedor)
     {
+        _busqueda = string.Empty;
         _sinProveedorSeleccionado = false;
         _grupoSeleccionado = proveedor;
     }
 
     private void SeleccionarSinProveedor()
     {
+        _busqueda = string.Empty;
         _sinProveedorSeleccionado = true;
         _grupoSeleccionado = null;
     }
 
     private void Volver()
     {
+        _busqueda = string.Empty;
         _grupoSeleccionado = null;
         _sinProveedorSeleccionado = false;
     }
