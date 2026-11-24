@@ -69,6 +69,38 @@
     };
 </script>
 <script>
+    // Login: recuerda el USUARIO (nunca la contraseña) en este navegador si la casilla "Recordar contraseña en
+    // este equipo" está marcada, y lo rellena la próxima vez. Se engancha al cargar y también tras una
+    // navegación mejorada de Blazor, por si se llega al login sin recargar la página.
+    (function () {
+        const CLAVE = 'cafestock.usuario';
+        function iniciar() {
+            const form = document.getElementById('formulario-login');
+            if (!form || form.dataset.recordar) return;
+            form.dataset.recordar = '1';
+            const usuario = form.querySelector('#usuario');
+            const casilla = form.querySelector('#recordar');
+            const password = form.querySelector('#password');
+            try {
+                const guardado = localStorage.getItem(CLAVE);
+                if (guardado && usuario && !usuario.value) {
+                    usuario.value = guardado;
+                    if (password) password.focus();
+                }
+            } catch (e) { }
+            form.addEventListener('submit', () => {
+                try {
+                    if (casilla && casilla.checked && usuario && usuario.value.trim()) localStorage.setItem(CLAVE, usuario.value.trim());
+                    else localStorage.removeItem(CLAVE);
+                } catch (e) { }
+            });
+        }
+        document.addEventListener('DOMContentLoaded', iniciar);
+        document.addEventListener('enhancedload', iniciar);
+        if (document.readyState !== 'loading') iniciar();
+    })();
+</script>
+<script>
     window.descargarArchivo = (nombreArchivo, base64) => {
         const enlace = document.createElement('a');
         enlace.href = "data:application/pdf;base64," + base64;
