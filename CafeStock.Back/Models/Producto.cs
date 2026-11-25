@@ -6,14 +6,14 @@ public record Producto
 {
     public int Id { get; set; }
     public string Nombre { get; set; } = string.Empty; //String.Empty evita que el compilador se queje por si puede ser null
-    public int StockActual { get; set; }
-    public int StockMaximo { get; set; }
+    public decimal StockActual { get; set; }
+    public decimal StockMaximo { get; set; }
     public UnidadMedida Unidad { get; set; } = UnidadMedida.SinEspecificar;
     public string Descripcion { get; set; } = string.Empty;
     public string ImagenUrl { get; set; } = string.Empty;
     public int? ProveedorId { get; set; }
     public decimal PrecioUnitario { get; set; }
-    public int CantidadAComprar => Math.Max(0, StockMaximo - StockActual);//Prodpiedad autocalculada
+    public decimal CantidadAComprar => Math.Max(0m, StockMaximo - StockActual);//Prodpiedad autocalculada
 
     /// <summary>
     /// Activa el registro de venta/consumo individual (ver RegistroCafe y la pantalla
@@ -31,7 +31,7 @@ public record Producto
     /// comporta como siempre (escribe StockActual). Ningún mapper lo rellena: lo informa quien
     /// edita.
     /// </summary>
-    public int? StockActualAlLeer { get; set; }
+    public decimal? StockActualAlLeer { get; set; }
 
     /// <summary>
     /// Marca productos que se venden íntegros (p.ej. una lata de Coca-Cola: se compra una

@@ -79,7 +79,7 @@ public class ProductoService : IProductoService
         return await _repository.ProductosUrgentes();
     }
 
-    public async Task<Result<Producto, DomainError>> ActualizarStockActualAsync(int id, int nuevaCantidad)
+    public async Task<Result<Producto, DomainError>> ActualizarStockActualAsync(int id, decimal nuevaCantidad)
     {
         if (nuevaCantidad < 0)
             return Result.Failure<Producto, DomainError>(

@@ -41,8 +41,8 @@ public static class ProductoMapper
         {
             Id = entity.Id,
             Nombre = entity.Nombre,
-            StockActual = entity.StockActual,
-            StockMaximo = entity.StockMaximo,
+            StockActual = SinCerosFinales(entity.StockActual),
+            StockMaximo = SinCerosFinales(entity.StockMaximo),
             Unidad = entity.Unidad,
             Descripcion = entity.Descripcion,
             ImagenUrl = entity.ImagenUrl,
@@ -65,4 +65,10 @@ public static class ProductoMapper
             NotasCata = entity.NotasCata
         };
     }
+
+    /// <summary>
+    /// Quita los ceros finales de un decimal (0,50 pasa a 0,5 y 2,00 a 2), para que el stock se muestre igual
+    /// en todas las pantallas sin tener que formatearlo en cada una.
+    /// </summary>
+    private static decimal SinCerosFinales(decimal valor) => valor / 1.0000000000000000000000000000m;
 }

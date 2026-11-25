@@ -22,6 +22,9 @@ public class ValidadorProducto : IValidador<Producto>
             errores.Add("El stock no puede ser menor que 0");
         if(producto.StockMaximo <= 0)
             errores.Add("El stock máximo debe ser mayor que 0");
+        // El stock admite decimales (p.ej. 0,5 de un paquete abierto a la mitad) pero solo hasta dos.
+        if (Math.Round(producto.StockActual, 2) != producto.StockActual || Math.Round(producto.StockMaximo, 2) != producto.StockMaximo)
+            errores.Add("El stock admite como máximo dos decimales");
         if(producto.StockMaximo < producto.StockActual)
             errores.Add("El stock actual no puede ser mayor que el stock máximo.");
         if(producto.PrecioUnitario < 0)

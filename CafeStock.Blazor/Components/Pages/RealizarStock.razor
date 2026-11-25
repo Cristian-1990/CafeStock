@@ -149,10 +149,11 @@ else
             <RowTemplate>
                 <MudTd DataLabel="Nombre">@context.Nombre</MudTd>
                 <MudTd DataLabel="Cantidad actual">
-                    <MudNumericField T="int"
+                    <MudNumericField T="decimal"
                                      Value="context.StockActual"
                                      ValueChanged="@(v => OnCantidadCambiada(context, v))"
                                      Min="0"
+                                     Format="0.##"
                                      Variant="Variant.Outlined"
                                      Style="max-width:120px;"/>
                 </MudTd>
@@ -238,7 +239,7 @@ else
     private bool _guardandoTodo;
 
     // Última cantidad persistida en BD por producto (para detectar cambios sin tocar el modelo).
-    private readonly Dictionary<int, int> _valorGuardado = new();
+    private readonly Dictionary<int, decimal> _valorGuardado = new();
     private readonly Dictionary<int, EstadoFila> _estadoFila = new();
 
     // Ninguno de los dos marcado = paso 1 (elegir grupo).
@@ -456,7 +457,7 @@ else
             Snackbar.Add($"Stock de {_nombreGrupoSeleccionado} completo: ya aparece en Recepcionar", Severity.Success);
     }
 
-    private void OnCantidadCambiada(Producto p, int nuevoValor)
+    private void OnCantidadCambiada(Producto p, decimal nuevoValor)
     {
         p.StockActual = nuevoValor;
         var guardado = _valorGuardado.TryGetValue(p.Id, out var v) ? v : nuevoValor;

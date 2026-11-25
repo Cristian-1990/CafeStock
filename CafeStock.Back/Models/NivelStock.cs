@@ -10,10 +10,10 @@ namespace CafeStock.Back.Models;
 public static class NivelStock
 {
     /// <summary>Porcentaje 0-100 de llenado. Sin máximo definido cuenta como 0.</summary>
-    public static int Porcentaje(int stockActual, int stockMaximo)
+    public static int Porcentaje(decimal stockActual, decimal stockMaximo)
     {
         if (stockMaximo <= 0) return 0;
-        return Math.Clamp(stockActual * 100 / stockMaximo, 0, 100);
+        return (int)Math.Clamp(Math.Floor(stockActual * 100m / stockMaximo), 0m, 100m);
     }
 
     /// <summary>
@@ -29,7 +29,7 @@ public static class NivelStock
         _ => 1
     };
 
-    public static int Tramo(int stockActual, int stockMaximo) => Tramo(Porcentaje(stockActual, stockMaximo));
+    public static int Tramo(decimal stockActual, decimal stockMaximo) => Tramo(Porcentaje(stockActual, stockMaximo));
 
     /// <summary>
     /// Productos por reponer, del más urgente al menos: primero el de menor porcentaje de stock sobre su
@@ -45,5 +45,5 @@ public static class NivelStock
             .ToList();
 
     /// <summary>Clase CSS del medidor ("n1".."n5"); los colores viven en app.css (--nivel-N).</summary>
-    public static string Clase(int stockActual, int stockMaximo) => $"n{Tramo(stockActual, stockMaximo)}";
+    public static string Clase(decimal stockActual, decimal stockMaximo) => $"n{Tramo(stockActual, stockMaximo)}";
 }

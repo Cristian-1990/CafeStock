@@ -27,12 +27,15 @@
                   Class="mb-4"/>
 
     <MudNumericField @bind-Value="_stockActual"
+                     Format="0.##"
+                     HelperText="Admite hasta dos decimales (p.ej. 0,5 si hay un paquete abierto a la mitad)"
                      Label="Stock actual"
                      Variant="Variant.Outlined"
                      Min="0"
                      Class="mb-4"/>
 
     <MudNumericField @bind-Value="_stockMaximo"
+                     Format="0.##"
                      Label="Stock máximo"
                      Variant="Variant.Outlined"
                      Min="0"
@@ -181,10 +184,10 @@
     [Parameter] public int? Id { get; set; }
 
     private string _nombre = string.Empty;
-    private int _stockActual;
+    private decimal _stockActual;
     // Stock que tenía el producto al abrir el formulario: permite no pisar ventas hechas mientras tanto (ver Producto.StockActualAlLeer).
-    private int _stockActualAlAbrir;
-    private int _stockMaximo;
+    private decimal _stockActualAlAbrir;
+    private decimal _stockMaximo;
     private decimal _precioUnitario;
     private int? _pasillo;
     private int _ordenEnPasillo;
