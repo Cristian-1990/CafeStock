@@ -117,6 +117,36 @@ public class ProductosEfRepositoryTest
     }
 
     [Test]
+    public async Task CreateAsync_GuardaArmario()
+    {
+        // Arrange / Act
+        var creado = await _repository.CreateAsync(
+            new Producto { Nombre = "Harina", StockActual = 1, StockMaximo = 4, Armario = 2 });
+        var leido = await _repository.GetByIdAsync(creado.Value.Id);
+
+        // Assert
+        leido.Value.Armario.Should().Be(2);
+    }
+
+    [Test]
+    public async Task UpdateAsync_ModificaYQuitaArmario()
+    {
+        // Arrange
+        var creado = await _repository.CreateAsync(
+            new Producto { Nombre = "Harina", StockActual = 1, StockMaximo = 4, Armario = null });
+
+        // Act: asignar un armario...
+        var conArmario = await _repository.UpdateAsync(creado.Value.Id, creado.Value with { Armario = 5 });
+        // ...y quitarlo otra vez (null = sin armario).
+        var sinArmario = await _repository.UpdateAsync(creado.Value.Id, conArmario.Value with { Armario = null });
+
+        // Assert
+        conArmario.Value.Armario.Should().Be(5);
+        sinArmario.Value.Armario.Should().BeNull();
+        (await _repository.GetByIdAsync(creado.Value.Id)).Value.Armario.Should().BeNull();
+    }
+
+    [Test]
     public async Task UpdateAsync_ModificaSeccion()
     {
         // Arrange

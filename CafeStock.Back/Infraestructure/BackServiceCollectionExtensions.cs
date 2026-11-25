@@ -13,6 +13,8 @@ using CafeStock.Back.Repositories.RegistrosCafe.Base;
 using CafeStock.Back.Repositories.RegistrosCafe.EfCore;
 using CafeStock.Back.Repositories.SnapshotsInventario.Base;
 using CafeStock.Back.Repositories.SnapshotsInventario.EfCore;
+using CafeStock.Back.Repositories.StocksRealizados.Base;
+using CafeStock.Back.Repositories.StocksRealizados.EfCore;
 using CafeStock.Back.Services.Compras;
 using CafeStock.Back.Services.Facturas;
 using CafeStock.Back.Services.Informes;
@@ -21,6 +23,7 @@ using CafeStock.Back.Services.Productos;
 using CafeStock.Back.Services.Proveedores;
 using CafeStock.Back.Services.RegistrosCafe;
 using CafeStock.Back.Services.SnapshotsInventario;
+using CafeStock.Back.Services.StocksRealizados;
 using CafeStock.Back.Services.Usuarios;
 using CafeStock.Back.Validators.Common;
 using CafeStock.Back.Validators.Compras;
@@ -51,6 +54,7 @@ public static class BackServiceCollectionExtensions
         services.AddSingleton<IRegistroCafeRepository>(_ => new RegistrosCafeEfRepository(connectionString));
         services.AddSingleton<IPresupuestoRepository>(_ => new PresupuestosEfRepository(connectionString));
         services.AddSingleton<ISnapshotInventarioRepository>(_ => new SnapshotsInventarioEfRepository(connectionString));
+        services.AddSingleton<IStockRealizadoRepository>(_ => new StocksRealizadosEfRepository(connectionString));
 
         services.AddScoped<IValidador<Producto>, ValidadorProducto>();
         services.AddScoped<IValidador<Proveedor>, ValidadorProveedor>();
@@ -66,6 +70,7 @@ public static class BackServiceCollectionExtensions
         services.AddScoped<IRegistroCafeService, RegistroCafeService>();
         services.AddScoped<IPresupuestoService, PresupuestoService>();
         services.AddScoped<ISnapshotInventarioService, SnapshotInventarioService>();
+        services.AddScoped<IStockRealizadoService, StockRealizadoService>();
 
         // Cálculos de los informes: puros (sin base de datos); "hoy" sale del reloj inyectado.
         services.TryAddSingleton(TimeProvider.System);

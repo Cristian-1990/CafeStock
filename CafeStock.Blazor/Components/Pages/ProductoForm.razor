@@ -47,6 +47,13 @@
                      AdornmentText="€"
                      Class="mb-4"/>
 
+    <MudNumericField T="int?" @bind-Value="_armario"
+                     Label="Armario (donde se guarda en el local; divide Realizar stock en los supermercados)"
+                     Variant="Variant.Outlined"
+                     Min="0"
+                     Clearable="true"
+                     Class="mb-4"/>
+
     <MudNumericField T="int?" @bind-Value="_pasillo"
                      Label="Pasillo (solo para ordenar la lista de la compra en supermercados)"
                      Variant="Variant.Outlined"
@@ -181,6 +188,7 @@
     private decimal _precioUnitario;
     private int? _pasillo;
     private int _ordenEnPasillo;
+    private int? _armario;
     private bool _esFrontalPasillo;
     private SeccionEspecial _seccion = SeccionEspecial.Ninguna;
     private UnidadMedida _unidad = UnidadMedida.SinEspecificar;
@@ -245,6 +253,7 @@
                 _pasillo = resultado.Value.Pasillo;
                 _ordenEnPasillo = resultado.Value.OrdenEnPasillo;
                 _esFrontalPasillo = resultado.Value.EsFrontalPasillo;
+                _armario = resultado.Value.Armario;
                 _seccion = resultado.Value.Seccion;
                 _unidad = resultado.Value.Unidad;
                 _descripcion = resultado.Value.Descripcion;
@@ -282,6 +291,7 @@
             Pasillo = _pasillo,
             OrdenEnPasillo = _ordenEnPasillo,
             EsFrontalPasillo = _esFrontalPasillo,
+            Armario = _armario,
             Seccion = _seccion,
             Unidad = _unidad,
             Descripcion = _descripcion,

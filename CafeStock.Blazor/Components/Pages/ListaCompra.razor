@@ -5,6 +5,7 @@
 @inject CafeStock.Back.Services.Compras.ICompraService CompraService
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
+@inject CafeStock.Back.Services.StocksRealizados.IStockRealizadoService StockRealizadoService
 @inject NavigationManager Navigation
 
 <PageTitle>Recepcionar</PageTitle>
@@ -17,9 +18,12 @@
 {
     <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
 }
-else if (!_productos.Any() && !_proveedores.Any(p => p.EsSupermercadoGenerico))
+else if (!_gruposPendientes.Any())
 {
-    <MudAlert Severity="Severity.Success">Todo completo, no hay nada que comprar.</MudAlert>
+    <MudAlert Severity="Severity.Info">
+        No hay nada pendiente de recibir. Un proveedor aparece aquí cuando termina su stock en Realizar stock
+        (con todos sus productos guardados o verificados) y tiene algo por reponer.
+    </MudAlert>
 }
 else
 {
@@ -37,7 +41,7 @@ else
         </MudButton>
     </div>
 
-    @foreach (var grupo in _gruposCompletos)
+    @foreach (var grupo in _gruposPendientes)
     {
         var proveedorId = grupo.Proveedor?.Id;
         var nombreProveedor = grupo.Proveedor?.Nombre ?? "Sin proveedor asignado";
@@ -241,7 +245,7 @@ else
 
     private void ExpandirTodo()
     {
-        foreach (var g in _gruposCompletos.ToList())
+        foreach (var g in _gruposPendientes.ToList())
             _expandidos.Add(g.Proveedor?.Id);
     }
 
@@ -270,29 +274,18 @@ else
     private IEnumerable<(Proveedor? Proveedor, List<Producto> Productos)> _grupos =>
         AgrupadorProveedor.AgruparPorProveedor(_productos, _proveedores);
 
+    // Proveedores cuyo stock ya se hizo en Realizar stock y tienen la recepción pendiente (null = "Sin
+    // proveedor asignado"). Recepcionar solo enseña estos: un proveedor aparece cuando se termina su stock y
+    // desaparece al confirmar su recepción (ver IStockRealizadoService).
+    private HashSet<int?> _pendientes = [];
+
     /// <summary>
-    /// _grupos + una tarjeta vacía por cada supermercado genérico que hoy no tiene nada
-    /// pendiente de reponer (AgruparPorProveedor solo genera grupo para proveedores con algún
-    /// producto en _productos) — así su tarjeta sigue apareciendo siempre, en vez de depender
-    /// de que haya stock bajo mínimo ese día.
+    /// Los grupos que se enseñan: solo los proveedores con el stock hecho, y de ellos solo con lo que hay por
+    /// reponer. Antes salían todos los que tenían algo por reponer (y siempre las tarjetas de los
+    /// supermercados), aunque nadie hubiera hecho su stock.
     /// </summary>
-    private IEnumerable<(Proveedor? Proveedor, List<Producto> Productos)> _gruposCompletos
-    {
-        get
-        {
-            var grupos = _grupos.ToList();
-            var proveedoresConGrupo = grupos
-                .Where(g => g.Proveedor is not null)
-                .Select(g => g.Proveedor!.Id)
-                .ToHashSet();
-
-            var extra = _proveedores
-                .Where(p => p.EsSupermercadoGenerico && !proveedoresConGrupo.Contains(p.Id))
-                .Select(p => (Proveedor: (Proveedor?)p, Productos: new List<Producto>()));
-
-            return grupos.Concat(extra);
-        }
-    }
+    private IEnumerable<(Proveedor? Proveedor, List<Producto> Productos)> _gruposPendientes =>
+        _grupos.Where(g => _pendientes.Contains(g.Proveedor?.Id)).ToList();
 
     protected override async Task OnInitializedAsync()
     {
@@ -312,6 +305,7 @@ else
     private async Task CargarAsync()
     {
         _productos = await ProductoService.GetProductosBajoMinimoAsync();
+        _pendientes = await StockRealizadoService.GetProveedoresPendientesAsync();
         _cantidadesRecibidas = _productos.ToDictionary(p => p.Id, p => p.CantidadAComprar);
         _preciosRecibidos = _productos.ToDictionary(p => p.Id, p => p.PrecioUnitario);
         _recibidoEnPacks = _productos.ToDictionary(p => p.Id, _ => false);
@@ -438,6 +432,8 @@ else
             if (resultadoCompra.IsSuccess)
             {
                 _notas[ClaveNota(proveedorId)] = string.Empty;
+                // Recibido: el proveedor deja de estar pendiente hasta que se haga su stock otra vez.
+                await StockRealizadoService.QuitarAsync(proveedorId);
                 Snackbar.Add($"Recepción confirmada: {lineas.Count} producto(s)", Severity.Success);
             }
             else

@@ -20,6 +20,7 @@ public class ProductoEntity
     public int? Pasillo { get; set; }
     public int OrdenEnPasillo { get; set; }
     public bool EsFrontalPasillo { get; set; }
+    public int? Armario { get; set; }
     public SeccionEspecial Seccion { get; set; }
     public string Pais { get; set; } = string.Empty;
     public string Region { get; set; } = string.Empty;

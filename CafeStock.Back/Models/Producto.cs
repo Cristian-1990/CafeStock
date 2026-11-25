@@ -84,6 +84,16 @@ public record Producto
     public bool EsFrontalPasillo { get; set; }
 
     /// <summary>
+    /// Armario (o zona de la despensa) donde se guarda este producto en el local — se usa para dividir
+    /// por armarios la pantalla Realizar stock de los supermercados genéricos (p.ej. Alcampo), de modo
+    /// que se cuente armario a armario. Nada que ver con Pasillo (que es del supermercado donde se
+    /// compra): este es el sitio donde se almacena en la cafetería. Numeración manual (1, 2, 3...), solo
+    /// editable desde el formulario de producto. Null mientras no se haya asignado: esos productos
+    /// salen al final, en "Sin armario".
+    /// </summary>
+    public int? Armario { get; set; }
+
+    /// <summary>
     /// Sección especial a la que pertenece el producto (frutería, infusiones...) — ver
     /// SeccionEspecial. Se usa únicamente para colorear su fila en la lista de la compra (ver
     /// PdfService), nunca se muestra en ningún listado ni ficha. Igual que

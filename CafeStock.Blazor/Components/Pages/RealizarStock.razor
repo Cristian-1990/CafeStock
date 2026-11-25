@@ -3,6 +3,7 @@
 @inject IProductoService ProductoService
 @inject IProveedorService ProveedorService
 @inject ISnackbar Snackbar
+@inject CafeStock.Back.Services.StocksRealizados.IStockRealizadoService StockRealizadoService
 @inject IDialogService DialogService
 @inject CafeStock.Blazor.Services.PdfService PdfService
 @inject CafeStock.Blazor.Services.EmailService EmailService
@@ -81,20 +82,26 @@ else
         <MudText Typo="Typo.h5" Style="color:var(--color-dark); margin:0;">@_nombreGrupoSeleccionado</MudText>
     </div>
 
-    @* Supermercados (Alcampo...): por defecto A–Z; el orden por pasillo sigue el recorrido de la tienda. *@
+    @* Supermercados (Alcampo...): "Cafetería" (por defecto) cuenta por armarios, donde se guarda cada cosa en
+       el local; "Supermercado" sigue el recorrido de la tienda (pasillos) y A–Z es la lista plana. *@
     @if (_grupoSeleccionado?.EsSupermercadoGenerico == true)
     {
         <div class="d-flex flex-wrap align-center gap-2 mb-4">
             <MudText Typo="Typo.overline" Style="color:var(--color-primary);">Orden</MudText>
-            <MudChip T="string" Color="@(_ordenPasillo ? Color.Default : Color.Primary)"
-                     Variant="@(_ordenPasillo ? Variant.Outlined : Variant.Filled)"
-                     OnClick="@(() => _ordenPasillo = false)">
-                A–Z
+            <MudChip T="string" Color="@(_orden == OrdenLista.Armario ? Color.Primary : Color.Default)"
+                     Variant="@(_orden == OrdenLista.Armario ? Variant.Filled : Variant.Outlined)"
+                     OnClick="@(() => _orden = OrdenLista.Armario)">
+                Cafetería
             </MudChip>
-            <MudChip T="string" Color="@(_ordenPasillo ? Color.Primary : Color.Default)"
-                     Variant="@(_ordenPasillo ? Variant.Filled : Variant.Outlined)"
-                     OnClick="@(() => _ordenPasillo = true)">
-                Por pasillo
+            <MudChip T="string" Color="@(_orden == OrdenLista.Pasillo ? Color.Primary : Color.Default)"
+                     Variant="@(_orden == OrdenLista.Pasillo ? Variant.Filled : Variant.Outlined)"
+                     OnClick="@(() => _orden = OrdenLista.Pasillo)">
+                Supermercado
+            </MudChip>
+            <MudChip T="string" Color="@(_orden == OrdenLista.AZ ? Color.Primary : Color.Default)"
+                     Variant="@(_orden == OrdenLista.AZ ? Variant.Filled : Variant.Outlined)"
+                     OnClick="@(() => _orden = OrdenLista.AZ)">
+                A–Z
             </MudChip>
         </div>
     }
@@ -124,7 +131,16 @@ else
             <MudAlert Severity="Severity.Info" Class="mb-4">Ningún producto coincide con la búsqueda.</MudAlert>
         }
 
-        <MudTable Items="_productosVisibles" Hover="true" Elevation="2" RowStyleFunc="FilaEstilo">
+        @* Por armario: una sola tabla con cabecera de grupo ("Armario 1", "Armario 2"... y "Sin armario" al
+           final). En los demás órdenes no hay agrupación. *@
+        <MudTable Items="_productosVisibles" Hover="true" Elevation="2" RowStyleFunc="FilaEstilo"
+                  GroupBy="@(_agruparPorArmario ? _agrupacionArmario : null)"
+                  GroupHeaderStyle="background-color:var(--bg-panel); font-weight:600;">
+            <GroupHeaderTemplate>
+                <MudTh colspan="3" Style="color:var(--color-dark); font-size:1.05rem;">
+                    @NombreArmario((int)context.Key)
+                </MudTh>
+            </GroupHeaderTemplate>
             <HeaderContent>
                 <MudTh>Nombre</MudTh>
                 <MudTh>Cantidad actual</MudTh>
@@ -144,28 +160,40 @@ else
                     @{
                         var estado = EstadoDe(context);
                     }
-                    @if (estado == EstadoFila.Guardado)
+                    @if (estado is EstadoFila.Guardado or EstadoFila.Verificado)
                     {
                         <MudButton Variant="Variant.Filled"
                                    Color="Color.Success"
                                    Size="Size.Small"
                                    StartIcon="@Icons.Material.Filled.CheckCircle"
                                    Disabled="true">
-                            Guardado
+                            @(estado == EstadoFila.Verificado ? "Verificado" : "Guardado")
                         </MudButton>
                     }
                     else
                     {
-                        <MudButton Variant="@(estado == EstadoFila.Pendiente ? Variant.Filled : Variant.Outlined)"
-                                   Size="Size.Small"
-                                   StartIcon="@Icons.Material.Filled.Save"
-                                   Style="@(estado == EstadoFila.Pendiente
-                                            ? "background-color:var(--accent-gold); color:#fff;"
-                                            : "color:var(--color-primary); border-color:var(--color-primary);")"
-                                   Disabled="@(estado == EstadoFila.SinCambios || _guardandoTodo)"
-                                   OnClick="@(() => GuardarAsync(context))">
-                            Actualizar
-                        </MudButton>
+                        <div class="d-flex flex-wrap align-center gap-2">
+                            <MudButton Variant="@(estado == EstadoFila.Pendiente ? Variant.Filled : Variant.Outlined)"
+                                       Size="Size.Small"
+                                       StartIcon="@Icons.Material.Filled.Save"
+                                       Style="@(estado == EstadoFila.Pendiente
+                                                ? "background-color:var(--accent-gold); color:#fff;"
+                                                : "color:var(--color-primary); border-color:var(--color-primary);")"
+                                       Disabled="@(estado == EstadoFila.SinCambios || _guardandoTodo)"
+                                       OnClick="@(() => GuardarAsync(context))">
+                                Actualizar
+                            </MudButton>
+                            @* Verificar: "lo he revisado y la cantidad está bien", sin tocar el stock. Solo con la fila
+                               sin cambios: si hay una cantidad pendiente de guardar se usa Actualizar. *@
+                            <MudButton Variant="Variant.Outlined"
+                                       Size="Size.Small"
+                                       StartIcon="@Icons.Material.Filled.FactCheck"
+                                       Style="color:var(--color-primary); border-color:var(--color-primary);"
+                                       Disabled="@(estado != EstadoFila.SinCambios || _guardandoTodo)"
+                                       OnClick="@(() => VerificarAsync(context))">
+                                Verificar
+                            </MudButton>
+                        </div>
                     }
                 </MudTd>
             </RowTemplate>
@@ -201,7 +229,8 @@ else
 }
 
 @code {
-    private enum EstadoFila { SinCambios, Pendiente, Guardado }
+    // Verificado = revisada con "Verificar" sin cambiar la cantidad (solo en esta pantalla, no se guarda nada).
+    private enum EstadoFila { SinCambios, Pendiente, Guardado, Verificado }
 
     private List<Producto> _productos = [];
     private IEnumerable<Proveedor> _proveedores = [];
@@ -237,12 +266,33 @@ else
     [Parameter]
     public int? ProductoDestacadoId { get; set; }
 
-    private bool _ordenPasillo;
+    private enum OrdenLista { Armario, AZ, Pasillo }
+
+    // Solo cuenta en supermercados genéricos (los chips solo salen ahí); el resto siempre va A–Z.
+    private OrdenLista _orden = OrdenLista.Armario;
     private bool _generandoPedido;
 
-    // Siempre A–Z (ver OrdenAlfabetico), salvo "Por pasillo" en un supermercado: pasillo (los sin
-    // pasillo al final), posición dentro del pasillo y nombre. Ninguno de los dos órdenes depende
-    // de la cantidad que se está tecleando, así que la lista no salta mientras se cuenta.
+    private bool _esSupermercado => _grupoSeleccionado?.EsSupermercadoGenerico == true;
+    private bool _agruparPorArmario => _esSupermercado && _orden == OrdenLista.Armario;
+
+    // Los productos sin armario no tienen número: se agrupan con una clave muy alta para que salgan al final
+    // ("Sin armario"). El cabecero de grupo traduce la clave a texto (ver NombreArmario).
+    private const int SinArmario = int.MaxValue;
+
+    private static string NombreArmario(int clave) => clave == SinArmario ? "Sin armario" : $"Armario {clave}";
+
+    private readonly TableGroupDefinition<Producto> _agrupacionArmario = new()
+    {
+        GroupName = "Armario",
+        Indentation = false,
+        Expandable = false,
+        Selector = p => p.Armario ?? SinArmario
+    };
+
+    // Siempre A–Z (ver OrdenAlfabetico), salvo en un supermercado: "Por armario" (armario, los sin armario al
+    // final, y nombre) o "Por pasillo" (pasillo, los sin pasillo al final, posición dentro del pasillo y
+    // nombre). Ninguno de los órdenes depende de la cantidad que se está tecleando, así que la lista no
+    // salta mientras se cuenta.
     private IEnumerable<Producto> _productosDelGrupo
     {
         get
@@ -258,12 +308,15 @@ else
                 lista = _productos.Where(p => p.ProveedorId == proveedorId).ToList();
             }
 
-            var ordenada = _ordenPasillo && _grupoSeleccionado?.EsSupermercadoGenerico == true
-                ? lista.OrderBy(p => p.Pasillo ?? int.MaxValue).ThenBy(p => p.OrdenEnPasillo).LuegoAlfabeticamente(p => p.Nombre).ToList()
-                : lista.OrdenarAlfabeticamente(p => p.Nombre).ToList();
+            var ordenada = _esSupermercado && _orden == OrdenLista.Armario
+                ? lista.OrderBy(p => p.Armario ?? SinArmario).LuegoAlfabeticamente(p => p.Nombre).ToList()
+                : _esSupermercado && _orden == OrdenLista.Pasillo
+                    ? lista.OrderBy(p => p.Pasillo ?? int.MaxValue).ThenBy(p => p.OrdenEnPasillo).LuegoAlfabeticamente(p => p.Nombre).ToList()
+                    : lista.OrdenarAlfabeticamente(p => p.Nombre).ToList();
 
-            // El producto destacado, si está en este grupo, va el primero.
-            var destacado = ordenada.FirstOrDefault(p => p.Id == ProductoDestacadoId);
+            // El producto destacado, si está en este grupo, va el primero (salvo agrupando por armario: ahí
+            // moverlo rompería el orden de los grupos; se queda en su armario, igualmente resaltado).
+            var destacado = _agruparPorArmario ? null : ordenada.FirstOrDefault(p => p.Id == ProductoDestacadoId);
             if (destacado is not null)
             {
                 ordenada.Remove(destacado);
@@ -358,6 +411,51 @@ else
     private EstadoFila EstadoDe(Producto p) =>
         _estadoFila.TryGetValue(p.Id, out var e) ? e : EstadoFila.SinCambios;
 
+    /// <summary>
+    /// "Verificar": la cantidad que hay es la correcta, así que la fila se da por revisada sin tocar el stock
+    /// (no hay nada que guardar). Solo desde SinCambios; si luego se edita la cantidad, vuelve a Pendiente.
+    /// </summary>
+    private async Task VerificarAsync(Producto p)
+    {
+        if (EstadoDe(p) != EstadoFila.SinCambios)
+            return;
+
+        _estadoFila[p.Id] = EstadoFila.Verificado;
+        await ComprobarStockCompletoAsync();
+    }
+
+    // Grupos (proveedores) cuyo "stock realizado" ya se ha marcado en esta visita, para avisar una sola vez.
+    private readonly HashSet<int?> _avisados = [];
+
+    /// <summary>
+    /// El stock de un proveedor está hecho cuando TODAS sus filas están revisadas (guardadas o verificadas).
+    /// Entonces, si tiene algo por reponer, se marca para que aparezca en Recepcionar; si no hay nada que
+    /// recibir se quita cualquier marca vieja, para que no salga sin motivo.
+    /// </summary>
+    private async Task ComprobarStockCompletoAsync()
+    {
+        var grupo = _productosDelGrupo.ToList();
+        if (grupo.Count == 0 || !grupo.All(p => EstadoDe(p) is EstadoFila.Guardado or EstadoFila.Verificado))
+            return;
+
+        var proveedorId = _sinProveedorSeleccionado ? null : _grupoSeleccionado?.Id;
+        if (!grupo.Any(p => p.CantidadAComprar > 0))
+        {
+            await StockRealizadoService.QuitarAsync(proveedorId);
+            return;
+        }
+
+        var resultado = await StockRealizadoService.MarcarAsync(proveedorId);
+        if (resultado.IsFailure)
+        {
+            Snackbar.Add(resultado.Error.Message, Severity.Error);
+            return;
+        }
+
+        if (_avisados.Add(proveedorId))
+            Snackbar.Add($"Stock de {_nombreGrupoSeleccionado} completo: ya aparece en Recepcionar", Severity.Success);
+    }
+
     private void OnCantidadCambiada(Producto p, int nuevoValor)
     {
         p.StockActual = nuevoValor;
@@ -368,7 +466,7 @@ else
     private string FilaEstilo(Producto p, int index) => EstadoDe(p) switch
     {
         EstadoFila.Pendiente => "background-color:rgba(193,120,23,0.12);",
-        EstadoFila.Guardado  => "background-color:rgba(102,187,106,0.16);",
+        EstadoFila.Guardado or EstadoFila.Verificado => "background-color:rgba(102,187,106,0.16);",
         _ when p.Id == ProductoDestacadoId => "box-shadow:inset 5px 0 0 var(--accent-terracota); background-color:rgba(168,72,31,0.08);",
         _                    => string.Empty
     };
@@ -401,6 +499,7 @@ else
         {
             _valorGuardado[producto.Id] = producto.StockActual;
             _estadoFila[producto.Id] = EstadoFila.Guardado;
+            await ComprobarStockCompletoAsync();
         }
         else
         {
@@ -439,5 +538,7 @@ else
             Snackbar.Add($"{ok} producto{(ok == 1 ? "" : "s")} actualizado{(ok == 1 ? "" : "s")}", Severity.Success);
         foreach (var error in errores)
             Snackbar.Add(error, Severity.Error);
+
+        await ComprobarStockCompletoAsync();
     }
 }
