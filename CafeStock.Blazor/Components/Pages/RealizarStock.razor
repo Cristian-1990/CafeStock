@@ -3,6 +3,7 @@
 @inject IProductoService ProductoService
 @inject IProveedorService ProveedorService
 @inject ISnackbar Snackbar
+@inject CafeStock.Back.Services.StocksRealizados.IStockRealizadoService StockRealizadoService
 @inject IDialogService DialogService
 @inject CafeStock.Blazor.Services.PdfService PdfService
 @inject CafeStock.Blazor.Services.EmailService EmailService
@@ -189,7 +190,7 @@ else
                                        StartIcon="@Icons.Material.Filled.FactCheck"
                                        Style="color:var(--color-primary); border-color:var(--color-primary);"
                                        Disabled="@(estado != EstadoFila.SinCambios || _guardandoTodo)"
-                                       OnClick="@(() => Verificar(context))">
+                                       OnClick="@(() => VerificarAsync(context))">
                                 Verificar
                             </MudButton>
                         </div>
@@ -414,10 +415,45 @@ else
     /// "Verificar": la cantidad que hay es la correcta, así que la fila se da por revisada sin tocar el stock
     /// (no hay nada que guardar). Solo desde SinCambios; si luego se edita la cantidad, vuelve a Pendiente.
     /// </summary>
-    private void Verificar(Producto p)
+    private async Task VerificarAsync(Producto p)
     {
-        if (EstadoDe(p) == EstadoFila.SinCambios)
-            _estadoFila[p.Id] = EstadoFila.Verificado;
+        if (EstadoDe(p) != EstadoFila.SinCambios)
+            return;
+
+        _estadoFila[p.Id] = EstadoFila.Verificado;
+        await ComprobarStockCompletoAsync();
+    }
+
+    // Grupos (proveedores) cuyo "stock realizado" ya se ha marcado en esta visita, para avisar una sola vez.
+    private readonly HashSet<int?> _avisados = [];
+
+    /// <summary>
+    /// El stock de un proveedor está hecho cuando TODAS sus filas están revisadas (guardadas o verificadas).
+    /// Entonces, si tiene algo por reponer, se marca para que aparezca en Recepcionar; si no hay nada que
+    /// recibir se quita cualquier marca vieja, para que no salga sin motivo.
+    /// </summary>
+    private async Task ComprobarStockCompletoAsync()
+    {
+        var grupo = _productosDelGrupo.ToList();
+        if (grupo.Count == 0 || !grupo.All(p => EstadoDe(p) is EstadoFila.Guardado or EstadoFila.Verificado))
+            return;
+
+        var proveedorId = _sinProveedorSeleccionado ? null : _grupoSeleccionado?.Id;
+        if (!grupo.Any(p => p.CantidadAComprar > 0))
+        {
+            await StockRealizadoService.QuitarAsync(proveedorId);
+            return;
+        }
+
+        var resultado = await StockRealizadoService.MarcarAsync(proveedorId);
+        if (resultado.IsFailure)
+        {
+            Snackbar.Add(resultado.Error.Message, Severity.Error);
+            return;
+        }
+
+        if (_avisados.Add(proveedorId))
+            Snackbar.Add($"Stock de {_nombreGrupoSeleccionado} completo: ya aparece en Recepcionar", Severity.Success);
     }
 
     private void OnCantidadCambiada(Producto p, int nuevoValor)
@@ -463,6 +499,7 @@ else
         {
             _valorGuardado[producto.Id] = producto.StockActual;
             _estadoFila[producto.Id] = EstadoFila.Guardado;
+            await ComprobarStockCompletoAsync();
         }
         else
         {
@@ -501,5 +538,7 @@ else
             Snackbar.Add($"{ok} producto{(ok == 1 ? "" : "s")} actualizado{(ok == 1 ? "" : "s")}", Severity.Success);
         foreach (var error in errores)
             Snackbar.Add(error, Severity.Error);
+
+        await ComprobarStockCompletoAsync();
     }
 }
