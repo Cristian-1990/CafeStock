@@ -23,6 +23,7 @@ public partial class AppDbContext : IdentityDbContext<IdentityUser>
     public DbSet<RegistroCafeEntity> RegistrosCafe { get; set; } = null!;
     public DbSet<PresupuestoEntity> Presupuestos { get; set; } = null!;
     public DbSet<SnapshotInventarioEntity> SnapshotsInventario { get; set; } = null!;
+    public DbSet<StockRealizadoEntity> StocksRealizados { get; set; } = null!;
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) //
     {
@@ -104,6 +105,12 @@ public partial class AppDbContext : IdentityDbContext<IdentityUser>
         // Como mucho un snapshot por día — ver también AsegurarTablaSnapshotsInventarioAsync.
         modelBuilder.Entity<SnapshotInventarioEntity>()
             .HasIndex(s => s.Fecha)
+            .IsUnique();
+
+        // Como mucho una marca de "stock realizado" por proveedor (0 = sin proveedor). Sin FK a propósito:
+        // ver el comentario de StockRealizado.
+        modelBuilder.Entity<StockRealizadoEntity>()
+            .HasIndex(s => s.ProveedorId)
             .IsUnique();
     }
 }

@@ -314,6 +314,26 @@ namespace CafeStock.Back.Migrations
                     b.ToTable("SnapshotsInventario");
                 });
 
+            modelBuilder.Entity("CafeStock.Back.Entity.StockRealizadoEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("Fecha")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ProveedorId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProveedorId")
+                        .IsUnique();
+
+                    b.ToTable("StocksRealizados");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
                     b.Property<string>("Id")
