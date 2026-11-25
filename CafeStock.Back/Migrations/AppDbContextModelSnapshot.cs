@@ -131,6 +131,9 @@ namespace CafeStock.Back.Migrations
                     b.Property<bool>("AplicaConciliacionTpv")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("Armario")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Descripcion")
                         .IsRequired()
                         .HasColumnType("TEXT");

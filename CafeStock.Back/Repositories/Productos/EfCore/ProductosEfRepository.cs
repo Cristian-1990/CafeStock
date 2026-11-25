@@ -105,6 +105,7 @@ public class ProductosEfRepository : IProductoRepository
                 entity.Pasillo = producto.Pasillo;
                 entity.OrdenEnPasillo = producto.OrdenEnPasillo;
                 entity.EsFrontalPasillo = producto.EsFrontalPasillo;
+                entity.Armario = producto.Armario;
                 entity.Seccion = producto.Seccion;
                 entity.Pais = producto.Pais;
                 entity.Region = producto.Region;
