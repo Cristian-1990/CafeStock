@@ -110,7 +110,7 @@ public class ProductosEfRepository : IProductoRepository
                 // enciende, nunca se apaga aquí: ver el comentario de UpdateAsync).
                 entity.GrupoCafe = producto.GrupoCafe;
                 entity.FormatoCafe = producto.FormatoCafe;
-                if (producto.GrupoCafe != GrupoCafe.SinGrupo)
+                if (producto.GrupoCafe.EsDelTablero())
                     entity.SeguimientoIndividual = true;
                 entity.Seccion = producto.Seccion;
                 entity.Pais = producto.Pais;

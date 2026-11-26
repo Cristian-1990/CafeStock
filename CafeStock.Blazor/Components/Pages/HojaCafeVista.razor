@@ -1,0 +1,43 @@
+@page "/cafe/hoja/{Id:int}"
+@attribute [Authorize(Policy = Politicas.Trabajador)]
+@inject IHojaCafeService HojaCafeService
+
+<PageTitle>Hoja @Id</PageTitle>
+
+<div class="mb-4">
+    <MudButton Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ArrowBack" Href="/vender">Volver a Venta</MudButton>
+</div>
+
+<div class="mb-4" style="background-color:rgba(var(--rgb-borde),0.10); border-radius:12px; padding:16px 24px; display:inline-block;">
+    <MudText Typo="Typo.h4" Style="color:var(--color-dark); margin:0;">Hoja @Id</MudText>
+    @if (_hoja is not null)
+    {
+        <MudText Typo="Typo.body2" Style="color:var(--text-muted); margin:0;">
+            Del @_hoja.FechaApertura.ToString("dd/MM/yyyy")@(_hoja.FechaCierre is { } cierre ? $" al {cierre:dd/MM/yyyy}" : " · hoja actual")
+        </MudText>
+    }
+</div>
+
+@if (_noExiste)
+{
+    <MudAlert Severity="Severity.Warning">No existe esa hoja.</MudAlert>
+}
+else
+{
+    @* Una hoja abierta se puede seguir usando desde Venta; aquí solo se mira. *@
+    <MapaCafe HojaId="Id" SoloLectura="true"/>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private HojaCafe? _hoja;
+    private bool _noExiste;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var detalle = await HojaCafeService.GetDetalleAsync(Id);
+        _noExiste = detalle.IsFailure;
+        _hoja = detalle.IsSuccess ? detalle.Value.Hoja : null;
+    }
+}

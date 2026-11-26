@@ -200,3 +200,16 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* Sobrante de una hoja anterior: mismo recuadro con el borde discontinuo. */
+.cafe-recuadro-sobrante {
+    border-style: dashed;
+}
+
+/* Libre en una hoja cerrada porque se usó después, en una hoja posterior. */
+.cafe-recuadro-pasa {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--cafe-color);
+    opacity: 0.6;
+}

@@ -7,4 +7,8 @@ public class RegistroCafeEntity
     public ProductoEntity? Producto { get; set; }
     public string NombreTrabajador { get; set; } = string.Empty;
     public DateTime Fecha { get; set; }
+    public int? PaqueteId { get; set; }
+    public PaqueteCafeEntity? Paquete { get; set; }
+    public int? HojaId { get; set; }
+    public HojaCafeEntity? Hoja { get; set; }
 }
