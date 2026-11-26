@@ -24,6 +24,8 @@ public partial class AppDbContext : IdentityDbContext<IdentityUser>
     public DbSet<PresupuestoEntity> Presupuestos { get; set; } = null!;
     public DbSet<SnapshotInventarioEntity> SnapshotsInventario { get; set; } = null!;
     public DbSet<StockRealizadoEntity> StocksRealizados { get; set; } = null!;
+    public DbSet<HojaCafeEntity> HojasCafe { get; set; } = null!;
+    public DbSet<PaqueteCafeEntity> PaquetesCafe { get; set; } = null!;
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) //
     {
@@ -112,5 +114,17 @@ public partial class AppDbContext : IdentityDbContext<IdentityUser>
         modelBuilder.Entity<StockRealizadoEntity>()
             .HasIndex(s => s.ProveedorId)
             .IsUnique();
+
+        // Hojas de café: cada paquete nace en una hoja (Restrict: una hoja con paquetes no se borra) y es de un
+        // producto (Cascade, como el resto del historial del producto). El registro de uso apunta, de forma
+        // opcional, al paquete y a la hoja: SetNull para no perder el historial si algún día se borran.
+        modelBuilder.Entity<PaqueteCafeEntity>()
+            .HasOne(p => p.Producto).WithMany().HasForeignKey(p => p.ProductoId).OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<PaqueteCafeEntity>()
+            .HasOne(p => p.HojaOrigen).WithMany().HasForeignKey(p => p.HojaOrigenId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<RegistroCafeEntity>()
+            .HasOne(r => r.Paquete).WithMany().HasForeignKey(r => r.PaqueteId).OnDelete(DeleteBehavior.SetNull);
+        modelBuilder.Entity<RegistroCafeEntity>()
+            .HasOne(r => r.Hoja).WithMany().HasForeignKey(r => r.HojaId).OnDelete(DeleteBehavior.SetNull);
     }
 }

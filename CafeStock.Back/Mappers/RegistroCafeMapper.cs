@@ -12,7 +12,9 @@ public static class RegistroCafeMapper
             Id = registro.Id,
             ProductoId = registro.ProductoId,
             NombreTrabajador = registro.NombreTrabajador,
-            Fecha = registro.Fecha
+            Fecha = registro.Fecha,
+            PaqueteId = registro.PaqueteId,
+            HojaId = registro.HojaId
         };
     }
 
@@ -23,7 +25,9 @@ public static class RegistroCafeMapper
             Id = entity.Id,
             ProductoId = entity.ProductoId,
             NombreTrabajador = entity.NombreTrabajador,
-            Fecha = entity.Fecha
+            Fecha = entity.Fecha,
+            PaqueteId = entity.PaqueteId,
+            HojaId = entity.HojaId
         };
     }
 }

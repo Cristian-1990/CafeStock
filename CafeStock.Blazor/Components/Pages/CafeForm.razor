@@ -1,0 +1,212 @@
+@page "/cafes/nuevo"
+@attribute [Authorize(Policy = Politicas.Encargado)]
+@inject IProductoService ProductoService
+@inject IProveedorService ProveedorService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>Añadir café</PageTitle>
+
+<div class="mb-4" style="background-color:rgba(var(--rgb-borde),0.10); border-radius:12px; padding:16px 24px; display:inline-block;">
+    <MudText Typo="Typo.h4" Style="color:var(--color-dark); margin:0;">Añadir café</MudText>
+</div>
+
+@if (_error is not null)
+{
+    <MudAlert Severity="Severity.Error" Class="mb-4">@_error</MudAlert>
+}
+
+@* Un café nuevo no es un producto cualquiera: solo lo que hace falta para venderlo y recepcionarlo. El resto de datos
+   del producto (stock, pasillo, armario...) se toca, si hace falta, desde su ficha en Catálogo. *@
+<MudPaper Class="pa-6" Elevation="2" Style="max-width:500px;">
+    <MudTextField @bind-Value="_nombre"
+                  Label="Nombre"
+                  HelperText="El formato se añade solo al final del nombre (p. ej. «Etiopía Guji — 250g»)."
+                  Variant="Variant.Outlined"
+                  Required="true"
+                  Class="mb-4"/>
+
+    <MudNumericField @bind-Value="_precioUnitario"
+                     Label="Precio unitario"
+                     Variant="Variant.Outlined"
+                     Min="0"
+                     Format="F2"
+                     Adornment="Adornment.End"
+                     AdornmentText="€"
+                     Class="mb-4"/>
+
+    <MudSelect T="GrupoCafe?" @bind-Value="_grupo"
+               Label="Grupo de café"
+               Variant="Variant.Outlined"
+               Required="true"
+               Class="mb-4">
+        <MudSelectItem T="GrupoCafe?" Value="GrupoCafe.Casa">Casa (el de siempre)</MudSelectItem>
+        <MudSelectItem T="GrupoCafe?" Value="GrupoCafe.Descafeinado">Descafeinado</MudSelectItem>
+        <MudSelectItem T="GrupoCafe?" Value="GrupoCafe.Especial">Especial (el de la semana)</MudSelectItem>
+    </MudSelect>
+
+    <MudSelect T="FormatoElegido?" @bind-Value="_formato"
+               Label="Formato"
+               Variant="Variant.Outlined"
+               Required="true"
+               Class="mb-4">
+        <MudSelectItem T="FormatoElegido?" Value="FormatoElegido.Kilo">1 kg</MudSelectItem>
+        <MudSelectItem T="FormatoElegido?" Value="FormatoElegido.DosKilos">2 kg</MudSelectItem>
+        <MudSelectItem T="FormatoElegido?" Value="FormatoElegido.Cuarto">250 gramos</MudSelectItem>
+    </MudSelect>
+
+    <MudTextField @bind-Value="_descripcion"
+                  Label="Descripción"
+                  Variant="Variant.Outlined"
+                  Lines="3"
+                  Class="mb-4"/>
+
+    <MudTextField @bind-Value="_imagenUrl"
+                  Label="Imagen (ruta relativa, p.ej. /images/nombre.jpg)"
+                  Variant="Variant.Outlined"
+                  Class="mb-4"/>
+
+    @if (_cargandoProveedores)
+    {
+        <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Small" Class="mb-4"/>
+    }
+    else
+    {
+        <MudSelect T="int?" @bind-Value="_proveedorId"
+                   Label="Proveedor"
+                   Variant="Variant.Outlined"
+                   Clearable="true"
+                   Class="mb-4">
+            @foreach (var proveedor in _proveedores)
+            {
+                <MudSelectItem T="int?" Value="@proveedor.Id">@proveedor.Nombre</MudSelectItem>
+            }
+        </MudSelect>
+    }
+
+    @* Ficha de café, para poder explicárselo al cliente: todo opcional. *@
+    <MudExpansionPanels Class="mb-4" Elevation="0">
+        <MudExpansionPanel Text="Ficha de café (opcional)" Expanded="true">
+            <MudTextField @bind-Value="_pais" Label="País" Variant="Variant.Outlined" Class="mb-3"/>
+            <MudTextField @bind-Value="_region" Label="Región" Variant="Variant.Outlined" Class="mb-3"/>
+            <MudTextField @bind-Value="_finca" Label="Finca" Variant="Variant.Outlined" Class="mb-3"/>
+            <MudTextField @bind-Value="_altitud" Label="Altitud" Placeholder="p.ej. 927 msnm" Variant="Variant.Outlined" Class="mb-3"/>
+            <MudTextField @bind-Value="_variedad" Label="Variedad" Variant="Variant.Outlined" Class="mb-3"/>
+            <MudTextField @bind-Value="_proceso" Label="Proceso" Placeholder="p.ej. Natural, Lavado" Variant="Variant.Outlined" Class="mb-3"/>
+            <MudTextField @bind-Value="_notasCata" Label="Notas de cata" Variant="Variant.Outlined" Lines="2" Class="mb-1"/>
+        </MudExpansionPanel>
+    </MudExpansionPanels>
+
+    <div class="d-flex gap-2">
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Save"
+                   Disabled="_guardando"
+                   OnClick="GuardarAsync">
+            Guardar
+        </MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Href="/vender">
+            Cancelar
+        </MudButton>
+    </div>
+</MudPaper>
+
+@code {
+    // 1 kg y 2 kg son paquetes (para el molino) y 250 g es un cuarto (para vender): así los coloca el mapa de Venta.
+    private enum FormatoElegido { Kilo, DosKilos, Cuarto }
+
+    private string _nombre = string.Empty;
+    private decimal _precioUnitario;
+    private GrupoCafe? _grupo;
+    private FormatoElegido? _formato;
+    private string _descripcion = string.Empty;
+    private string _imagenUrl = string.Empty;
+    private int? _proveedorId;
+    private string _pais = string.Empty;
+    private string _region = string.Empty;
+    private string _finca = string.Empty;
+    private string _altitud = string.Empty;
+    private string _variedad = string.Empty;
+    private string _proceso = string.Empty;
+    private string _notasCata = string.Empty;
+
+    private IEnumerable<Proveedor> _proveedores = [];
+    private bool _cargandoProveedores = true;
+    private bool _guardando;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _proveedores = (await ProveedorService.GetAllAsync()).ToList();
+        // Los cafés vienen de Puchero: solo es el valor que sale marcado, se puede cambiar.
+        _proveedorId = _proveedores.FirstOrDefault(p => p.Nombre.Equals("Puchero", StringComparison.OrdinalIgnoreCase))?.Id;
+        _cargandoProveedores = false;
+    }
+
+    private static string Peso(FormatoElegido formato) => formato switch
+    {
+        FormatoElegido.Kilo => "1kg",
+        FormatoElegido.DosKilos => "2kg",
+        _ => "250g"
+    };
+
+    /// <summary>Añade el formato al nombre (como los cafés que ya hay: «Brasil — 2kg») salvo que ya lo lleve escrito.</summary>
+    private static string NombreConFormato(string nombre, FormatoElegido formato)
+    {
+        nombre = nombre.Trim();
+        var peso = Peso(formato);
+        return nombre.Replace(" ", string.Empty).Contains(peso, StringComparison.OrdinalIgnoreCase)
+            ? nombre
+            : $"{nombre} — {peso}";
+    }
+
+    private async Task GuardarAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_nombre) || _grupo is null || _formato is null)
+        {
+            _error = "Faltan el nombre, el grupo de café y el formato.";
+            return;
+        }
+
+        var formato = _formato.Value;
+        var producto = new Producto
+        {
+            Nombre = NombreConFormato(_nombre, formato),
+            PrecioUnitario = _precioUnitario,
+            GrupoCafe = _grupo.Value,
+            FormatoCafe = formato == FormatoElegido.Cuarto ? FormatoCafe.Cuarto : FormatoCafe.Paquete,
+            Descripcion = _descripcion ?? string.Empty,
+            ImagenUrl = _imagenUrl ?? string.Empty,
+            ProveedorId = _proveedorId,
+            Pais = _pais ?? string.Empty,
+            Region = _region ?? string.Empty,
+            Finca = _finca ?? string.Empty,
+            Altitud = _altitud ?? string.Empty,
+            Variedad = _variedad ?? string.Empty,
+            Proceso = _proceso ?? string.Empty,
+            NotasCata = _notasCata ?? string.Empty,
+            // Todavía no hay paquetes: llegan al recepcionarlos. El máximo mínimo que admite el producto es 1; se
+            // ajusta en su ficha (Catálogo) cuando se sepa cuántos se quieren tener.
+            StockActual = 0,
+            StockMaximo = 1
+        };
+
+        _guardando = true;
+        try
+        {
+            var resultado = await ProductoService.CreateAsync(producto);
+            if (resultado.IsFailure)
+            {
+                _error = resultado.Error.Message;
+                return;
+            }
+
+            Snackbar.Add($"Café «{resultado.Value.Nombre}» creado: ya puedes recepcionarlo", Severity.Success);
+            Navigation.NavigateTo("/vender");
+        }
+        finally
+        {
+            _guardando = false;
+        }
+    }
+}

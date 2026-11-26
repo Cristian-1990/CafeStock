@@ -7,6 +7,18 @@
             <div><dt>Café</dt><dd>@NombreCafe</dd></div>
             <div><dt>Grupo</dt><dd>@Grupo</dd></div>
             <div><dt>Formato</dt><dd>@Formato</dd></div>
+            @if (FechaTueste is { } tueste)
+            {
+                <div><dt>Tueste</dt><dd>@tueste.ToString("dd/MM/yyyy")</dd></div>
+            }
+            @if (!string.IsNullOrWhiteSpace(RecepcionadoPor))
+            {
+                <div><dt>Recepcionó</dt><dd>@RecepcionadoPor@(FechaRecepcion is { } r ? $" · {r:dd/MM/yyyy HH:mm}" : "")</dd></div>
+            }
+            @if (HojaOrigenId is { } hoja)
+            {
+                <div><dt>Llegó en</dt><dd>Hoja @hoja</dd></div>
+            }
             @if (!string.IsNullOrWhiteSpace(Trabajador))
             {
                 <div><dt>Lo usó</dt><dd>@Trabajador</dd></div>
@@ -45,6 +57,12 @@
     [Parameter] public string Formato { get; set; } = string.Empty;
     [Parameter] public string? Trabajador { get; set; }
     [Parameter] public DateTime? Fecha { get; set; }
+
+    // Datos del paquete: de cuándo es el tueste, quién lo recepcionó y en qué hoja llegó (null en paquetes anteriores a las hojas).
+    [Parameter] public DateTime? FechaTueste { get; set; }
+    [Parameter] public string? RecepcionadoPor { get; set; }
+    [Parameter] public DateTime? FechaRecepcion { get; set; }
+    [Parameter] public int? HojaOrigenId { get; set; }
 
     /// <summary>Solo se ofrece deshacer si el hueco viene de un registro (si no, no hay nada que devolver).</summary>
     [Parameter] public bool PuedeDeshacer { get; set; }

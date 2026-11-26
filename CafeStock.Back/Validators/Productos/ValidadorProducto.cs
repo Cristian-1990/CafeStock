@@ -26,7 +26,7 @@ public class ValidadorProducto : IValidador<Producto>
         if (Math.Round(producto.StockActual, 2) != producto.StockActual || Math.Round(producto.StockMaximo, 2) != producto.StockMaximo)
             errores.Add("El stock admite como máximo dos decimales");
         // Grupo y formato del café van juntos: o los dos o ninguno (si no, el producto no saldría en el tablero).
-        if ((producto.GrupoCafe != GrupoCafe.SinGrupo) != (producto.FormatoCafe != FormatoCafe.SinFormato))
+        if (producto.GrupoCafe.EsDelTablero() != (producto.FormatoCafe != FormatoCafe.SinFormato))
             errores.Add("El grupo y el formato de café van juntos: elige los dos o ninguno");
         if(producto.StockMaximo < producto.StockActual)
             errores.Add("El stock actual no puede ser mayor que el stock máximo.");

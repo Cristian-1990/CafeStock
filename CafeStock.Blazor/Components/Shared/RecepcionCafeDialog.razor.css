@@ -1,0 +1,68 @@
+.recepcion-fila {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.recepcion-fila-botones {
+    display: flex;
+    gap: 2px;
+}
+
+.recepcion-anadir {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-top: 8px;
+}
+
+@media (max-width: 560px) {
+    .recepcion-fila {
+        grid-template-columns: 1fr auto;
+    }
+
+    .recepcion-fila ::deep .mud-picker {
+        grid-column: 1 / 2;
+    }
+}
+
+.recepcion-bloque {
+    margin-bottom: 14px;
+}
+
+.recepcion-bloque .recepcion-fila {
+    margin-bottom: 8px;
+}
+
+.recepcion-clasificar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 10px 12px;
+    background-color: rgba(var(--rgb-borde), 0.08);
+    border-radius: 10px;
+}
+
+.recepcion-opcion {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+}
+
+.recepcion-opcion-grupo {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.recepcion-opcion-vacia {
+    padding: 8px 12px;
+    color: var(--text-muted);
+    font-style: italic;
+}

@@ -40,7 +40,7 @@ public class ProductoService : IProductoService
             return rotacion;
 
         // Un producto con grupo de café se cuenta de uno en uno, como en Venta.
-        if (producto.GrupoCafe != GrupoCafe.SinGrupo)
+        if (producto.GrupoCafe.EsDelTablero())
             producto = producto with { SeguimientoIndividual = true };
 
         var resultado = await _repository.CreateAsync(producto);

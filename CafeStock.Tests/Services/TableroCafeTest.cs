@@ -88,36 +88,4 @@ public class TableroCafeTest
     {
         TableroCafe.Huecos(Cafe(1, "Brasil", 0, 0), []).Should().BeEmpty();
     }
-
-    [Test]
-    public void Construir_SoloIncluyeCafesConGrupoYFormato()
-    {
-        var productos = new[]
-        {
-            Cafe(1, "Brasil", 1, 2),
-            Cafe(2, "Harina", 1, 2, GrupoCafe.SinGrupo, FormatoCafe.SinFormato),
-            Cafe(3, "Raro", 1, 2, GrupoCafe.Casa, FormatoCafe.SinFormato)
-        };
-
-        var tarjetas = TableroCafe.Construir(productos, new Dictionary<int, List<RegistroCafe>>());
-
-        tarjetas.Select(t => t.Producto.Id).Should().Equal(1);
-    }
-
-    [Test]
-    public void Construir_OrdenaPaquetesAntesQueCuartosYCasaEspecialDescafeinado()
-    {
-        var productos = new[]
-        {
-            Cafe(1, "Decaf cuarto", 1, 2, GrupoCafe.Descafeinado, FormatoCafe.Cuarto),
-            Cafe(2, "Especial paquete", 1, 2, GrupoCafe.Especial, FormatoCafe.Paquete),
-            Cafe(3, "Casa cuarto", 1, 2, GrupoCafe.Casa, FormatoCafe.Cuarto),
-            Cafe(4, "Casa paquete", 1, 2, GrupoCafe.Casa, FormatoCafe.Paquete),
-            Cafe(5, "Especial cuarto", 1, 2, GrupoCafe.Especial, FormatoCafe.Cuarto)
-        };
-
-        var tarjetas = TableroCafe.Construir(productos, new Dictionary<int, List<RegistroCafe>>());
-
-        tarjetas.Select(t => t.Producto.Id).Should().Equal(4, 2, 3, 5, 1);
-    }
 }

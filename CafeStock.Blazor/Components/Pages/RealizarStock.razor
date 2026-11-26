@@ -376,7 +376,7 @@ else
         // hueco en la pantalla Café, pero aquí se puede comprobar contra lo que hay de verdad y, sobre todo,
         // sin ellos no habría forma de incluirlos en el pedido a su proveedor.
         _productos = (await ProductoService.GetAllAsync())
-            .Where(p => !p.SeguimientoIndividual || p.GrupoCafe != GrupoCafe.SinGrupo)
+            .Where(p => !p.SeguimientoIndividual || p.GrupoCafe.EsDelTablero())
             .ToList();
         foreach (var p in _productos)
         {

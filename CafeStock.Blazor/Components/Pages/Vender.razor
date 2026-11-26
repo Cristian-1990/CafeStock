@@ -1,206 +1,123 @@
 @page "/vender"
 @page "/cafe"
 @attribute [Authorize(Policy = Politicas.Trabajador)]
-@inject IProductoService ProductoService
-@inject IRegistroCafeService RegistroCafeService
+@inject IHojaCafeService HojaCafeService
+@inject IDialogService DialogService
 @inject ISnackbar Snackbar
 
 <PageTitle>Venta</PageTitle>
 
-<div class="mb-4" style="background-color:rgba(var(--rgb-borde),0.10); border-radius:12px; padding:16px 24px; display:inline-block;">
-    <MudText Typo="Typo.h4" Style="color:var(--color-dark); margin:0;">Venta</MudText>
+<div class="mb-4 vender-cabecera">
+    <div style="background-color:rgba(var(--rgb-borde),0.10); border-radius:12px; padding:16px 24px; display:inline-block;">
+        <MudText Typo="Typo.h4" Style="color:var(--color-dark); margin:0;">Venta</MudText>
+        @if (_actual is not null)
+        {
+            <MudText Typo="Typo.body2" Style="color:var(--text-muted); margin:0;">
+                Hoja @_actual.Id · desde el @_actual.FechaApertura.ToString("dd/MM/yyyy")
+            </MudText>
+        }
+    </div>
+
+    <div class="vender-acciones">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
+                   StartIcon="@Icons.Material.Filled.Inventory"
+                   Disabled="_recepcionando" OnClick="RecepcionarAsync">
+            Recepcionar café
+        </MudButton>
+        @* Un café que aún no existe (p. ej. el especial de esta semana): formulario propio, no el de producto. Alta solo para encargados. *@
+        <AuthorizeView Policy="@Politicas.Encargado">
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       Href="/cafes/nuevo">
+                Añadir nuevo café
+            </MudButton>
+        </AuthorizeView>
+    </div>
 </div>
 
-@* Venta es el mapa visual del café: un recuadro por cada paquete que hay en el almacén, en tres columnas como la
-   hoja a mano (casa, especial, descafeinado). Se vende tocando un recuadro. Debajo, plegados, quedan la ficha del
-   café con el registro a mano de siempre y el historial. /cafe sigue funcionando como enlace antiguo. *@
-<MapaCafe OnCambio="RefrescarAsync"/>
+@* Venta es la hoja de café vigente: un recuadro por cada paquete, en tres columnas como la hoja a mano (casa,
+   especial, descafeinado). Se vende tocando un recuadro. Al llegar el pedido se recepciona: la hoja se cierra y
+   pasa al historial, y se abre la siguiente con el café nuevo y los sobrantes. /cafe sigue como enlace antiguo. *@
+<MapaCafe @key="_version" OnCambio="CargarAsync"/>
 
-@if (_cargando)
-{
-    <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
-}
-else if (_productos.Any())
-{
-  <MudExpansionPanels Class="mt-6" MultiExpansion="true">
-    <MudExpansionPanel Text="Ficha del café y registro a mano">
-    <MudPaper Class="pa-6" Elevation="0" Style="max-width:640px;">
-        <MudSelect T="int?" @bind-Value="_productoId"
-                   Label="Producto"
-                   Variant="Variant.Outlined"
-                   Class="mb-4">
-            @foreach (var producto in _productos)
-            {
-                <MudSelectItem T="int?" Value="@producto.Id">@producto.Nombre (@producto.StockActual disponibles)</MudSelectItem>
-            }
-        </MudSelect>
-
-        @* Ficha del café elegido: imagen y detalles (país, finca, altitud, variedad, proceso, notas de
-           cata), para poder explicárselo al cliente. Solo se muestran los datos que estén rellenos;
-           se editan en la ficha del producto (Catálogo). *@
-        @if (_productoSeleccionado is { } cafe)
+<MudExpansionPanels Class="mt-6" MultiExpansion="true">
+    <MudExpansionPanel Text="Historial">
+        @if (_cerradas.Count == 0)
         {
-            <article class="ficha-cafe" aria-label="Ficha de @cafe.Nombre">
-                <div class="ficha-cafe-imagen">
-                    @if (!string.IsNullOrWhiteSpace(cafe.ImagenUrl))
-                    {
-                        <img src="@cafe.ImagenUrl" alt="@cafe.Nombre" decoding="async"/>
-                    }
-                    else
-                    {
-                        <MudIcon Icon="@CustomIcons.CoffeeBean" Class="ficha-cafe-icono"/>
-                    }
-                </div>
-                <div class="ficha-cafe-datos">
-                    <h2 class="ficha-cafe-nombre">@cafe.Nombre</h2>
-                    <p class="ficha-cafe-stock">@cafe.StockActual @(cafe.StockActual == 1 ? "disponible" : "disponibles")</p>
-                    @if (DatosFicha(cafe).Any())
-                    {
-                        <dl class="ficha-cafe-lista">
-                            @foreach (var (etiqueta, valor) in DatosFicha(cafe))
-                            {
-                                <div>
-                                    <dt>@etiqueta</dt>
-                                    <dd>@valor</dd>
-                                </div>
-                            }
-                        </dl>
-                    }
-                    @if (!string.IsNullOrWhiteSpace(cafe.NotasCata))
-                    {
-                        <p class="ficha-cafe-notas">“@cafe.NotasCata”</p>
-                    }
-                    @if (!DatosFicha(cafe).Any() && string.IsNullOrWhiteSpace(cafe.NotasCata))
-                    {
-                        <p class="ficha-cafe-vacia">Este café aún no tiene ficha: se rellena desde Catálogo, en la ficha del producto.</p>
-                    }
-                </div>
-            </article>
+            <MudText Typo="Typo.body2" Style="color:var(--text-muted); font-style:italic;">
+                Todavía no hay hojas cerradas. La hoja actual pasa aquí cuando recepciones el siguiente pedido.
+            </MudText>
         }
-
-        <MudTextField @bind-Value="_nombreTrabajador"
-                      Label="Nombre de la persona que lo vende"
-                      Variant="Variant.Outlined"
-                      Immediate="true"
-                      Class="mb-4"/>
-
-        <MudButton Variant="Variant.Filled"
-                   Color="Color.Primary"
-                   StartIcon="@CustomIcons.CoffeeBean"
-                   Disabled="@(!PuedeRegistrar || _registrando)"
-                   OnClick="RegistrarAsync">
-            @(_registrando ? "Registrando..." : "Registrar")
-        </MudButton>
-    </MudPaper>
+        else
+        {
+            <MudTable Items="_cerradas" Hover="true" Dense="true" Striped="true" Elevation="0">
+                <HeaderContent>
+                    <MudTh>Hoja</MudTh>
+                    <MudTh>Abierta</MudTh>
+                    <MudTh>Cerrada</MudTh>
+                    <MudTh>Paquetes</MudTh>
+                    <MudTh>Usados</MudTh>
+                    <MudTh></MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Hoja">Hoja @context.Hoja.Id</MudTd>
+                    <MudTd DataLabel="Abierta">@context.Hoja.FechaApertura.ToString("dd/MM/yyyy")</MudTd>
+                    <MudTd DataLabel="Cerrada">@(context.Hoja.FechaCierre?.ToString("dd/MM/yyyy") ?? "—")</MudTd>
+                    <MudTd DataLabel="Paquetes">@context.Paquetes</MudTd>
+                    <MudTd DataLabel="Usados">@context.Usados</MudTd>
+                    <MudTd>
+                        <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small" Href="@($"/cafe/hoja/{context.Hoja.Id}")">Ver hoja</MudButton>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
     </MudExpansionPanel>
-
-        <MudExpansionPanel Text="Historial">
-            @if (_cargandoHistorial)
-            {
-                <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Small"/>
-            }
-            else if (!_historial.Any())
-            {
-                <MudText Typo="Typo.body2" Style="color:#9E9E9E; font-style:italic;">Todavía no se ha registrado ninguna venta.</MudText>
-            }
-            else
-            {
-                <MudTable Items="_historial" Hover="true" Dense="true" Striped="true" Elevation="0">
-                    <HeaderContent>
-                        <MudTh>Producto</MudTh>
-                        <MudTh>Trabajador</MudTh>
-                        <MudTh>Fecha</MudTh>
-                    </HeaderContent>
-                    <RowTemplate>
-                        <MudTd DataLabel="Producto">@(context.ProductoNombre ?? "—")</MudTd>
-                        <MudTd DataLabel="Trabajador">@context.NombreTrabajador</MudTd>
-                        <MudTd DataLabel="Fecha">@context.Fecha.ToString("dd/MM/yyyy HH:mm")</MudTd>
-                    </RowTemplate>
-                </MudTable>
-            }
-        </MudExpansionPanel>
-    </MudExpansionPanels>
-}
+</MudExpansionPanels>
 
 @code {
-    private List<Producto> _productos = [];
-    private List<RegistroCafe> _historial = [];
-    private int? _productoId;
-    private string _nombreTrabajador = string.Empty;
-    private bool _cargando = true;
-    private bool _cargandoHistorial = true;
-    private bool _registrando;
+    [CascadingParameter] private Task<AuthenticationState>? EstadoAutenticacion { get; set; }
 
-    private bool PuedeRegistrar => _productoId is not null && !string.IsNullOrWhiteSpace(_nombreTrabajador);
+    private HojaCafe? _actual;
+    private List<ResumenHojaCafe> _cerradas = [];
+    private int _version;
+    private bool _recepcionando;
 
-    private Producto? _productoSeleccionado => _productos.FirstOrDefault(p => p.Id == _productoId);
+    protected override async Task OnInitializedAsync() => await CargarAsync();
 
-    // Solo los datos de la ficha que estén rellenos, en el orden en que se leen mejor.
-    private static List<(string Etiqueta, string Valor)> DatosFicha(Producto cafe) =>
-        new (string Etiqueta, string Valor)[]
-        {
-            ("País", cafe.Pais), ("Región", cafe.Region), ("Finca", cafe.Finca),
-            ("Altitud", cafe.Altitud), ("Variedad", cafe.Variedad), ("Proceso", cafe.Proceso),
-        }
-        .Where(d => !string.IsNullOrWhiteSpace(d.Valor))
-        .ToList();
-
-    protected override async Task OnInitializedAsync()
+    private async Task CargarAsync()
     {
-        await CargarProductosAsync();
-        _cargando = false;
-
-        await CargarHistorialAsync();
+        _actual = await HojaCafeService.GetActualAsync();
+        _cerradas = (await HojaCafeService.GetResumenesAsync()).Where(r => !r.Hoja.Abierta).ToList();
     }
 
-    private async Task CargarProductosAsync()
+    private async Task RecepcionarAsync()
     {
-        // Todos los productos con seguimiento individual, sin depender de nombres concretos:
-        // el día que se dé de alta otro origen de café (u otro producto con este flag),
-        // aparece aquí solo.
-        _productos = (await ProductoService.GetAllAsync()).Where(p => p.SeguimientoIndividual).ToList();
-    }
+        var dialogo = await DialogService.ShowAsync<RecepcionCafeDialog>("Recepcionar café",
+            new DialogParameters(), new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseOnEscapeKey = true });
+        var resultado = await dialogo.Result;
+        if (resultado is not { Canceled: false, Data: List<NuevoPaqueteCafe> paquetes } || paquetes.Count == 0)
+            return;
 
-    // El mapa avisa cada vez que se registra o se deshace un uso: se refrescan el historial y los datos de la ficha.
-    private async Task RefrescarAsync()
-    {
-        await CargarProductosAsync();
-        await CargarHistorialAsync();
-        StateHasChanged();
-    }
+        var estado = EstadoAutenticacion is null ? null : await EstadoAutenticacion;
+        var quien = estado?.User.Identity?.Name ?? string.Empty;
 
-    private async Task CargarHistorialAsync()
-    {
-        _cargandoHistorial = true;
-        _historial = (await RegistroCafeService.GetUltimosAsync()).ToList();
-        _cargandoHistorial = false;
-    }
-
-    private async Task RegistrarAsync()
-    {
-        if (!PuedeRegistrar) return;
-
-        _registrando = true;
+        _recepcionando = true;
         try
         {
-            var resultado = await RegistroCafeService.RegistrarVentaAsync(_productoId!.Value, _nombreTrabajador);
-            if (resultado.IsSuccess)
+            var recepcion = await HojaCafeService.RecepcionarAsync(paquetes, quien);
+            if (recepcion.IsFailure)
             {
-                Snackbar.Add("Venta registrada", Severity.Success);
-                // Solo se limpia el nombre: el producto se queda seleccionado para que el
-                // siguiente trabajador pueda registrar la suya sin fricción.
-                _nombreTrabajador = string.Empty;
-                await CargarProductosAsync();
-                await CargarHistorialAsync();
+                Snackbar.Add(recepcion.Error.Message, Severity.Error);
+                return;
             }
-            else
-            {
-                Snackbar.Add(resultado.Error.Message, Severity.Error);
-            }
+
+            Snackbar.Add($"Café recepcionado: {paquetes.Count} {(paquetes.Count == 1 ? "paquete" : "paquetes")} en la hoja {recepcion.Value.Id}", Severity.Success);
+            await CargarAsync();
+            _version++; // vuelve a pintar el mapa con la hoja nueva
         }
         finally
         {
-            _registrando = false;
+            _recepcionando = false;
         }
     }
 }
