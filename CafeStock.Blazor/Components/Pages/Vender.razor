@@ -1,4 +1,5 @@
 @page "/vender"
+@page "/cafe"
 @attribute [Authorize(Policy = Politicas.Trabajador)]
 @inject IProductoService ProductoService
 @inject IRegistroCafeService RegistroCafeService
@@ -10,17 +11,20 @@
     <MudText Typo="Typo.h4" Style="color:var(--color-dark); margin:0;">Venta</MudText>
 </div>
 
+@* Venta es el mapa visual del café: un recuadro por cada paquete que hay en el almacén, en tres columnas como la
+   hoja a mano (casa, especial, descafeinado). Se vende tocando un recuadro. Debajo, plegados, quedan la ficha del
+   café con el registro a mano de siempre y el historial. /cafe sigue funcionando como enlace antiguo. *@
+<MapaCafe OnCambio="RefrescarAsync"/>
+
 @if (_cargando)
 {
     <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
 }
-else if (!_productos.Any())
+else if (_productos.Any())
 {
-    <MudAlert Severity="Severity.Info">Todavía no hay ningún producto con seguimiento individual activado.</MudAlert>
-}
-else
-{
-    <MudPaper Class="pa-6 mb-6" Elevation="2" Style="max-width:640px;">
+  <MudExpansionPanels Class="mt-6" MultiExpansion="true">
+    <MudExpansionPanel Text="Ficha del café y registro a mano">
+    <MudPaper Class="pa-6" Elevation="0" Style="max-width:640px;">
         <MudSelect T="int?" @bind-Value="_productoId"
                    Label="Producto"
                    Variant="Variant.Outlined"
@@ -88,8 +92,8 @@ else
             @(_registrando ? "Registrando..." : "Registrar")
         </MudButton>
     </MudPaper>
+    </MudExpansionPanel>
 
-    <MudExpansionPanels>
         <MudExpansionPanel Text="Historial">
             @if (_cargandoHistorial)
             {
@@ -155,6 +159,14 @@ else
         // el día que se dé de alta otro origen de café (u otro producto con este flag),
         // aparece aquí solo.
         _productos = (await ProductoService.GetAllAsync()).Where(p => p.SeguimientoIndividual).ToList();
+    }
+
+    // El mapa avisa cada vez que se registra o se deshace un uso: se refrescan el historial y los datos de la ficha.
+    private async Task RefrescarAsync()
+    {
+        await CargarProductosAsync();
+        await CargarHistorialAsync();
+        StateHasChanged();
     }
 
     private async Task CargarHistorialAsync()
