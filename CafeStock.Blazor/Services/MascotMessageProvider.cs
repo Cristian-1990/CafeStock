@@ -20,7 +20,7 @@ public class MascotMessageProvider : IMascotMessageProvider
             "Aquí consultas el historial de compras con su factura o albarán adjunto. Si buscas las de un proveedor concreto, entra en su ficha y toca 'Ver facturas'."),
 
         ["vender"] = (MascotPose.Celebracion,
-            "¡Un café más! Elige el producto y quién lo preparó — así sabemos cuánto se ha consumido de cada uno."),
+            "¡Un café más! Toca un recuadro del mapa cuando uses o vendas un paquete: queda marcado con tu nombre y así sabemos cuánto se ha consumido de cada uno."),
 
         ["lista-compra"] = (MascotPose.Recepcion,
             "Aquí confirmas lo que ha llegado del pedido. Marca las cantidades recibidas y el stock se actualiza solo. Si algo no llega completo, no pasa nada: queda pendiente para la próxima entrega."),

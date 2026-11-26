@@ -44,4 +44,15 @@ public class RegistroCafeService : IRegistroCafeService
                 productoId, resultado.Value.NombreTrabajador);
         return resultado;
     }
+
+    public Task<IReadOnlyDictionary<int, List<RegistroCafe>>> GetUltimosPorProductoAsync(IReadOnlyCollection<int> productoIds, int porProducto) =>
+        _repository.GetUltimosPorProductoAsync(productoIds, porProducto);
+
+    public async Task<Result<RegistroCafe, DomainError>> DeshacerVentaAsync(int registroId)
+    {
+        var resultado = await _repository.DeshacerVentaAsync(registroId);
+        if (resultado.IsSuccess)
+            Log.Information("Venta deshecha: RegistroId={RegistroId}, ProductoId={ProductoId}", registroId, resultado.Value.ProductoId);
+        return resultado;
+    }
 }

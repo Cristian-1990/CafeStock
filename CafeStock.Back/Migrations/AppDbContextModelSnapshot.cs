@@ -145,6 +145,12 @@ namespace CafeStock.Back.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("FormatoCafe")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("GrupoCafe")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("ImagenUrl")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -187,12 +193,12 @@ namespace CafeStock.Back.Migrations
                     b.Property<bool>("SeguimientoIndividual")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("StockActual")
+                    b.Property<decimal>("StockActual")
                         .IsConcurrencyToken()
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("TEXT");
 
-                    b.Property<int>("StockMaximo")
-                        .HasColumnType("INTEGER");
+                    b.Property<decimal>("StockMaximo")
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("Unidad")
                         .HasColumnType("INTEGER");

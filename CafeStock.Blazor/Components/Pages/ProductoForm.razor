@@ -27,12 +27,15 @@
                   Class="mb-4"/>
 
     <MudNumericField @bind-Value="_stockActual"
+                     Format="0.##"
+                     HelperText="Admite hasta dos decimales (p.ej. 0,5 si hay un paquete abierto a la mitad)"
                      Label="Stock actual"
                      Variant="Variant.Outlined"
                      Min="0"
                      Class="mb-4"/>
 
     <MudNumericField @bind-Value="_stockMaximo"
+                     Format="0.##"
                      Label="Stock máximo"
                      Variant="Variant.Outlined"
                      Min="0"
@@ -71,6 +74,27 @@
                  Label="Está en el frontal del pasillo (sale subrayado en la lista de la compra)"
                  Color="Color.Primary"
                  Class="mb-4"/>
+
+    @* Café del tablero (pantalla Café): grupo y formato van juntos. El especial que rota solo puede entrar cuando
+       el anterior del mismo formato se ha agotado (lo comprueba el servicio y avisa si no). *@
+    <MudSelect @bind-Value="_grupoCafe"
+               Label="Grupo de café (solo para el tablero de la pantalla Café)"
+               Variant="Variant.Outlined"
+               Class="mb-4">
+        <MudSelectItem Value="GrupoCafe.SinGrupo">No es café del tablero</MudSelectItem>
+        <MudSelectItem Value="GrupoCafe.Casa">Casa (el de siempre)</MudSelectItem>
+        <MudSelectItem Value="GrupoCafe.Especial">Especial (el de la semana)</MudSelectItem>
+        <MudSelectItem Value="GrupoCafe.Descafeinado">Descafeinado</MudSelectItem>
+    </MudSelect>
+
+    <MudSelect @bind-Value="_formatoCafe"
+               Label="Formato de café"
+               Variant="Variant.Outlined"
+               Class="mb-4">
+        <MudSelectItem Value="FormatoCafe.SinFormato">Sin formato</MudSelectItem>
+        <MudSelectItem Value="FormatoCafe.Paquete">Paquete (kilo, para el molino)</MudSelectItem>
+        <MudSelectItem Value="FormatoCafe.Cuarto">Cuarto (250 g, para vender)</MudSelectItem>
+    </MudSelect>
 
     <MudSelect @bind-Value="_seccion"
                Label="Sección especial (colorea la fila en la lista de la compra)"
@@ -181,16 +205,18 @@
     [Parameter] public int? Id { get; set; }
 
     private string _nombre = string.Empty;
-    private int _stockActual;
+    private decimal _stockActual;
     // Stock que tenía el producto al abrir el formulario: permite no pisar ventas hechas mientras tanto (ver Producto.StockActualAlLeer).
-    private int _stockActualAlAbrir;
-    private int _stockMaximo;
+    private decimal _stockActualAlAbrir;
+    private decimal _stockMaximo;
     private decimal _precioUnitario;
     private int? _pasillo;
     private int _ordenEnPasillo;
     private int? _armario;
     private bool _esFrontalPasillo;
     private SeccionEspecial _seccion = SeccionEspecial.Ninguna;
+    private GrupoCafe _grupoCafe = GrupoCafe.SinGrupo;
+    private FormatoCafe _formatoCafe = FormatoCafe.SinFormato;
     private UnidadMedida _unidad = UnidadMedida.SinEspecificar;
     private string _descripcion = string.Empty;
     private string _imagenUrl = string.Empty;
@@ -255,6 +281,8 @@
                 _esFrontalPasillo = resultado.Value.EsFrontalPasillo;
                 _armario = resultado.Value.Armario;
                 _seccion = resultado.Value.Seccion;
+                _grupoCafe = resultado.Value.GrupoCafe;
+                _formatoCafe = resultado.Value.FormatoCafe;
                 _unidad = resultado.Value.Unidad;
                 _descripcion = resultado.Value.Descripcion;
                 _imagenUrl = resultado.Value.ImagenUrl;
@@ -293,6 +321,8 @@
             EsFrontalPasillo = _esFrontalPasillo,
             Armario = _armario,
             Seccion = _seccion,
+            GrupoCafe = _grupoCafe,
+            FormatoCafe = _formatoCafe,
             Unidad = _unidad,
             Descripcion = _descripcion,
             ImagenUrl = _imagenUrl,

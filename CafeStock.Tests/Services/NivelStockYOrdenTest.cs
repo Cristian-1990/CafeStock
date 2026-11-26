@@ -8,6 +8,15 @@ public class NivelStockYOrdenTest
 {
     // ---------- NivelStock ----------
 
+    [TestCase(0.5, 1, 50)]      // medio paquete de uno
+    [TestCase(0.25, 1, 25)]
+    [TestCase(0.99, 1, 99)]     // se trunca, no se redondea hacia arriba
+    [TestCase(1.5, 12, 12)]
+    public void Porcentaje_ConDecimales(double actual, double maximo, int esperado)
+    {
+        NivelStock.Porcentaje((decimal)actual, (decimal)maximo).Should().Be(esperado);
+    }
+
     [TestCase(0, 12, 0)]
     [TestCase(6, 12, 50)]
     [TestCase(12, 12, 100)]

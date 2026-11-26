@@ -19,7 +19,7 @@ public interface IProductoService
     /// cantidad no sea negativa; no pasa por el validador completo de Producto ni puede tocar
     /// ningún otro campo (precio, proveedor, nombre...) por diseño.
     /// </summary>
-    Task<Result<Producto, DomainError>> ActualizarStockActualAsync(int id, int nuevaCantidad);
+    Task<Result<Producto, DomainError>> ActualizarStockActualAsync(int id, decimal nuevaCantidad);
 
     /// <summary>
     /// Actualiza únicamente PrecioUnitario. Valida solo que el nuevo precio sea mayor que 0;

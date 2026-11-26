@@ -18,7 +18,7 @@ public interface IProductoRepository
     /// de recuento restringido (RealizarStock.razor): a diferencia de UpdateAsync, no puede
     /// modificar precio, proveedor, nombre, etc. aunque se llame por error con otros datos.
     /// </summary>
-    Task<Result<Producto, DomainError>> ActualizarStockActualAsync(int id, int nuevaCantidad);
+    Task<Result<Producto, DomainError>> ActualizarStockActualAsync(int id, decimal nuevaCantidad);
 
     /// <summary>
     /// Actualiza ÚNICAMENTE PrecioUnitario, sin tocar ningún otro campo. Pensado para la

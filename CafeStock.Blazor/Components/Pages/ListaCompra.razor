@@ -306,7 +306,8 @@ else
     {
         _productos = await ProductoService.GetProductosBajoMinimoAsync();
         _pendientes = await StockRealizadoService.GetProveedoresPendientesAsync();
-        _cantidadesRecibidas = _productos.ToDictionary(p => p.Id, p => p.CantidadAComprar);
+        // Lo que falta puede ser fraccionario (stock con decimales), pero se compra por unidades enteras: se redondea hacia arriba.
+        _cantidadesRecibidas = _productos.ToDictionary(p => p.Id, p => (int)Math.Ceiling(p.CantidadAComprar));
         _preciosRecibidos = _productos.ToDictionary(p => p.Id, p => p.PrecioUnitario);
         _recibidoEnPacks = _productos.ToDictionary(p => p.Id, _ => false);
         _numPacksRecibidos = _productos.ToDictionary(p => p.Id, _ => 0);

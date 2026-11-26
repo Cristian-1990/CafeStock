@@ -126,6 +126,17 @@ else
             </MudPaper>
         </div>
 
+        @* Un producto sin stock máximo (0) nunca falta, así que nunca entra en el pedido: se avisa, porque si no
+           "Generar pedido (0)" se queda apagado sin explicación. *@
+        @if (_sinMaximo.Count > 0)
+        {
+            <MudAlert Severity="Severity.Warning" Dense="true" Class="mb-4">
+                <strong>@_sinMaximo.Count producto@(_sinMaximo.Count == 1 ? "" : "s") sin stock máximo</strong>
+                (@string.Join(", ", _sinMaximo.Take(4).Select(p => p.Nombre))@(_sinMaximo.Count > 4 ? $" y {_sinMaximo.Count - 4} más" : "")):
+                no se pueden pedir. Fija su máximo en la ficha del producto.
+            </MudAlert>
+        }
+
         @if (!_productosVisibles.Any())
         {
             <MudAlert Severity="Severity.Info" Class="mb-4">Ningún producto coincide con la búsqueda.</MudAlert>
@@ -149,10 +160,11 @@ else
             <RowTemplate>
                 <MudTd DataLabel="Nombre">@context.Nombre</MudTd>
                 <MudTd DataLabel="Cantidad actual">
-                    <MudNumericField T="int"
+                    <MudNumericField T="decimal"
                                      Value="context.StockActual"
                                      ValueChanged="@(v => OnCantidadCambiada(context, v))"
                                      Min="0"
+                                     Format="0.##"
                                      Variant="Variant.Outlined"
                                      Style="max-width:120px;"/>
                 </MudTd>
@@ -238,7 +250,7 @@ else
     private bool _guardandoTodo;
 
     // Última cantidad persistida en BD por producto (para detectar cambios sin tocar el modelo).
-    private readonly Dictionary<int, int> _valorGuardado = new();
+    private readonly Dictionary<int, decimal> _valorGuardado = new();
     private readonly Dictionary<int, EstadoFila> _estadoFila = new();
 
     // Ninguno de los dos marcado = paso 1 (elegir grupo).
@@ -345,6 +357,9 @@ else
         }
     }
 
+    // Productos del grupo sin stock máximo definido (0): no pueden faltar, así que no entran nunca en el pedido.
+    private List<Producto> _sinMaximo => _productosDelGrupo.Where(p => p.StockMaximo <= 0).ToList();
+
     // Lo que hay que pedir de este grupo: los productos por debajo de su máximo.
     private List<Producto> _productosAPedir => _productosDelGrupo.Where(p => p.CantidadAComprar > 0).ToList();
 
@@ -355,10 +370,14 @@ else
     protected override async Task OnInitializedAsync()
     {
         _proveedores = await ProveedorService.GetAllAsync();
-        // Los productos con seguimiento individual (ver Producto.SeguimientoIndividual) no
-        // se cuentan aquí: su stock se controla desde "Venta", el recuento manual semanal
-        // no tiene sentido para ellos.
-        _productos = (await ProductoService.GetAllAsync()).Where(p => !p.SeguimientoIndividual).ToList();
+        // Los productos con seguimiento individual (ver Producto.SeguimientoIndividual) no se cuentan aquí:
+        // su stock se controla desde "Venta", el recuento manual semanal no tiene sentido para ellos.
+        // Excepción: los cafés del tablero (con grupo, ver GrupoCafe) SÍ entran. Su stock baja al tocar un
+        // hueco en la pantalla Café, pero aquí se puede comprobar contra lo que hay de verdad y, sobre todo,
+        // sin ellos no habría forma de incluirlos en el pedido a su proveedor.
+        _productos = (await ProductoService.GetAllAsync())
+            .Where(p => !p.SeguimientoIndividual || p.GrupoCafe != GrupoCafe.SinGrupo)
+            .ToList();
         foreach (var p in _productos)
         {
             _valorGuardado[p.Id] = p.StockActual;
@@ -456,7 +475,7 @@ else
             Snackbar.Add($"Stock de {_nombreGrupoSeleccionado} completo: ya aparece en Recepcionar", Severity.Success);
     }
 
-    private void OnCantidadCambiada(Producto p, int nuevoValor)
+    private void OnCantidadCambiada(Producto p, decimal nuevoValor)
     {
         p.StockActual = nuevoValor;
         var guardado = _valorGuardado.TryGetValue(p.Id, out var v) ? v : nuevoValor;

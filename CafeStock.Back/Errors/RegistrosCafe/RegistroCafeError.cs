@@ -10,6 +10,9 @@ public abstract record RegistroCafeError(string Message) : DomainError(Message)
     public sealed record SinStock(int ProductoId)
         : RegistroCafeError($"No queda stock de este producto");
 
+    public sealed record RegistroNoEncontrado(int RegistroId)
+        : RegistroCafeError($"No se ha encontrado el registro (puede que ya se haya deshecho)");
+
     public sealed record Validation(IEnumerable<string> Errors)
         : RegistroCafeError($"Errores de validacion:{Environment.NewLine}• {string.Join($"{Environment.NewLine}•", Errors)}");
 
@@ -21,6 +24,7 @@ public static class RegistroCafeErrors
 {
     public static DomainError ProductoNoEncontrado(int productoId) => new RegistroCafeError.ProductoNoEncontrado(productoId);
     public static DomainError SinStock(int productoId) => new RegistroCafeError.SinStock(productoId);
+    public static DomainError RegistroNoEncontrado(int registroId) => new RegistroCafeError.RegistroNoEncontrado(registroId);
     public static DomainError Validation(IEnumerable<string> errors) => new RegistroCafeError.Validation(errors);
     public static DomainError DatabaseError(string details) => new RegistroCafeError.DatabaseError(details);
 }
