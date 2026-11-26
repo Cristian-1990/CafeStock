@@ -75,6 +75,27 @@
                  Color="Color.Primary"
                  Class="mb-4"/>
 
+    @* Café del tablero (pantalla Café): grupo y formato van juntos. El especial que rota solo puede entrar cuando
+       el anterior del mismo formato se ha agotado (lo comprueba el servicio y avisa si no). *@
+    <MudSelect @bind-Value="_grupoCafe"
+               Label="Grupo de café (solo para el tablero de la pantalla Café)"
+               Variant="Variant.Outlined"
+               Class="mb-4">
+        <MudSelectItem Value="GrupoCafe.SinGrupo">No es café del tablero</MudSelectItem>
+        <MudSelectItem Value="GrupoCafe.Casa">Casa (el de siempre)</MudSelectItem>
+        <MudSelectItem Value="GrupoCafe.Especial">Especial (el de la semana)</MudSelectItem>
+        <MudSelectItem Value="GrupoCafe.Descafeinado">Descafeinado</MudSelectItem>
+    </MudSelect>
+
+    <MudSelect @bind-Value="_formatoCafe"
+               Label="Formato de café"
+               Variant="Variant.Outlined"
+               Class="mb-4">
+        <MudSelectItem Value="FormatoCafe.SinFormato">Sin formato</MudSelectItem>
+        <MudSelectItem Value="FormatoCafe.Paquete">Paquete (kilo, para el molino)</MudSelectItem>
+        <MudSelectItem Value="FormatoCafe.Cuarto">Cuarto (250 g, para vender)</MudSelectItem>
+    </MudSelect>
+
     <MudSelect @bind-Value="_seccion"
                Label="Sección especial (colorea la fila en la lista de la compra)"
                Variant="Variant.Outlined"
@@ -194,6 +215,8 @@
     private int? _armario;
     private bool _esFrontalPasillo;
     private SeccionEspecial _seccion = SeccionEspecial.Ninguna;
+    private GrupoCafe _grupoCafe = GrupoCafe.SinGrupo;
+    private FormatoCafe _formatoCafe = FormatoCafe.SinFormato;
     private UnidadMedida _unidad = UnidadMedida.SinEspecificar;
     private string _descripcion = string.Empty;
     private string _imagenUrl = string.Empty;
@@ -258,6 +281,8 @@
                 _esFrontalPasillo = resultado.Value.EsFrontalPasillo;
                 _armario = resultado.Value.Armario;
                 _seccion = resultado.Value.Seccion;
+                _grupoCafe = resultado.Value.GrupoCafe;
+                _formatoCafe = resultado.Value.FormatoCafe;
                 _unidad = resultado.Value.Unidad;
                 _descripcion = resultado.Value.Descripcion;
                 _imagenUrl = resultado.Value.ImagenUrl;
@@ -296,6 +321,8 @@
             EsFrontalPasillo = _esFrontalPasillo,
             Armario = _armario,
             Seccion = _seccion,
+            GrupoCafe = _grupoCafe,
+            FormatoCafe = _formatoCafe,
             Unidad = _unidad,
             Descripcion = _descripcion,
             ImagenUrl = _imagenUrl,

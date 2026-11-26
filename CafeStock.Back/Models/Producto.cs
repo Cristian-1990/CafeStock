@@ -24,6 +24,14 @@ public record Producto
     public bool SeguimientoIndividual { get; set; }
 
     /// <summary>
+    /// Grupo y formato del café en el tablero de la pantalla Café (ver <see cref="GrupoCafe"/> y
+    /// <see cref="FormatoCafe"/>). Solo tienen sentido juntos: un producto sale en el tablero si tiene los dos.
+    /// Asignar un grupo lo pasa a SeguimientoIndividual (cada uso se registra de uno en uno, igual que en Venta).
+    /// </summary>
+    public GrupoCafe GrupoCafe { get; set; }
+    public FormatoCafe FormatoCafe { get; set; }
+
+    /// <summary>
     /// Solo para editar: el StockActual que tenía el producto cuando se abrió el formulario de
     /// edición. Permite a UpdateAsync distinguir "el usuario no tocó el stock" de "lo cambió a
     /// propósito": en el primer caso no lo escribe, para no pisar ventas o recepciones hechas

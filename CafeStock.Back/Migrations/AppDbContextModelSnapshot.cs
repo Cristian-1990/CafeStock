@@ -145,6 +145,12 @@ namespace CafeStock.Back.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("FormatoCafe")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("GrupoCafe")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("ImagenUrl")
                         .IsRequired()
                         .HasColumnType("TEXT");

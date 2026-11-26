@@ -15,6 +15,8 @@ public class ProductoEntity
     public ProveedorEntity? Proveedor { get; set; }
     public decimal PrecioUnitario { get; set; }
     public bool SeguimientoIndividual { get; set; }
+    public GrupoCafe GrupoCafe { get; set; }
+    public FormatoCafe FormatoCafe { get; set; }
     public bool AplicaConciliacionTpv { get; set; }
     public int? UnidadesPorPack { get; set; }
     public int? Pasillo { get; set; }

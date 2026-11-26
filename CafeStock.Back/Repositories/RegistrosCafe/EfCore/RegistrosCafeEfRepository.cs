@@ -75,4 +75,53 @@ public class RegistrosCafeEfRepository : IRegistroCafeRepository
             return Result.Failure<RegistroCafe, DomainError>(RegistroCafeErrors.DatabaseError(ex.Message));
         }
     }
+
+    public async Task<IReadOnlyDictionary<int, List<RegistroCafe>>> GetUltimosPorProductoAsync(IReadOnlyCollection<int> productoIds, int porProducto)
+    {
+        await InitializeAsync();
+        using var context = CreateContext();
+        var resultado = new Dictionary<int, List<RegistroCafe>>();
+        foreach (var productoId in productoIds)
+        {
+            var registros = await context.RegistrosCafe
+                .Where(r => r.ProductoId == productoId)
+                .OrderByDescending(r => r.Fecha)
+                .ThenByDescending(r => r.Id)
+                .Take(porProducto)
+                .Select(e => e.ToRegistroCafe())
+                .ToListAsync();
+            if (registros.Count > 0)
+                resultado[productoId] = registros;
+        }
+        return resultado;
+    }
+
+    public async Task<Result<RegistroCafe, DomainError>> DeshacerVentaAsync(int registroId)
+    {
+        await InitializeAsync();
+        try
+        {
+            // Misma concurrencia optimista que RegistrarVentaAsync: StockActual es token de concurrencia.
+            return await ReintentoConcurrencia.EjecutarAsync(async () =>
+            {
+                using var context = CreateContext();
+                var registro = await context.RegistrosCafe.FindAsync(registroId);
+                if (registro is null)
+                    return Result.Failure<RegistroCafe, DomainError>(RegistroCafeErrors.RegistroNoEncontrado(registroId));
+
+                var producto = await context.Productos.FindAsync(registro.ProductoId);
+                if (producto is not null)
+                    producto.StockActual += 1;
+
+                context.RegistrosCafe.Remove(registro);
+                await context.SaveChangesAsync();
+                return Result.Success<RegistroCafe, DomainError>(registro.ToRegistroCafe());
+            });
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error al deshacer el registro de café {RegistroId}", registroId);
+            return Result.Failure<RegistroCafe, DomainError>(RegistroCafeErrors.DatabaseError(ex.Message));
+        }
+    }
 }

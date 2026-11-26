@@ -106,6 +106,12 @@ public class ProductosEfRepository : IProductoRepository
                 entity.OrdenEnPasillo = producto.OrdenEnPasillo;
                 entity.EsFrontalPasillo = producto.EsFrontalPasillo;
                 entity.Armario = producto.Armario;
+                // Grupo y formato del tablero de café. Asignar un grupo activa el seguimiento individual (solo se
+                // enciende, nunca se apaga aquí: ver el comentario de UpdateAsync).
+                entity.GrupoCafe = producto.GrupoCafe;
+                entity.FormatoCafe = producto.FormatoCafe;
+                if (producto.GrupoCafe != GrupoCafe.SinGrupo)
+                    entity.SeguimientoIndividual = true;
                 entity.Seccion = producto.Seccion;
                 entity.Pais = producto.Pais;
                 entity.Region = producto.Region;
