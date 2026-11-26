@@ -43,9 +43,9 @@
 }
 
 /* Colores de grupo (los de la hoja a mano). Cada columna los hereda por su clase. */
-.cafe-grupo-casa      { --cafe-color: #1C7ED6; }
-.cafe-grupo-especial  { --cafe-color: #E8590C; }
-.cafe-grupo-decaf     { --cafe-color: #E64980; }
+.cafe-grupo-casa      { --cafe-color: #6D4C41; }   /* espresso: el café de siempre */
+.cafe-grupo-especial  { --cafe-color: #C17817; }   /* caramelo: el acento de la marca */
+.cafe-grupo-decaf     { --cafe-color: #5F7D5B; }   /* verde salvia: tranquilo, sin cafeína */
 
 .cafe-columna {
     min-width: 0;

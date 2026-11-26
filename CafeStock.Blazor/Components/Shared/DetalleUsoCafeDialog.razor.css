@@ -25,3 +25,8 @@
     font-weight: 600;
     color: var(--color-dark);
 }
+
+.detalle-uso .detalle-uso-codigo {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.06em;
+}

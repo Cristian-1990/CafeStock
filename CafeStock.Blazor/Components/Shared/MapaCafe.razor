@@ -223,6 +223,7 @@ else
             { x => x.NombreCafe, tarjeta.ProductoNombre },
             { x => x.Grupo, NombreGrupo(tarjeta.Grupo) },
             { x => x.Formato, tarjeta.Formato == FormatoCafe.Paquete ? "Paquete (para el molino)" : "Cuarto (para vender)" },
+            { x => x.Codigo, hueco.Paquete?.Codigo },
             { x => x.FechaTueste, hueco.Paquete?.FechaTueste },
             { x => x.RecepcionadoPor, hueco.Paquete?.RecepcionadoPor },
             { x => x.FechaRecepcion, hueco.Paquete?.FechaRecepcion },
@@ -240,11 +241,14 @@ else
     }
 
     private static string TextoUsado(HuecoCafe hueco) =>
-        hueco.Fecha is { } fecha ? $"{hueco.Trabajador} · {fecha:dd/MM HH:mm}" : "Usado";
+        hueco.Fecha is { } fecha
+            ? $"{(hueco.Paquete is { } p ? p.Codigo + " · " : "")}{hueco.Trabajador} · {fecha:dd/MM HH:mm}"
+            : "Usado";
 
     private static string TextoLibre(HuecoCafe hueco)
     {
         var partes = new List<string>();
+        if (hueco.Paquete is { } paquete) partes.Add(paquete.Codigo);
         if (hueco.Paquete?.FechaTueste is { } tueste) partes.Add($"Tueste {tueste:dd/MM/yyyy}");
         if (hueco.Sobrante && hueco.Paquete is { } p) partes.Add($"Sobrante de la hoja {p.HojaOrigenId}");
         if (hueco.PasaASiguiente) partes.Add("Pasó a la hoja siguiente");
