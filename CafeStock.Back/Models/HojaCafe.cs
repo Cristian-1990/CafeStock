@@ -29,6 +29,9 @@ public record PaqueteCafe
     public DateTime? FechaTueste { get; init; }
     public string RecepcionadoPor { get; init; } = string.Empty;
     public DateTime FechaRecepcion { get; init; }
+
+    /// <summary>Código visible del paquete: la hoja en la que llegó y su número (p. ej. H3-0045). No cambia aunque pase a otras hojas.</summary>
+    public string Codigo => $"H{HojaOrigenId}-{Id:D4}";
 }
 
 /// <summary>Un paquete que llega en una recepción (el resto de datos los pone el sistema). Grupo y Formato solo hacen falta si el café aún está SinClasificar: se le asignan al recibirlo.</summary>

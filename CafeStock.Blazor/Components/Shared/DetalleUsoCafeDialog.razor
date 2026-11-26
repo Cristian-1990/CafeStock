@@ -4,6 +4,10 @@
     </TitleContent>
     <DialogContent>
         <dl class="detalle-uso">
+            @if (!string.IsNullOrWhiteSpace(Codigo))
+            {
+                <div><dt>Código</dt><dd class="detalle-uso-codigo">@Codigo</dd></div>
+            }
             <div><dt>Café</dt><dd>@NombreCafe</dd></div>
             <div><dt>Grupo</dt><dd>@Grupo</dd></div>
             <div><dt>Formato</dt><dd>@Formato</dd></div>
@@ -59,6 +63,7 @@
     [Parameter] public DateTime? Fecha { get; set; }
 
     // Datos del paquete: de cuándo es el tueste, quién lo recepcionó y en qué hoja llegó (null en paquetes anteriores a las hojas).
+    [Parameter] public string? Codigo { get; set; }
     [Parameter] public DateTime? FechaTueste { get; set; }
     [Parameter] public string? RecepcionadoPor { get; set; }
     [Parameter] public DateTime? FechaRecepcion { get; set; }
