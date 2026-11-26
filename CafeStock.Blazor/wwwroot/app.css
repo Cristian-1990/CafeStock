@@ -220,12 +220,12 @@ h1:focus {
 }
 
 .acceso-logo {
-    height: 84px;
-    width: 84px;
-    object-fit: cover;
-    background-color: #FFFFFF;
-    border: 3px solid var(--accent-gold);
-    border-radius: 50%;
+    height: 132px;
+    width: 132px;
+    object-fit: contain;
+    background: transparent;
+    border: 0;
+    filter: drop-shadow(0 4px 10px rgba(var(--rgb-sombra), 0.30));
 }
 
 .acceso-eyebrow {
@@ -235,6 +235,24 @@ h1:focus {
     letter-spacing: 0.18em;
     text-transform: uppercase;
     color: var(--accent-terracota);
+}
+
+/* Oculto a la vista pero presente para lectores de pantalla (el login no muestra el nombre de la app). */
+.acceso-titulo-oculto {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Sin título visible, "Leones del café" y "Inicia sesión..." quedaban pegados: se les da aire. */
+.acceso-eyebrow + .acceso-titulo-oculto + .acceso-subtitulo {
+    margin-top: 16px;
 }
 
 .acceso-titulo {
@@ -332,6 +350,29 @@ h1:focus {
 .acceso-tarjeta .acceso-ojo:hover {
     color: var(--text-espresso);
     background-color: var(--bg-sunken);
+}
+
+/* Casilla "Recordar contraseña": anula el aspecto de campo de texto que ".acceso-tarjeta input" da a todo
+   input, y deja una zona táctil cómoda. */
+.acceso-tarjeta .acceso-recordar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: var(--touch-min);
+    margin-top: 14px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.acceso-tarjeta .acceso-recordar input {
+    flex-shrink: 0;
+    width: 22px;
+    min-height: 22px;
+    height: 22px;
+    padding: 0;
+    margin: 0;
+    accent-color: var(--accent-terracota);
+    cursor: pointer;
 }
 
 .acceso-olvido {

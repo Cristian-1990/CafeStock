@@ -90,7 +90,7 @@ public class ProductosEfRepository : IProductoRepository
                 // pisa las ventas o recepciones hechas mientras el formulario estaba abierto.
                 // Si lo cambió a propósito (corregir un recuento), sí se aplica. Sin
                 // StockActualAlLeer (null) se conserva el comportamiento de siempre: se escribe.
-                var stockSinTocar = producto.StockActualAlLeer is int leido && producto.StockActual == leido;
+                var stockSinTocar = producto.StockActualAlLeer is decimal leido && producto.StockActual == leido;
                 if (!stockSinTocar)
                     entity.StockActual = producto.StockActual;
 
@@ -105,6 +105,13 @@ public class ProductosEfRepository : IProductoRepository
                 entity.Pasillo = producto.Pasillo;
                 entity.OrdenEnPasillo = producto.OrdenEnPasillo;
                 entity.EsFrontalPasillo = producto.EsFrontalPasillo;
+                entity.Armario = producto.Armario;
+                // Grupo y formato del tablero de café. Asignar un grupo activa el seguimiento individual (solo se
+                // enciende, nunca se apaga aquí: ver el comentario de UpdateAsync).
+                entity.GrupoCafe = producto.GrupoCafe;
+                entity.FormatoCafe = producto.FormatoCafe;
+                if (producto.GrupoCafe.EsDelTablero())
+                    entity.SeguimientoIndividual = true;
                 entity.Seccion = producto.Seccion;
                 entity.Pais = producto.Pais;
                 entity.Region = producto.Region;
@@ -211,7 +218,7 @@ public class ProductosEfRepository : IProductoRepository
             .ToListAsync();
     }
 
-    public async Task<Result<Producto, DomainError>> ActualizarStockActualAsync(int id, int nuevaCantidad)
+    public async Task<Result<Producto, DomainError>> ActualizarStockActualAsync(int id, decimal nuevaCantidad)
     {
         await InitializeAsync();
         using var context = CreateContext();
@@ -220,7 +227,7 @@ public class ProductosEfRepository : IProductoRepository
             return Result.Failure<Producto, DomainError>(ProductoErrors.NotFound(id));
         try
         {
-            entity.StockActual = nuevaCantidad;
+            entity.StockActual = Math.Round(nuevaCantidad, 2, MidpointRounding.AwayFromZero);
             await context.SaveChangesAsync();
             return Result.Success<Producto, DomainError>(entity.ToProducto());
         }

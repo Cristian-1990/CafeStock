@@ -1,0 +1,27 @@
+.detalle-uso {
+    display: grid;
+    gap: 10px;
+    margin: 0;
+}
+
+.detalle-uso div {
+    display: grid;
+    grid-template-columns: 96px 1fr;
+    gap: 12px;
+    align-items: baseline;
+}
+
+.detalle-uso dt {
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.detalle-uso dd {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-dark);
+}

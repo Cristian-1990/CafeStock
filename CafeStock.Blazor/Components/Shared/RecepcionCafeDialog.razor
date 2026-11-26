@@ -1,0 +1,157 @@
+@inject IProductoService ProductoService
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Recepcionar café</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudText Typo="Typo.body2" Class="mb-4" Style="color:var(--text-muted);">
+            Un renglón por cada paquete que llega, con su fecha de tueste. Al confirmar se cierra la hoja actual
+            (queda en el historial) y se abre una nueva con estos paquetes más los que sobraban.
+        </MudText>
+
+        @if (_cafes.Count == 0)
+        {
+            <MudAlert Severity="Severity.Warning">
+                No hay ningún café con grupo y formato. Asígnaselos en su ficha (Catálogo, Editar) y vuelve aquí.
+            </MudAlert>
+        }
+        else
+        {
+            @foreach (var fila in _filas)
+            {
+                <div class="recepcion-bloque">
+                <div class="recepcion-fila">
+                    @* Los cafés van en grupos; el peso ya va en el nombre, así que no se repite el formato. *@
+                    @* Con búsqueda: se escribe parte del nombre (sin tildes ni mayúsculas) y la lista se reduce. Cada opción
+                       lleva el grupo al lado. *@
+                    <MudAutocomplete T="Producto" @bind-Value="fila.Cafe" Label="Café (escribe para buscar)"
+                                     Variant="Variant.Outlined" Dense="true"
+                                     SearchFunc="BuscarAsync" ToStringFunc="@(p => p?.Nombre)"
+                                     OpenOnFocus="true" MaxItems="40" CoerceText="false" ResetValueOnEmptyText="true"
+                                     Clearable="true" SelectValueOnTab="true" Placeholder="Buscar café...">
+                        <ItemTemplate Context="cafe">
+                            <div class="recepcion-opcion">
+                                <span>@cafe.Nombre</span>
+                                <span class="recepcion-opcion-grupo">@NombreGrupo(cafe.GrupoCafe)</span>
+                            </div>
+                        </ItemTemplate>
+                        <NoItemsTemplate>
+                            <span class="recepcion-opcion-vacia">Ningún café coincide.</span>
+                        </NoItemsTemplate>
+                    </MudAutocomplete>
+                    <MudDatePicker @bind-Date="fila.Tueste" Label="Fecha de tueste" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                   MaxDate="DateTime.Today" Editable="true" Clearable="true"/>
+                    <div class="recepcion-fila-botones">
+                        <MudIconButton Icon="@Icons.Material.Filled.ContentCopy" Size="Size.Small" Title="Duplicar este paquete" aria-label="Duplicar este paquete"
+                                       OnClick="@(() => Duplicar(fila))"/>
+                        <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" Title="Quitar este paquete" aria-label="Quitar este paquete"
+                                       OnClick="@(() => _filas.Remove(fila))"/>
+                    </div>
+                </div>
+
+                @* Un café sin clasificar se clasifica al recibirlo: aquí se elige su grupo y su formato. *@
+                @if (SinClasificar(fila))
+                {
+                    <div class="recepcion-clasificar">
+                        <MudSelect T="GrupoCafe?" @bind-Value="fila.Grupo" Label="Grupo del café" Variant="Variant.Outlined" Dense="true" Required="true">
+                            <MudSelectItem T="GrupoCafe?" Value="GrupoCafe.Casa">Casa (el de siempre)</MudSelectItem>
+                            <MudSelectItem T="GrupoCafe?" Value="GrupoCafe.Descafeinado">Descafeinado</MudSelectItem>
+                            <MudSelectItem T="GrupoCafe?" Value="GrupoCafe.Especial">Especial (el de la semana)</MudSelectItem>
+                        </MudSelect>
+                        <MudSelect T="FormatoCafe?" @bind-Value="fila.Formato" Label="Formato" Variant="Variant.Outlined" Dense="true" Required="true">
+                            <MudSelectItem T="FormatoCafe?" Value="FormatoCafe.Paquete">Paquete (1 kg o 2 kg, para el molino)</MudSelectItem>
+                            <MudSelectItem T="FormatoCafe?" Value="FormatoCafe.Cuarto">Cuarto (250 g, para vender)</MudSelectItem>
+                        </MudSelect>
+                    </div>
+                }
+                </div>
+            }
+
+            <div class="recepcion-anadir">
+                <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Add" OnClick="AnadirCafe">
+                    Añadir otro paquete
+                </MudButton>
+            </div>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancelar">Cancelar</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" Disabled="@(!PuedeConfirmar)" OnClick="Confirmar">
+            Recepcionar @_filas.Count(f => f.ProductoId is not null) @(_filas.Count(f => f.ProductoId is not null) == 1 ? "paquete" : "paquetes")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private sealed class Fila
+    {
+        public Producto? Cafe { get; set; }
+        public int? ProductoId => Cafe?.Id;
+        public DateTime? Tueste { get; set; }
+        // Solo para cafés sin clasificar: grupo y formato que se les asignan al recibirlos.
+        public GrupoCafe? Grupo { get; set; }
+        public FormatoCafe? Formato { get; set; }
+    }
+
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    private List<Producto> _cafes = [];
+    private readonly List<Fila> _filas = [new Fila()];
+    private static readonly GrupoCafe[] _grupos = [GrupoCafe.Casa, GrupoCafe.Descafeinado, GrupoCafe.Especial, GrupoCafe.SinClasificar];
+
+    private bool SinClasificar(Fila fila) =>
+        fila.ProductoId is int id && _cafes.Any(c => c.Id == id && c.GrupoCafe == GrupoCafe.SinClasificar);
+
+    // Hace falta al menos un paquete, y los de cafés sin clasificar con su grupo y su formato elegidos.
+    private bool PuedeConfirmar =>
+        _filas.Any(f => f.ProductoId is not null)
+        && _filas.Where(f => f.ProductoId is not null).All(f => !SinClasificar(f) || (f.Grupo is not null && f.Formato is not null));
+
+    protected override async Task OnInitializedAsync()
+    {
+        _cafes = (await ProductoService.GetAllAsync())
+            .Where(p => (p.GrupoCafe.EsDelTablero() && p.FormatoCafe != FormatoCafe.SinFormato) || p.GrupoCafe == GrupoCafe.SinClasificar)
+            .OrderBy(p => OrdenAlfabetico.Clave(p.Nombre), StringComparer.Ordinal)
+            .ToList();
+    }
+
+    // Un café nuevo empieza en blanco; para otro paquete igual (mismo café y tueste) se duplica el renglón.
+    private void AnadirCafe() => _filas.Add(new Fila());
+
+    private void Duplicar(Fila fila) =>
+        _filas.Insert(_filas.IndexOf(fila) + 1, new Fila { Cafe = fila.Cafe, Tueste = fila.Tueste, Grupo = fila.Grupo, Formato = fila.Formato });
+
+    /// <summary>Cafés que contienen lo escrito (sin tildes ni mayúsculas), ordenados por grupo y nombre. Sin texto, todos.</summary>
+    private Task<IEnumerable<Producto>> BuscarAsync(string? texto, CancellationToken cancelacion)
+    {
+        var buscado = OrdenAlfabetico.Clave(texto);
+        var palabras = buscado.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        IEnumerable<Producto> encontrados = _cafes
+            .Where(c => palabras.All(w => OrdenAlfabetico.Clave(c.Nombre).Contains(w)))
+            .OrderBy(c => Array.IndexOf(_grupos, c.GrupoCafe))
+            .ThenBy(c => OrdenAlfabetico.Clave(c.Nombre), StringComparer.Ordinal);
+        return Task.FromResult(encontrados);
+    }
+
+    private static string NombreGrupo(GrupoCafe grupo) => grupo switch
+    {
+        GrupoCafe.Casa => "Casa",
+        GrupoCafe.Especial => "Especial",
+        GrupoCafe.SinClasificar => "Sin clasificar",
+        _ => "Descafeinado"
+    };
+
+    private void Cancelar() => MudDialog.Cancel();
+
+    private void Confirmar()
+    {
+        var paquetes = _filas
+            .Where(f => f.ProductoId is not null)
+            .Select(f => SinClasificar(f)
+                ? new NuevoPaqueteCafe(f.ProductoId!.Value, f.Tueste, f.Grupo, f.Formato)
+                : new NuevoPaqueteCafe(f.ProductoId!.Value, f.Tueste))
+            .ToList();
+        MudDialog.Close(DialogResult.Ok(paquetes));
+    }
+}

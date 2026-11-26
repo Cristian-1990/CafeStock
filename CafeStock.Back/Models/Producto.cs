@@ -6,14 +6,14 @@ public record Producto
 {
     public int Id { get; set; }
     public string Nombre { get; set; } = string.Empty; //String.Empty evita que el compilador se queje por si puede ser null
-    public int StockActual { get; set; }
-    public int StockMaximo { get; set; }
+    public decimal StockActual { get; set; }
+    public decimal StockMaximo { get; set; }
     public UnidadMedida Unidad { get; set; } = UnidadMedida.SinEspecificar;
     public string Descripcion { get; set; } = string.Empty;
     public string ImagenUrl { get; set; } = string.Empty;
     public int? ProveedorId { get; set; }
     public decimal PrecioUnitario { get; set; }
-    public int CantidadAComprar => Math.Max(0, StockMaximo - StockActual);//Prodpiedad autocalculada
+    public decimal CantidadAComprar => Math.Max(0m, StockMaximo - StockActual);//Prodpiedad autocalculada
 
     /// <summary>
     /// Activa el registro de venta/consumo individual (ver RegistroCafe y la pantalla
@@ -24,6 +24,14 @@ public record Producto
     public bool SeguimientoIndividual { get; set; }
 
     /// <summary>
+    /// Grupo y formato del café en el tablero de la pantalla Café (ver <see cref="GrupoCafe"/> y
+    /// <see cref="FormatoCafe"/>). Solo tienen sentido juntos: un producto sale en el tablero si tiene los dos.
+    /// Asignar un grupo lo pasa a SeguimientoIndividual (cada uso se registra de uno en uno, igual que en Venta).
+    /// </summary>
+    public GrupoCafe GrupoCafe { get; set; }
+    public FormatoCafe FormatoCafe { get; set; }
+
+    /// <summary>
     /// Solo para editar: el StockActual que tenía el producto cuando se abrió el formulario de
     /// edición. Permite a UpdateAsync distinguir "el usuario no tocó el stock" de "lo cambió a
     /// propósito": en el primer caso no lo escribe, para no pisar ventas o recepciones hechas
@@ -31,7 +39,7 @@ public record Producto
     /// comporta como siempre (escribe StockActual). Ningún mapper lo rellena: lo informa quien
     /// edita.
     /// </summary>
-    public int? StockActualAlLeer { get; set; }
+    public decimal? StockActualAlLeer { get; set; }
 
     /// <summary>
     /// Marca productos que se venden íntegros (p.ej. una lata de Coca-Cola: se compra una
@@ -82,6 +90,16 @@ public record Producto
     /// supermercados genéricos y solo editable desde el formulario de producto.
     /// </summary>
     public bool EsFrontalPasillo { get; set; }
+
+    /// <summary>
+    /// Armario (o zona de la despensa) donde se guarda este producto en el local — se usa para dividir
+    /// por armarios la pantalla Realizar stock de los supermercados genéricos (p.ej. Alcampo), de modo
+    /// que se cuente armario a armario. Nada que ver con Pasillo (que es del supermercado donde se
+    /// compra): este es el sitio donde se almacena en la cafetería. Numeración manual (1, 2, 3...), solo
+    /// editable desde el formulario de producto. Null mientras no se haya asignado: esos productos
+    /// salen al final, en "Sin armario".
+    /// </summary>
+    public int? Armario { get; set; }
 
     /// <summary>
     /// Sección especial a la que pertenece el producto (frutería, infusiones...) — ver

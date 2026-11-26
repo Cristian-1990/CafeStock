@@ -6,8 +6,8 @@ public class ProductoEntity
 {
     public int Id { get; set; }
     public string Nombre { get; set; } = string.Empty;
-    public int StockActual { get; set; }
-    public int StockMaximo { get; set; }
+    public decimal StockActual { get; set; }
+    public decimal StockMaximo { get; set; }
     public UnidadMedida Unidad { get; set; } = UnidadMedida.SinEspecificar;
     public string Descripcion { get; set; } = string.Empty;
     public string ImagenUrl { get; set; } = string.Empty;
@@ -15,11 +15,14 @@ public class ProductoEntity
     public ProveedorEntity? Proveedor { get; set; }
     public decimal PrecioUnitario { get; set; }
     public bool SeguimientoIndividual { get; set; }
+    public GrupoCafe GrupoCafe { get; set; }
+    public FormatoCafe FormatoCafe { get; set; }
     public bool AplicaConciliacionTpv { get; set; }
     public int? UnidadesPorPack { get; set; }
     public int? Pasillo { get; set; }
     public int OrdenEnPasillo { get; set; }
     public bool EsFrontalPasillo { get; set; }
+    public int? Armario { get; set; }
     public SeccionEspecial Seccion { get; set; }
     public string Pais { get; set; } = string.Empty;
     public string Region { get; set; } = string.Empty;

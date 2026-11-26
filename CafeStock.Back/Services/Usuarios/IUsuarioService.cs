@@ -25,6 +25,9 @@ public interface IUsuarioService
 
     Task<Result<Usuario, DomainError>> RestablecerPasswordAsync(string id, string nuevaPassword);
 
+    /// <summary>Cambia el nombre de usuario (debe ser único). Conserva rol, contraseña y el resto.</summary>
+    Task<Result<Usuario, DomainError>> RenombrarAsync(string id, string nuevoNombre);
+
     /// <param name="idUsuarioActual">Id de quien pide la baja: no puede eliminarse a sí mismo.</param>
     Task<Result<Usuario, DomainError>> EliminarAsync(string id, string idUsuarioActual);
 }

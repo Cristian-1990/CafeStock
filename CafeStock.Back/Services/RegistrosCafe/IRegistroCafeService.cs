@@ -16,4 +16,10 @@ public interface IRegistroCafeService
     /// defensa: el formulario de Vender.razor ya no deja registrar en blanco).
     /// </summary>
     Task<Result<RegistroCafe, DomainError>> RegistrarVentaAsync(int productoId, string nombreTrabajador);
+
+    /// <summary>Los últimos usos de cada producto indicado (más recientes primero); ver el repositorio.</summary>
+    Task<IReadOnlyDictionary<int, List<RegistroCafe>>> GetUltimosPorProductoAsync(IReadOnlyCollection<int> productoIds, int porProducto);
+
+    /// <summary>Deshace un registro y devuelve 1 al stock del producto (el inverso de RegistrarVentaAsync).</summary>
+    Task<Result<RegistroCafe, DomainError>> DeshacerVentaAsync(int registroId);
 }

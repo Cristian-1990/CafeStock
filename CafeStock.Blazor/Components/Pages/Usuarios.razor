@@ -17,7 +17,9 @@
             <MudTextField @bind-Value="_nuevoNombre" Label="Nombre de usuario" Variant="Variant.Outlined" Immediate="true"/>
         </MudItem>
         <MudItem xs="12" sm="4">
-            <MudTextField @bind-Value="_nuevaPassword" Label="Contraseña" InputType="InputType.Password"
+            <MudTextField @bind-Value="_nuevaPassword" Label="Contraseña" InputType="@(_verPassword ? InputType.Text : InputType.Password)"
+                          Adornment="Adornment.End" AdornmentIcon="@(_verPassword ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+                          OnAdornmentClick="@(() => _verPassword = !_verPassword)" AdornmentAriaLabel="@(_verPassword ? "Ocultar contraseña" : "Mostrar contraseña")"
                           HelperText="Mínimo 8 caracteres, con letras y un número" Variant="Variant.Outlined" Immediate="true"/>
         </MudItem>
         <MudItem xs="12" sm="4">
@@ -66,6 +68,11 @@ else
             </MudTd>
             <MudTd DataLabel="Acciones">
                 <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Primary" Class="mr-2"
+                           StartIcon="@Icons.Material.Filled.Edit"
+                           OnClick="@(() => RenombrarAsync(context))">
+                    Renombrar
+                </MudButton>
+                <MudButton Size="Size.Small" Variant="Variant.Outlined" Color="Color.Primary" Class="mr-2"
                            OnClick="@(() => RestablecerPasswordAsync(context))">
                     Restablecer contraseña
                 </MudButton>
@@ -89,6 +96,7 @@ else
 
     private string _nuevoNombre = string.Empty;
     private string _nuevaPassword = string.Empty;
+    private bool _verPassword;
     private string _nuevoRol = Roles.Trabajador;
 
     protected override async Task OnInitializedAsync()
@@ -136,6 +144,24 @@ else
             Snackbar.Add($"{usuario.NombreUsuario} ahora es {nuevoRol}", Severity.Success);
 
         // Recarga siempre: si falló, el desplegable vuelve al rol real y no queda mostrando uno que no se aplicó.
+        await CargarAsync();
+    }
+
+    private async Task RenombrarAsync(Usuario usuario)
+    {
+        var parametros = new DialogParameters<RenombrarUsuarioDialog> { { x => x.NombreActual, usuario.NombreUsuario } };
+        var dialogo = await DialogService.ShowAsync<RenombrarUsuarioDialog>("Renombrar usuario", parametros);
+        var respuesta = await dialogo.Result;
+        if (respuesta is null || respuesta.Canceled || respuesta.Data is not string nuevo) return;
+
+        var resultado = await UsuarioService.RenombrarAsync(usuario.Id, nuevo);
+        if (resultado.IsFailure)
+        {
+            Snackbar.Add(resultado.Error.Message, Severity.Error);
+            return;
+        }
+
+        Snackbar.Add($"{usuario.NombreUsuario} ahora se llama {resultado.Value.NombreUsuario}", Severity.Success);
         await CargarAsync();
     }
 

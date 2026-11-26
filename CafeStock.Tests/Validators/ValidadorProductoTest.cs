@@ -17,6 +17,30 @@ public class ValidadorProductoTest
     }
 
     [Test]
+    public void Validar_StockConDosDecimales_DevuelveSuccess()
+    {
+        var producto = new Producto { Nombre = "Harina", StockActual = 0.5m, StockMaximo = 2.25m };
+
+        _validador.Validar(producto).IsSuccess.Should().BeTrue();
+    }
+
+    [Test]
+    public void Validar_StockActualConMasDeDosDecimales_DevuelveFailure()
+    {
+        var producto = new Producto { Nombre = "Harina", StockActual = 0.125m, StockMaximo = 2 };
+
+        _validador.Validar(producto).IsFailure.Should().BeTrue();
+    }
+
+    [Test]
+    public void Validar_StockMaximoConMasDeDosDecimales_DevuelveFailure()
+    {
+        var producto = new Producto { Nombre = "Harina", StockActual = 1, StockMaximo = 2.001m };
+
+        _validador.Validar(producto).IsFailure.Should().BeTrue();
+    }
+
+    [Test]
     public void Validar_ProductoValido_DevuelveSuccess()
     {
         // Arrange

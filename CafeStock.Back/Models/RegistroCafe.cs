@@ -12,6 +12,10 @@ public record RegistroCafe
     public string NombreTrabajador { get; set; } = string.Empty;
     public DateTime Fecha { get; set; }
 
+    /// <summary>Paquete concreto que se usó y hoja en la que se usó (null en registros anteriores a las hojas).</summary>
+    public int? PaqueteId { get; set; }
+    public int? HojaId { get; set; }
+
     /// <summary>
     /// Nombre del producto ya resuelto, para el historial de Vender.razor (no obliga a la
     /// vista a hacer una búsqueda aparte). Null si no se ha resuelto.

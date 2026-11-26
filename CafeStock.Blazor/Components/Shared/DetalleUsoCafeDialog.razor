@@ -1,0 +1,83 @@
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Paquete usado</MudText>
+    </TitleContent>
+    <DialogContent>
+        <dl class="detalle-uso">
+            <div><dt>Café</dt><dd>@NombreCafe</dd></div>
+            <div><dt>Grupo</dt><dd>@Grupo</dd></div>
+            <div><dt>Formato</dt><dd>@Formato</dd></div>
+            @if (FechaTueste is { } tueste)
+            {
+                <div><dt>Tueste</dt><dd>@tueste.ToString("dd/MM/yyyy")</dd></div>
+            }
+            @if (!string.IsNullOrWhiteSpace(RecepcionadoPor))
+            {
+                <div><dt>Recepcionó</dt><dd>@RecepcionadoPor@(FechaRecepcion is { } r ? $" · {r:dd/MM/yyyy HH:mm}" : "")</dd></div>
+            }
+            @if (HojaOrigenId is { } hoja)
+            {
+                <div><dt>Llegó en</dt><dd>Hoja @hoja</dd></div>
+            }
+            @if (!string.IsNullOrWhiteSpace(Trabajador))
+            {
+                <div><dt>Lo usó</dt><dd>@Trabajador</dd></div>
+            }
+            @if (Fecha is { } fecha)
+            {
+                <div><dt>Fecha</dt><dd>@fecha.ToString("dddd d 'de' MMMM 'de' yyyy")</dd></div>
+                <div><dt>Hora</dt><dd>@fecha.ToString("HH:mm")</dd></div>
+                <div><dt>Hace</dt><dd>@Transcurrido(fecha)</dd></div>
+            }
+        </dl>
+
+        @if (Fecha is null)
+        {
+            <MudText Typo="Typo.body2" Class="mt-3" Style="color:var(--text-muted); font-style:italic;">
+                Este hueco está usado, pero no hay registro de quién ni cuándo (es anterior al mapa).
+            </MudText>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cerrar">Cerrar</MudButton>
+        @if (PuedeDeshacer)
+        {
+            <MudButton Color="Color.Warning" Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Undo" OnClick="Deshacer">
+                Deshacer este uso
+            </MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter] public string NombreCafe { get; set; } = string.Empty;
+    [Parameter] public string Grupo { get; set; } = string.Empty;
+    [Parameter] public string Formato { get; set; } = string.Empty;
+    [Parameter] public string? Trabajador { get; set; }
+    [Parameter] public DateTime? Fecha { get; set; }
+
+    // Datos del paquete: de cuándo es el tueste, quién lo recepcionó y en qué hoja llegó (null en paquetes anteriores a las hojas).
+    [Parameter] public DateTime? FechaTueste { get; set; }
+    [Parameter] public string? RecepcionadoPor { get; set; }
+    [Parameter] public DateTime? FechaRecepcion { get; set; }
+    [Parameter] public int? HojaOrigenId { get; set; }
+
+    /// <summary>Solo se ofrece deshacer si el hueco viene de un registro (si no, no hay nada que devolver).</summary>
+    [Parameter] public bool PuedeDeshacer { get; set; }
+
+    private void Cerrar() => MudDialog.Cancel();
+
+    // Cerrar con Ok significa "deshacer este uso": lo ejecuta quien abrió el diálogo.
+    private void Deshacer() => MudDialog.Close(DialogResult.Ok(true));
+
+    private static string Transcurrido(DateTime fecha)
+    {
+        var t = DateTime.Now - fecha;
+        if (t.TotalMinutes < 1) return "menos de un minuto";
+        if (t.TotalHours < 1) return $"{(int)t.TotalMinutes} min";
+        if (t.TotalDays < 1) return $"{(int)t.TotalHours} h {(int)(t.TotalMinutes % 60)} min";
+        return $"{(int)t.TotalDays} día{((int)t.TotalDays == 1 ? "" : "s")}";
+    }
+}

@@ -8,8 +8,9 @@
 
 <div class="acceso-tarjeta">
     <img src="LogoCafeteria.png" alt="CafeStock" class="acceso-logo"/>
-    <p class="acceso-eyebrow">Café de especialidad</p>
-    <h1 class="acceso-titulo">CafeStock</h1>
+    <p class="acceso-eyebrow">Leones del café</p>
+    @* Sin título visible (el logo ya identifica la app); el h1 se mantiene oculto para lectores de pantalla. *@
+    <h1 class="acceso-titulo-oculto">CafeStock</h1>
     <p class="acceso-subtitulo">Inicia sesión para continuar</p>
 
     @if (Error is not null)
@@ -23,7 +24,7 @@
 
     @* POST normal a un endpoint (no un formulario de Blazor): la cookie de sesión solo se
        puede escribir en una respuesta HTTP, no dentro del circuito interactivo. *@
-    <form method="post" action="/auth/login">
+    <form id="formulario-login" method="post" action="/auth/login">
         <AntiforgeryToken/>
         <input type="hidden" name="returnUrl" value="@ReturnUrl"/>
 
@@ -39,6 +40,16 @@
             <button type="button" class="acceso-ojo" aria-controls="password" aria-pressed="false"
                     onclick="var i=document.getElementById('password'),v=i.type==='password';i.type=v?'text':'password';this.textContent=v?'Ocultar':'Mostrar';this.setAttribute('aria-pressed',v);">Mostrar</button>
         </div>
+
+        @* Recordar contraseña en este equipo: marcada (por defecto, como siempre), la sesión sigue al cerrar el
+           navegador; sin marcar, termina al cerrarlo (ver /auth/login). Además recuerda el usuario en este
+           navegador. La contraseña NUNCA se guarda: de eso se encarga, si quiere, el gestor del navegador. El
+           usuario se guarda con JavaScript de toda la vida (en App.razor), no con C#, porque el
+           formulario es un POST normal. *@
+        <label class="acceso-recordar" for="recordar">
+            <input id="recordar" name="recordar" type="checkbox" value="true" checked/>
+            Recordar contraseña en este equipo
+        </label>
 
         <button type="submit">Entrar</button>
 

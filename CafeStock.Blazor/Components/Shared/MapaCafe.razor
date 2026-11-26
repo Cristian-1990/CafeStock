@@ -1,0 +1,285 @@
+@inject IHojaCafeService HojaCafeService
+@inject IRegistroCafeService RegistroCafeService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+@if (_cargando)
+{
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true"/>
+}
+else if (_tarjetas.Count == 0)
+{
+    <MudAlert Severity="Severity.Info">
+        Esta hoja todavía no tiene café. Cuando llegue el pedido, pulsa <strong>Recepcionar café</strong>: cada
+        paquete que entre aparece aquí con un recuadro. (El café necesita su <strong>grupo</strong> y su
+        <strong>formato</strong> en su ficha: Catálogo, Editar.)
+    </MudAlert>
+}
+else
+{
+    @* Quién registra: un texto, el nombre del trabajador. Se rellena con el usuario de la sesión y se puede
+       cambiar si registra otra persona. La fecha y la hora las guarda el sistema por debajo. *@
+    @if (!SoloLectura)
+    {
+        <div class="cafe-barra">
+            <MudTextField T="string" @bind-Value="_nombre"
+                          Label="¿Quién lo registra?"
+                          Variant="Variant.Outlined"
+                          Immediate="true"
+                          Required="true"
+                          Style="max-width:300px;"/>
+        </div>
+        <p class="cafe-ayuda">
+            Cada recuadro es un paquete. Los vacíos están en el almacén: toca uno cuando se use o se venda y se
+            marca con tu nombre. Toca uno marcado para ver la fecha y los detalles. Los de borde discontinuo son
+            sobrantes de la hoja anterior.
+        </p>
+    }
+    else
+    {
+        <p class="cafe-ayuda">
+            Hoja cerrada, solo lectura. Los de borde discontinuo ya sobraban de la hoja anterior; los marcados con
+            ↪ sobraron y se usaron en una hoja posterior.
+        </p>
+    }
+
+    @* Como la hoja a mano: las tres columnas (casa, especial, descafeinado) y, dentro de cada una, un recuadro
+       por paquete. Arriba los paquetes grandes (molino) y abajo los cuartos (venta). *@
+    @foreach (var seccion in _secciones)
+    {
+        <section class="cafe-hoja" aria-label="@seccion.Titulo">
+            <h2 class="cafe-hoja-titulo">@seccion.Titulo</h2>
+            <div class="cafe-columnas">
+                @foreach (var grupo in _grupos)
+                {
+                    var tarjetas = seccion.Tarjetas.Where(t => t.Grupo == grupo).ToList();
+                    <div class="cafe-columna @ClaseGrupo(grupo)">
+                        <h3 class="cafe-columna-titulo">@NombreGrupo(grupo)</h3>
+
+                        @if (tarjetas.Count == 0)
+                        {
+                            <p class="cafe-vacio">@(grupo == GrupoCafe.Especial ? "Sin especial asignado" : "Sin café asignado")</p>
+                        }
+
+                        @foreach (var tarjeta in tarjetas)
+                        {
+                            var n = 0;
+                            <article class="cafe-cafe">
+                                <header class="cafe-cafe-cabecera">
+                                    <h4 class="cafe-cafe-nombre">@tarjeta.ProductoNombre</h4>
+                                    <span class="cafe-cafe-cuenta" aria-label="@Cuenta(tarjeta, seccion.Formato)">@(SoloLectura ? $"{tarjeta.Usados}/{tarjeta.Total}" : tarjeta.Disponibles.ToString())</span>
+                                </header>
+
+                                    <div class="cafe-recuadros">
+                                        @foreach (var hueco in tarjeta.Huecos)
+                                        {
+                                            n++;
+                                            @if (hueco.Usado)
+                                            {
+                                                <button type="button" class="cafe-recuadro cafe-recuadro-usado @FormaRecuadro(seccion.Formato, grupo) @(hueco.Sobrante ? "cafe-recuadro-sobrante" : "")"
+                                                        title="@TextoUsado(hueco)"
+                                                        aria-label="Ver los detalles del paquete de @tarjeta.ProductoNombre usado por @(hueco.Trabajador ?? "alguien")"
+                                                        @onclick="@(() => VerDetalleAsync(tarjeta, hueco))">
+                                                    <span class="cafe-recuadro-esquina">@Numero(seccion.Formato, grupo, n)</span>
+                                                    <span class="cafe-recuadro-nombre">@(hueco.Trabajador ?? "—")</span>
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button type="button" class="cafe-recuadro cafe-recuadro-libre @FormaRecuadro(seccion.Formato, grupo) @(hueco.Sobrante ? "cafe-recuadro-sobrante" : "")"
+                                                        disabled="@(_registrando || SoloLectura)"
+                                                        title="@TextoLibre(hueco)"
+                                                        aria-label="@(SoloLectura ? $"Paquete libre de {tarjeta.ProductoNombre}" : $"Registrar el uso de un paquete de {tarjeta.ProductoNombre}")"
+                                                        @onclick="@(() => RegistrarAsync(tarjeta))">
+                                                    @* Como en la hoja, los cuartos del especial y del decaf van numerados: 1E, 2E... 1D, 2D... *@
+                                                    <span class="cafe-recuadro-esquina">@Numero(seccion.Formato, grupo, n)</span>
+                                                    @if (hueco.PasaASiguiente)
+                                                    {
+                                                        <span class="cafe-recuadro-pasa">↪</span>
+                                                    }
+                                                    else if (!SoloLectura)
+                                                    {
+                                                        <MudIcon Icon="@Icons.Material.Filled.Add" Class="cafe-recuadro-mas"/>
+                                                    }
+                                                </button>
+                                            }
+                                        }
+                                    </div>
+                            </article>
+                        }
+                    </div>
+                }
+            </div>
+        </section>
+    }
+}
+
+@code {
+    private record Seccion(FormatoCafe Formato, string Titulo, List<TarjetaHoja> Tarjetas);
+
+    private static readonly GrupoCafe[] _grupos = [GrupoCafe.Casa, GrupoCafe.Especial, GrupoCafe.Descafeinado];
+
+    /// <summary>Se avisa a la página (Venta) cada vez que se registra o se deshace un uso, para que refresque su historial.</summary>
+    [Parameter] public EventCallback OnCambio { get; set; }
+
+    /// <summary>Hoja que se muestra (null = la actual, la que se vende).</summary>
+    [Parameter] public int? HojaId { get; set; }
+
+    /// <summary>En una hoja cerrada no se registra ni se deshace nada: solo se mira.</summary>
+    [Parameter] public bool SoloLectura { get; set; }
+
+    [CascadingParameter] private Task<AuthenticationState>? EstadoAutenticacion { get; set; }
+
+    private List<TarjetaHoja> _tarjetas = [];
+    private List<Seccion> _secciones = [];
+    private string _nombre = string.Empty;
+    private bool _cargando = true;
+    private bool _registrando;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var estado = EstadoAutenticacion is null ? null : await EstadoAutenticacion;
+        _nombre = estado?.User.Identity?.Name ?? string.Empty;
+        await CargarAsync();
+    }
+
+    private async Task CargarAsync()
+    {
+        var detalle = await HojaCafeService.GetDetalleAsync(HojaId);
+        _tarjetas = detalle.IsSuccess ? detalle.Value.Tarjetas.ToList() : [];
+        if (detalle.IsFailure)
+            Snackbar.Add(detalle.Error.Message, Severity.Error);
+
+        _secciones =
+        [
+            .. new[]
+            {
+                new Seccion(FormatoCafe.Paquete, "Paquetes · para el molino", _tarjetas.Where(t => t.Formato == FormatoCafe.Paquete).ToList()),
+                new Seccion(FormatoCafe.Cuarto, "Cuartos · para vender", _tarjetas.Where(t => t.Formato == FormatoCafe.Cuarto).ToList())
+            }.Where(s => s.Tarjetas.Count > 0)
+        ];
+        _cargando = false;
+    }
+
+    private async Task RegistrarAsync(TarjetaHoja tarjeta)
+    {
+        if (SoloLectura) return;
+
+        if (string.IsNullOrWhiteSpace(_nombre))
+        {
+            Snackbar.Add("Escribe quién lo registra antes de tocar un recuadro", Severity.Warning);
+            return;
+        }
+
+        _registrando = true;
+        try
+        {
+            var resultado = await RegistroCafeService.RegistrarVentaAsync(tarjeta.ProductoId, _nombre);
+            if (resultado.IsFailure)
+            {
+                Snackbar.Add(resultado.Error.Message, Severity.Error);
+                await CargarAsync();
+                return;
+            }
+
+            var registroId = resultado.Value.Id;
+            Snackbar.Add($"{tarjeta.ProductoNombre}: registrado ({resultado.Value.NombreTrabajador})", Severity.Success, config =>
+            {
+                config.Action = "Deshacer";
+                config.ActionColor = Color.Warning;
+                config.OnClick = _ => DeshacerAsync(registroId);
+                config.VisibleStateDuration = 8000;
+            });
+            await CargarAsync();
+            await OnCambio.InvokeAsync();
+        }
+        finally
+        {
+            _registrando = false;
+        }
+    }
+
+    private async Task DeshacerAsync(int registroId)
+    {
+        var resultado = await RegistroCafeService.DeshacerVentaAsync(registroId);
+        if (resultado.IsFailure)
+            Snackbar.Add(resultado.Error.Message, Severity.Warning);
+        else
+            Snackbar.Add("Registro deshecho: el paquete vuelve a estar disponible", Severity.Info);
+
+        await CargarAsync();
+        await OnCambio.InvokeAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    /// <summary>
+    /// Al pulsar un recuadro ya usado: quién, cuándo y los detalles del café. Desde ahí también se puede deshacer
+    /// ese uso (el paquete vuelve a estar disponible), por si se marcó por error.
+    /// </summary>
+    private async Task VerDetalleAsync(TarjetaHoja tarjeta, HuecoCafe hueco)
+    {
+        var parametros = new DialogParameters<DetalleUsoCafeDialog>
+        {
+            { x => x.NombreCafe, tarjeta.ProductoNombre },
+            { x => x.Grupo, NombreGrupo(tarjeta.Grupo) },
+            { x => x.Formato, tarjeta.Formato == FormatoCafe.Paquete ? "Paquete (para el molino)" : "Cuarto (para vender)" },
+            { x => x.FechaTueste, hueco.Paquete?.FechaTueste },
+            { x => x.RecepcionadoPor, hueco.Paquete?.RecepcionadoPor },
+            { x => x.FechaRecepcion, hueco.Paquete?.FechaRecepcion },
+            { x => x.HojaOrigenId, hueco.Paquete?.HojaOrigenId },
+            { x => x.Trabajador, hueco.Trabajador },
+            { x => x.Fecha, hueco.Fecha },
+            { x => x.PuedeDeshacer, hueco.RegistroId is not null && !SoloLectura }
+        };
+        var dialogo = await DialogService.ShowAsync<DetalleUsoCafeDialog>("Paquete usado", parametros,
+            new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = true });
+        var resultado = await dialogo.Result;
+
+        if (resultado is { Canceled: false } && hueco.RegistroId is int registroId)
+            await DeshacerAsync(registroId);
+    }
+
+    private static string TextoUsado(HuecoCafe hueco) =>
+        hueco.Fecha is { } fecha ? $"{hueco.Trabajador} · {fecha:dd/MM HH:mm}" : "Usado";
+
+    private static string TextoLibre(HuecoCafe hueco)
+    {
+        var partes = new List<string>();
+        if (hueco.Paquete?.FechaTueste is { } tueste) partes.Add($"Tueste {tueste:dd/MM/yyyy}");
+        if (hueco.Sobrante && hueco.Paquete is { } p) partes.Add($"Sobrante de la hoja {p.HojaOrigenId}");
+        if (hueco.PasaASiguiente) partes.Add("Pasó a la hoja siguiente");
+        return partes.Count == 0 ? "Libre" : string.Join(" · ", partes);
+    }
+
+    private static string Cuenta(TarjetaHoja tarjeta, FormatoCafe formato)
+    {
+        var unidad = formato == FormatoCafe.Paquete ? "paquete" : "cuarto";
+        return $"{tarjeta.Disponibles} {unidad}{(tarjeta.Disponibles == 1 ? "" : "s")} disponible{(tarjeta.Disponibles == 1 ? "" : "s")}";
+    }
+
+    // Como en la hoja: los paquetes del especial y del descafeinado son redondos y el resto, rectangulares.
+    private static string FormaRecuadro(FormatoCafe formato, GrupoCafe grupo) =>
+        formato == FormatoCafe.Paquete
+            ? (grupo == GrupoCafe.Casa ? "cafe-recuadro-paquete" : "cafe-recuadro-paquete cafe-recuadro-redondo")
+            : "cafe-recuadro-cuarto";
+
+    // Solo los cuartos del especial (E) y del descafeinado (D) llevan número, como en la hoja.
+    private static string Numero(FormatoCafe formato, GrupoCafe grupo, int posicion) =>
+        formato == FormatoCafe.Cuarto && grupo != GrupoCafe.Casa
+            ? $"{posicion}{(grupo == GrupoCafe.Especial ? "E" : "D")}"
+            : string.Empty;
+
+    private static string ClaseGrupo(GrupoCafe grupo) => grupo switch
+    {
+        GrupoCafe.Casa => "cafe-grupo-casa",
+        GrupoCafe.Especial => "cafe-grupo-especial",
+        _ => "cafe-grupo-decaf"
+    };
+
+    private static string NombreGrupo(GrupoCafe grupo) => grupo switch
+    {
+        GrupoCafe.Casa => "Casa",
+        GrupoCafe.Especial => "Especial",
+        _ => "Descafeinado"
+    };
+}

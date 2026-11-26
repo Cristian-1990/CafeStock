@@ -152,6 +152,28 @@ public class UsuarioService : IUsuarioService
         return Result.Success<Usuario, DomainError>(await ComoUsuarioAsync(userManager, user));
     }
 
+    public async Task<Result<Usuario, DomainError>> RenombrarAsync(string id, string nuevoNombre)
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+
+        var user = await userManager.FindByIdAsync(id);
+        if (user is null)
+            return Result.Failure<Usuario, DomainError>(UsuarioErrors.NotFound(id));
+
+        var anterior = user.UserName;
+        var nombre = nuevoNombre?.Trim() ?? string.Empty;
+
+        // SetUserNameAsync valida (no vacío, caracteres permitidos y nombre no repetido) antes de guardar.
+        // Además renueva el sello de seguridad: las sesiones abiertas de este usuario se revalidan.
+        var cambio = await userManager.SetUserNameAsync(user, nombre);
+        if (!cambio.Succeeded)
+            return Result.Failure<Usuario, DomainError>(UsuarioErrors.Validation(Descripciones(cambio)));
+
+        Log.Information("Usuario renombrado: {Anterior} pasa a {UserName}", anterior, user.UserName);
+        return Result.Success<Usuario, DomainError>(await ComoUsuarioAsync(userManager, user));
+    }
+
     public async Task<Result<Usuario, DomainError>> EliminarAsync(string id, string idUsuarioActual)
     {
         if (id == idUsuarioActual)

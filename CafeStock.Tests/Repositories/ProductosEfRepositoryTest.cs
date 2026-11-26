@@ -117,6 +117,36 @@ public class ProductosEfRepositoryTest
     }
 
     [Test]
+    public async Task CreateAsync_GuardaArmario()
+    {
+        // Arrange / Act
+        var creado = await _repository.CreateAsync(
+            new Producto { Nombre = "Harina", StockActual = 1, StockMaximo = 4, Armario = 2 });
+        var leido = await _repository.GetByIdAsync(creado.Value.Id);
+
+        // Assert
+        leido.Value.Armario.Should().Be(2);
+    }
+
+    [Test]
+    public async Task UpdateAsync_ModificaYQuitaArmario()
+    {
+        // Arrange
+        var creado = await _repository.CreateAsync(
+            new Producto { Nombre = "Harina", StockActual = 1, StockMaximo = 4, Armario = null });
+
+        // Act: asignar un armario...
+        var conArmario = await _repository.UpdateAsync(creado.Value.Id, creado.Value with { Armario = 5 });
+        // ...y quitarlo otra vez (null = sin armario).
+        var sinArmario = await _repository.UpdateAsync(creado.Value.Id, conArmario.Value with { Armario = null });
+
+        // Assert
+        conArmario.Value.Armario.Should().Be(5);
+        sinArmario.Value.Armario.Should().BeNull();
+        (await _repository.GetByIdAsync(creado.Value.Id)).Value.Armario.Should().BeNull();
+    }
+
+    [Test]
     public async Task UpdateAsync_ModificaSeccion()
     {
         // Arrange
@@ -262,6 +292,54 @@ public class ProductosEfRepositoryTest
 
         // Assert
         resultado.IsFailure.Should().BeTrue();
+    }
+
+    [Test]
+    public async Task CreateAsync_GuardaStockConDecimales()
+    {
+        var creado = await _repository.CreateAsync(
+            new Producto { Nombre = "Harina", StockActual = 0.5m, StockMaximo = 2.25m });
+
+        var leido = await _repository.GetByIdAsync(creado.Value.Id);
+
+        leido.Value.StockActual.Should().Be(0.5m);
+        leido.Value.StockMaximo.Should().Be(2.25m);
+    }
+
+    [Test]
+    public async Task ActualizarStockActualAsync_AdmiteMedioPaqueteYRedondeaADosDecimales()
+    {
+        var creado = await _repository.CreateAsync(new Producto { Nombre = "Harina", StockActual = 1, StockMaximo = 4 });
+
+        var medio = await _repository.ActualizarStockActualAsync(creado.Value.Id, 0.5m);
+        var redondeado = await _repository.ActualizarStockActualAsync(creado.Value.Id, 1.236m);
+
+        medio.Value.StockActual.Should().Be(0.5m);
+        redondeado.Value.StockActual.Should().Be(1.24m);
+        (await _repository.GetByIdAsync(creado.Value.Id)).Value.StockActual.Should().Be(1.24m);
+    }
+
+    [Test]
+    public async Task ConfirmarRecepcionAsync_SumaUnidadesAUnStockConDecimales()
+    {
+        var creado = await _repository.CreateAsync(new Producto { Nombre = "Harina", StockActual = 0.5m, StockMaximo = 4 });
+
+        var resultado = await _repository.ConfirmarRecepcionAsync(creado.Value.Id, 2);
+
+        resultado.Value.StockActual.Should().Be(2.5m);
+    }
+
+    [Test]
+    public async Task ProductosUrgentes_ComparaBienConDecimales()
+    {
+        await _repository.CreateAsync(new Producto { Nombre = "Medio", StockActual = 0.5m, StockMaximo = 1 });      // falta medio
+        await _repository.CreateAsync(new Producto { Nombre = "Casi", StockActual = 9.99m, StockMaximo = 10 });      // falta 0,01
+        await _repository.CreateAsync(new Producto { Nombre = "Justo", StockActual = 2.5m, StockMaximo = 2.5m });    // completo
+        await _repository.CreateAsync(new Producto { Nombre = "Diez", StockActual = 10, StockMaximo = 9.5m });       // de sobra
+
+        var urgentes = (await _repository.ProductosUrgentes()).Select(p => p.Nombre).ToList();
+
+        urgentes.Should().BeEquivalentTo(new[] { "Medio", "Casi" });
     }
 
     [Test]

@@ -219,6 +219,54 @@ public class UsuarioServiceTest
         (await PasswordEsValidaAsync("ana", "cafe1234")).Should().BeTrue();
     }
 
+    // ---------- Renombrar ----------
+
+    [Test]
+    public async Task RenombrarAsync_NombreNuevo_CambiaElNombreYConservaRolYContrasena()
+    {
+        var ana = (await _service.CrearAsync("ana", "cafe1234", Roles.Encargado)).Value;
+
+        var resultado = await _service.RenombrarAsync(ana.Id, "  anabel ");
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value.NombreUsuario.Should().Be("anabel");
+        resultado.Value.Rol.Should().Be(Roles.Encargado);
+        (await PasswordEsValidaAsync("anabel", "cafe1234")).Should().BeTrue();
+        (await PasswordEsValidaAsync("ana", "cafe1234")).Should().BeFalse();
+    }
+
+    [Test]
+    public async Task RenombrarAsync_NombreYaUsado_FallaYConservaElNombre()
+    {
+        var ana = (await _service.CrearAsync("ana", "cafe1234", Roles.Trabajador)).Value;
+        await _service.CrearAsync("luis", "cafe1234", Roles.Trabajador);
+
+        var resultado = await _service.RenombrarAsync(ana.Id, "luis");
+
+        resultado.IsFailure.Should().BeTrue();
+        (await PasswordEsValidaAsync("ana", "cafe1234")).Should().BeTrue();
+    }
+
+    [Test]
+    public async Task RenombrarAsync_NombreVacio_Falla()
+    {
+        var ana = (await _service.CrearAsync("ana", "cafe1234", Roles.Trabajador)).Value;
+
+        var resultado = await _service.RenombrarAsync(ana.Id, "   ");
+
+        resultado.IsFailure.Should().BeTrue();
+        (await PasswordEsValidaAsync("ana", "cafe1234")).Should().BeTrue();
+    }
+
+    [Test]
+    public async Task RenombrarAsync_UsuarioInexistente_FallaConNotFound()
+    {
+        var resultado = await _service.RenombrarAsync("no-existe", "pepe");
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error.Should().BeOfType<UsuarioError.NotFound>();
+    }
+
     // ---------- Eliminar ----------
 
     [Test]

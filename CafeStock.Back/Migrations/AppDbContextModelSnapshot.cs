@@ -59,6 +59,23 @@ namespace CafeStock.Back.Migrations
                     b.ToTable("Compras");
                 });
 
+            modelBuilder.Entity("CafeStock.Back.Entity.HojaCafeEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("FechaApertura")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("FechaCierre")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("HojasCafe");
+                });
+
             modelBuilder.Entity("CafeStock.Back.Entity.LineaCompraEntity", b =>
                 {
                     b.Property<int>("Id")
@@ -90,6 +107,43 @@ namespace CafeStock.Back.Migrations
                     b.HasIndex("ProductoId");
 
                     b.ToTable("LineasCompra");
+                });
+
+            modelBuilder.Entity("CafeStock.Back.Entity.PaqueteCafeEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("FechaRecepcion")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("FechaTueste")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Formato")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Grupo")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("HojaOrigenId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ProductoId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("RecepcionadoPor")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("HojaOrigenId");
+
+                    b.HasIndex("ProductoId");
+
+                    b.ToTable("PaquetesCafe");
                 });
 
             modelBuilder.Entity("CafeStock.Back.Entity.PresupuestoEntity", b =>
@@ -131,6 +185,9 @@ namespace CafeStock.Back.Migrations
                     b.Property<bool>("AplicaConciliacionTpv")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("Armario")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Descripcion")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -141,6 +198,12 @@ namespace CafeStock.Back.Migrations
                     b.Property<string>("Finca")
                         .IsRequired()
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("FormatoCafe")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("GrupoCafe")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("ImagenUrl")
                         .IsRequired()
@@ -184,12 +247,12 @@ namespace CafeStock.Back.Migrations
                     b.Property<bool>("SeguimientoIndividual")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("StockActual")
+                    b.Property<decimal>("StockActual")
                         .IsConcurrencyToken()
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("TEXT");
 
-                    b.Property<int>("StockMaximo")
-                        .HasColumnType("INTEGER");
+                    b.Property<decimal>("StockMaximo")
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("Unidad")
                         .HasColumnType("INTEGER");
@@ -277,14 +340,24 @@ namespace CafeStock.Back.Migrations
                     b.Property<DateTime>("Fecha")
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("HojaId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("NombreTrabajador")
                         .IsRequired()
                         .HasColumnType("TEXT");
+
+                    b.Property<int?>("PaqueteId")
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("ProductoId")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("HojaId");
+
+                    b.HasIndex("PaqueteId");
 
                     b.HasIndex("ProductoId");
 
@@ -309,6 +382,26 @@ namespace CafeStock.Back.Migrations
                         .IsUnique();
 
                     b.ToTable("SnapshotsInventario");
+                });
+
+            modelBuilder.Entity("CafeStock.Back.Entity.StockRealizadoEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("Fecha")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ProveedorId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProveedorId")
+                        .IsUnique();
+
+                    b.ToTable("StocksRealizados");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -532,6 +625,25 @@ namespace CafeStock.Back.Migrations
                     b.Navigation("Producto");
                 });
 
+            modelBuilder.Entity("CafeStock.Back.Entity.PaqueteCafeEntity", b =>
+                {
+                    b.HasOne("CafeStock.Back.Entity.HojaCafeEntity", "HojaOrigen")
+                        .WithMany()
+                        .HasForeignKey("HojaOrigenId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("CafeStock.Back.Entity.ProductoEntity", "Producto")
+                        .WithMany()
+                        .HasForeignKey("ProductoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("HojaOrigen");
+
+                    b.Navigation("Producto");
+                });
+
             modelBuilder.Entity("CafeStock.Back.Entity.PresupuestoEntity", b =>
                 {
                     b.HasOne("CafeStock.Back.Entity.ProveedorEntity", "Proveedor")
@@ -555,11 +667,25 @@ namespace CafeStock.Back.Migrations
 
             modelBuilder.Entity("CafeStock.Back.Entity.RegistroCafeEntity", b =>
                 {
+                    b.HasOne("CafeStock.Back.Entity.HojaCafeEntity", "Hoja")
+                        .WithMany()
+                        .HasForeignKey("HojaId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("CafeStock.Back.Entity.PaqueteCafeEntity", "Paquete")
+                        .WithMany()
+                        .HasForeignKey("PaqueteId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("CafeStock.Back.Entity.ProductoEntity", "Producto")
                         .WithMany()
                         .HasForeignKey("ProductoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Hoja");
+
+                    b.Navigation("Paquete");
 
                     b.Navigation("Producto");
                 });

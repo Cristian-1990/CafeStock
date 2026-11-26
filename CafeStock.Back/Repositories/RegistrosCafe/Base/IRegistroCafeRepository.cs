@@ -18,4 +18,18 @@ public interface IRegistroCafeRepository
     /// segundo paso aparte que alguien podría olvidar.
     /// </summary>
     Task<Result<RegistroCafe, DomainError>> RegistrarVentaAsync(int productoId, string nombreTrabajador);
+
+    /// <summary>
+    /// Los últimos usos de cada uno de los productos indicados (más recientes primero, como mucho
+    /// <paramref name="porProducto"/> de cada uno), para rellenar los huecos usados del tablero de café. Los
+    /// productos sin ningún registro no aparecen en el diccionario.
+    /// </summary>
+    Task<IReadOnlyDictionary<int, List<RegistroCafe>>> GetUltimosPorProductoAsync(IReadOnlyCollection<int> productoIds, int porProducto);
+
+    /// <summary>
+    /// Deshace un registro: lo borra y devuelve 1 al stock del producto, en la misma transacción (el inverso
+    /// de <see cref="RegistrarVentaAsync"/>). Failure RegistroNoEncontrado si ya no existe, así que deshacer dos
+    /// veces seguidas no devuelve dos unidades.
+    /// </summary>
+    Task<Result<RegistroCafe, DomainError>> DeshacerVentaAsync(int registroId);
 }

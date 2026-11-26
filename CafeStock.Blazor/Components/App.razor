@@ -15,6 +15,8 @@
     <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet"/>
     <ImportMap/>
     <link rel="icon" type="image/png" href="favicon.png"/>
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png"/>
+    <link rel="apple-touch-icon" href="icons/icon-192.png"/>
     <link rel="manifest" href="/manifest.json"/>
     <meta name="theme-color" content="#6F4E37"/>
     <script>try{var t=localStorage.getItem("cafestock.tema");if(t)document.documentElement.setAttribute("data-tema",t)}catch(e){}</script>
@@ -65,6 +67,38 @@
             } catch (e) { }
         }
     };
+</script>
+<script>
+    // Login: recuerda el USUARIO (nunca la contraseña) en este navegador si la casilla "Recordar contraseña en
+    // este equipo" está marcada, y lo rellena la próxima vez. Se engancha al cargar y también tras una
+    // navegación mejorada de Blazor, por si se llega al login sin recargar la página.
+    (function () {
+        const CLAVE = 'cafestock.usuario';
+        function iniciar() {
+            const form = document.getElementById('formulario-login');
+            if (!form || form.dataset.recordar) return;
+            form.dataset.recordar = '1';
+            const usuario = form.querySelector('#usuario');
+            const casilla = form.querySelector('#recordar');
+            const password = form.querySelector('#password');
+            try {
+                const guardado = localStorage.getItem(CLAVE);
+                if (guardado && usuario && !usuario.value) {
+                    usuario.value = guardado;
+                    if (password) password.focus();
+                }
+            } catch (e) { }
+            form.addEventListener('submit', () => {
+                try {
+                    if (casilla && casilla.checked && usuario && usuario.value.trim()) localStorage.setItem(CLAVE, usuario.value.trim());
+                    else localStorage.removeItem(CLAVE);
+                } catch (e) { }
+            });
+        }
+        document.addEventListener('DOMContentLoaded', iniciar);
+        document.addEventListener('enhancedload', iniciar);
+        if (document.readyState !== 'loading') iniciar();
+    })();
 </script>
 <script>
     window.descargarArchivo = (nombreArchivo, base64) => {
