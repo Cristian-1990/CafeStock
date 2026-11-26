@@ -54,6 +54,12 @@ public class HojaCafeTest
         new() { Id = id, PaqueteId = paqueteId, HojaId = hoja, NombreTrabajador = quien, Fecha = new DateTime(2026, 11, 1).AddHours(id) };
 
     [Test]
+    public void Codigo_LlevaLaHojaDeOrigenYElNumeroDelPaquete()
+    {
+        Paq(45, 3).Codigo.Should().Be("H3-0045");
+    }
+
+    [Test]
     public void ConstruirHoja_NoIncluyeLosPaquetesDeHojasPosteriores()
     {
         var tarjetas = TableroCafe.ConstruirHoja(1, [Paq(1, 1), Paq(2, 2)], new Dictionary<int, RegistroCafe>());
