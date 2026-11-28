@@ -61,11 +61,13 @@ public class RegistrosCafeEfRepository : IRegistroCafeRepository
 
                 producto.StockActual -= 1;
 
-                // Se usa el paquete libre más antiguo (el que llegó antes). Si el café no tiene paquetes (stock
-                // sin repartir), el uso se registra igualmente, solo ligado a la hoja.
+                // Se usa el paquete libre de tueste más antiguo (los sin fecha, antes: no se sabe cuánto llevan). Es el
+                // que el mapa pinta al final. Si el café no tiene paquetes (stock sin repartir), el uso se registra
+                // igualmente, solo ligado a la hoja.
                 var paquete = await context.PaquetesCafe
                     .Where(p => p.ProductoId == productoId && !context.RegistrosCafe.Any(r => r.PaqueteId == p.Id))
-                    .OrderBy(p => p.HojaOrigenId).ThenBy(p => p.Id)
+                    .OrderBy(p => p.FechaTueste == null ? 0 : 1).ThenBy(p => p.FechaTueste)
+                    .ThenBy(p => p.HojaOrigenId).ThenBy(p => p.Id)
                     .FirstOrDefaultAsync();
 
                 var entity = new RegistroCafeEntity
