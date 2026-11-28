@@ -60,6 +60,41 @@ public class HojaCafeTest
     }
 
     [Test]
+    public void ConstruirHoja_OrdenaPorTuesteDeMasRecienteAMasAntiguo_ConLosSinFechaAlFinal()
+    {
+        var paquetes = new[]
+        {
+            Paq(1, 1) with { FechaTueste = new DateTime(2026, 11, 10) },
+            Paq(2, 1),                                                    // sin fecha: al final
+            Paq(3, 1) with { FechaTueste = new DateTime(2026, 11, 20) },
+            Paq(4, 1) with { FechaTueste = new DateTime(2026, 11, 15) },
+        };
+
+        var huecos = TableroCafe.ConstruirHoja(1, paquetes, new Dictionary<int, RegistroCafe>()).Single().Huecos;
+
+        huecos.Select(h => h.Paquete!.Id).Should().Equal(3, 4, 1, 2);
+    }
+
+    [Test]
+    public async Task UsarUnCafe_GastaElPaqueteDeTuesteMasAntiguo()
+    {
+        var brasil = await Cafe("Brasil");
+        await _hojas.RecepcionarAsync(
+        [
+            new NuevoPaqueteCafe(brasil.Id, new DateTime(2026, 11, 20)),
+            new NuevoPaqueteCafe(brasil.Id, new DateTime(2026, 11, 5)),
+            new NuevoPaqueteCafe(brasil.Id, new DateTime(2026, 11, 12)),
+        ], "Ana");
+
+        await _registros.RegistrarVentaAsync(brasil.Id, "Cristian");
+
+        var huecos = (await _hojas.GetDetalleAsync()).Value.Tarjetas.Single().Huecos;
+        huecos.Single(h => h.Usado).Paquete!.FechaTueste.Should().Be(new DateTime(2026, 11, 5));
+        // y el mapa lo pinta el último: el más antiguo queda abajo del todo
+        huecos.Last().Usado.Should().BeTrue();
+    }
+
+    [Test]
     public void ConstruirHoja_NoIncluyeLosPaquetesDeHojasPosteriores()
     {
         var tarjetas = TableroCafe.ConstruirHoja(1, [Paq(1, 1), Paq(2, 2)], new Dictionary<int, RegistroCafe>());

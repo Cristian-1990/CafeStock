@@ -213,3 +213,20 @@
     color: var(--cafe-color);
     opacity: 0.6;
 }
+
+/* Casa: como mucho cuatro por fila (el quinto empieza una fila nueva). */
+.cafe-recuadros-cuatro {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, var(--ancho-recuadro, 92px)));
+}
+
+.cafe-recuadros-cuatro .cafe-recuadro {
+    width: 100%;
+}
+
+/* Especial y descafeinado (los redondos): uno debajo de otro. */
+.cafe-recuadros-columna {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: flex-start;
+}

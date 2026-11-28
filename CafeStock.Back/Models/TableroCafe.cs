@@ -70,13 +70,19 @@ public static class TableroCafe
             {
                 // Usado en esta hoja (o sin hoja anotada); usados en una hoja posterior cuentan como libres.
                 bool UsadoAqui((PaqueteCafe Paquete, RegistroCafe? Uso) x) => x.Uso is not null && (x.Uso.HojaId is null || x.Uso.HojaId == hojaId);
-                var usados = g.Where(UsadoAqui)
-                    .OrderBy(x => x.Uso!.Fecha).ThenBy(x => x.Paquete.Id)
-                    .Select(x => Hueco(x.Paquete, x.Uso, hojaId, pasa: false));
-                var libres = g.Where(x => !UsadoAqui(x))
-                    .OrderBy(x => x.Paquete.HojaOrigenId).ThenBy(x => x.Paquete.Id)
-                    .Select(x => Hueco(x.Paquete, null, hojaId, pasa: x.Uso is not null));
-                return new TarjetaHoja(g.Key.ProductoId, g.Key.ProductoNombre, g.Key.Grupo, g.Key.Formato, usados.Concat(libres).ToList());
+                // Orden de los recuadros (de izquierda a derecha y de arriba abajo): primero el de tueste más reciente y al
+                // final el más antiguo; los que no tienen fecha de tueste, al fondo. Con la misma fecha, los usados primero.
+                var huecos = g
+                    .OrderByDescending(x => x.Paquete.FechaTueste.HasValue)
+                    .ThenByDescending(x => x.Paquete.FechaTueste)
+                    .ThenBy(x => UsadoAqui(x) ? 0 : 1)
+                    .ThenBy(x => UsadoAqui(x) ? x.Uso!.Fecha : DateTime.MinValue)
+                    .ThenBy(x => x.Paquete.Id)
+                    .Select(x => UsadoAqui(x)
+                        ? Hueco(x.Paquete, x.Uso, hojaId, pasa: false)
+                        : Hueco(x.Paquete, null, hojaId, pasa: x.Uso is not null))
+                    .ToList();
+                return new TarjetaHoja(g.Key.ProductoId, g.Key.ProductoNombre, g.Key.Grupo, g.Key.Formato, huecos);
             })
             .ToList();
     }

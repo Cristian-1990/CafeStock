@@ -70,7 +70,7 @@ else
                                     <span class="cafe-cafe-cuenta" aria-label="@Cuenta(tarjeta, seccion.Formato)">@(SoloLectura ? $"{tarjeta.Usados}/{tarjeta.Total}" : tarjeta.Disponibles.ToString())</span>
                                 </header>
 
-                                    <div class="cafe-recuadros">
+                                    <div class="cafe-recuadros @ClaseContenedor(seccion.Formato, grupo)" style="@AnchoRecuadro(seccion.Formato, grupo)">
                                         @foreach (var hueco in tarjeta.Huecos)
                                         {
                                             n++;
@@ -260,6 +260,16 @@ else
         var unidad = formato == FormatoCafe.Paquete ? "paquete" : "cuarto";
         return $"{tarjeta.Disponibles} {unidad}{(tarjeta.Disponibles == 1 ? "" : "s")} disponible{(tarjeta.Disponibles == 1 ? "" : "s")}";
     }
+
+    // Cómo se reparten los recuadros de un café: los de casa, en filas de cuatro; los redondos (paquetes del especial
+    // y del descafeinado), uno debajo de otro; los cuartos del especial y del descafeinado, en fila como siempre.
+    private static string ClaseContenedor(FormatoCafe formato, GrupoCafe grupo) =>
+        grupo == GrupoCafe.Casa ? "cafe-recuadros-cuatro"
+        : formato == FormatoCafe.Paquete ? "cafe-recuadros-columna"
+        : string.Empty;
+
+    private static string AnchoRecuadro(FormatoCafe formato, GrupoCafe grupo) =>
+        grupo == GrupoCafe.Casa ? $"--ancho-recuadro:{(formato == FormatoCafe.Paquete ? 92 : 68)}px" : string.Empty;
 
     // Como en la hoja: los paquetes del especial y del descafeinado son redondos y el resto, rectangulares.
     private static string FormaRecuadro(FormatoCafe formato, GrupoCafe grupo) =>
